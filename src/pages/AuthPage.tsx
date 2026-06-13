@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, Mail, Lock, User, ArrowRight, ShieldAlert } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User, ArrowRight, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import logo from '../assets/logo.png';
@@ -12,6 +12,35 @@ export default function AuthPage() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    
+    if (!val.trim()) {
+      setEmailSuggestions([]);
+      return;
+    }
+
+    const popularDomains = ['gmail.com', 'yandex.ru', 'mail.ru', 'outlook.com'];
+    
+    if (!val.includes('@')) {
+      setEmailSuggestions(popularDomains.map(d => `${val}@${d}`));
+    } else {
+      const [localPart, domainPart] = val.split('@');
+      if (domainPart === undefined) {
+        setEmailSuggestions(popularDomains.map(d => `${val}@${d}`));
+      } else if (domainPart === '') {
+        setEmailSuggestions(popularDomains.map(d => `${localPart}@${d}`));
+      } else {
+        const filtered = popularDomains.filter(d => d.startsWith(domainPart));
+        setEmailSuggestions(filtered.map(d => `${localPart}@${d}`));
+      }
+    }
+  };
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -179,7 +208,7 @@ export default function AuthPage() {
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2.5 relative">
               <label className="block text-xs font-semibold text-slate-400">Email Address</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
@@ -189,27 +218,54 @@ export default function AuthPage() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   placeholder="name@example.com"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
                 />
               </div>
+
+              {showSuggestions && emailSuggestions.length > 0 && (
+                <div className="absolute top-[calc(100%-4px)] left-0 right-0 mt-1 z-20 backdrop-blur-xl bg-slate-950/85 border border-white/10 rounded-xl overflow-hidden shadow-xl">
+                  {emailSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onMouseDown={() => {
+                        setEmail(suggestion);
+                        setEmailSuggestions([]);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-colors duration-200 cursor-pointer"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2.5">
               <label className="block text-xs font-semibold text-slate-400">Password</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 pointer-events-none">
                   <Lock className="w-4 h-4" />
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors duration-200 cursor-pointer z-10"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
