@@ -36,7 +36,7 @@ export default function AuthPage() {
     setError(null);
 
     if (!isLogin && password.length < 8) {
-      setError('Пароль должен быть не менее 8 символов.');
+      setError('Password must be at least 8 characters long.');
       setLoading(false);
       return;
     }
@@ -82,7 +82,7 @@ export default function AuthPage() {
             Task<span className="text-brand-500 bg-clip-text">Graph</span>
           </h1>
           <p className="text-sm text-slate-400 mt-2">
-            Семантический таск-трекер с ИИ-генератором зависимостей
+            Semantic task tracker with AI dependency generator
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function AuthPage() {
                 }`}
             >
               <LogIn className="w-4 h-4" />
-              Вход
+              Sign In
             </button>
             <button
               onClick={() => { setIsLogin(false); setError(null); }}
@@ -102,7 +102,7 @@ export default function AuthPage() {
                 }`}
             >
               <UserPlus className="w-4 h-4" />
-              Регистрация
+              Sign Up
             </button>
           </div>
 
@@ -110,7 +110,7 @@ export default function AuthPage() {
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 flex items-start gap-2.5 text-xs text-red-400">
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold mb-0.5">Ошибка авторизации</p>
+                <p className="font-semibold mb-0.5">Authentication Error</p>
                 <p className="leading-relaxed">{error}</p>
               </div>
             </div>
@@ -119,7 +119,7 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-400">Имя пользователя</label>
+                <label className="text-xs font-semibold text-slate-400">Username</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                     <User className="w-4 h-4" />
@@ -129,7 +129,7 @@ export default function AuthPage() {
                     required
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Алексей Иванов"
+                    placeholder="John Doe"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm"
                   />
                 </div>
@@ -137,7 +137,7 @@ export default function AuthPage() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400">Электронная почта</label>
+              <label className="text-xs font-semibold text-slate-400">Email Address</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Mail className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400">Пароль</label>
+              <label className="text-xs font-semibold text-slate-400">Password</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Lock className="w-4 h-4" />
@@ -179,7 +179,7 @@ export default function AuthPage() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isLogin ? 'Войти' : 'Создать аккаунт'}
+                  {isLogin ? 'Sign In' : 'Create Account'}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -188,7 +188,7 @@ export default function AuthPage() {
 
           <div className="relative flex py-5 items-center">
             <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">или</span>
+            <span className="flex-shrink mx-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">or</span>
             <div className="flex-grow border-t border-slate-800"></div>
           </div>
 
@@ -198,7 +198,7 @@ export default function AuthPage() {
             disabled={loading}
             className="w-full py-2.5 px-4 bg-slate-800/40 hover:bg-slate-800/80 active:scale-[0.98] border border-slate-700/50 text-slate-300 font-medium rounded-xl flex items-center justify-center gap-2 transition-all text-sm cursor-pointer disabled:opacity-50"
           >
-            Войти как разработчик (Mock API)
+            Sign in as Developer (Mock API)
           </button>
         </div>
       </div>

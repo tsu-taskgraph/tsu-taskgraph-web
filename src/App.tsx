@@ -19,7 +19,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
             <div className="absolute inset-0 rounded-full border-4 border-brand-500/20"></div>
             <div className="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
           </div>
-          <span className="text-sm font-medium text-slate-400 animate-pulse">Загрузка сессии...</span>
+          <span className="text-sm font-medium text-slate-400 animate-pulse">Restoring session...</span>
         </div>
       </div>
     );
