@@ -16,9 +16,15 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    displayName?: string;
+  }>({});
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
+    setFieldErrors(prev => ({ ...prev, email: undefined }));
     
     if (!val.trim()) {
       setEmailSuggestions([]);
@@ -49,11 +55,38 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
-    if (!isLogin && password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    const trimmedEmail = email.trim();
+    if (trimmedEmail.length < 1) {
+      setFieldErrors({ email: 'Email is required.' });
       setLoading(false);
       return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setFieldErrors({ email: 'Please enter a valid email address.' });
+      setLoading(false);
+      return;
+    }
+
+    if (isLogin) {
+      if (password.length < 1) {
+        setFieldErrors({ password: 'Password is required.' });
+        setLoading(false);
+        return;
+      }
+    } else {
+      if (displayName.trim().length < 1) {
+        setFieldErrors({ displayName: 'Username is required.' });
+        setLoading(false);
+        return;
+      }
+      if (password.length < 8) {
+        setFieldErrors({ password: 'Password must be at least 8 characters long.' });
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -162,7 +195,7 @@ export default function AuthPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div
               className={`grid transition-all duration-300 ease-in-out ${
                 isLogin ? 'grid-rows-[0fr] mb-0' : 'grid-rows-[1fr] mb-5'
@@ -176,18 +209,29 @@ export default function AuthPage() {
                       : 'opacity-100 translate-y-0 delay-150'
                   }`}
                 >
-                  <label className="block text-xs font-semibold text-slate-400">Username</label>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs font-semibold text-slate-400">Username</label>
+                    {fieldErrors.displayName && (
+                      <span className="text-[10px] font-medium text-red-400">{fieldErrors.displayName}</span>
+                    )}
+                  </div>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                       <User className="w-4 h-4" />
                     </span>
                     <input
                       type="text"
-                      required={!isLogin}
                       value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
+                      onChange={(e) => {
+                        setDisplayName(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, displayName: undefined }));
+                      }}
                       placeholder="John Doe"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 border rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
+                        fieldErrors.displayName
+                          ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500'
+                      }`}
                     />
                   </div>
                 </div>
@@ -195,20 +239,28 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-2.5 relative">
-              <label className="block text-xs font-semibold text-slate-400">Email Address</label>
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-semibold text-slate-400">Email Address</label>
+                {fieldErrors.email && (
+                  <span className="text-[10px] font-medium text-red-400">{fieldErrors.email}</span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Mail className="w-4 h-4" />
                 </span>
                 <input
                   type="email"
-                  required
                   value={email}
                   onChange={(e) => handleEmailChange(e.target.value)}
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   placeholder="name@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 border rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
+                    fieldErrors.email
+                      ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500'
+                  }`}
                 />
               </div>
 
@@ -232,18 +284,29 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-2.5">
-              <label className="block text-xs font-semibold text-slate-400">Password</label>
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-semibold text-slate-400">Password</label>
+                {fieldErrors.password && (
+                  <span className="text-[10px] font-medium text-red-400">{fieldErrors.password}</span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 pointer-events-none">
                   <Lock className="w-4 h-4" />
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldErrors(prev => ({ ...prev, password: undefined }));
+                  }}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
+                  className={`w-full pl-10 pr-10 py-2.5 bg-slate-950 border rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
+                    fieldErrors.password
+                      ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500'
+                  }`}
                 />
                 <button
                   type="button"

@@ -232,6 +232,13 @@ export const handlers = [
   http.post('*/api/v1/auth/login', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
 
+    if (data.email === 'error@example.com' || data.password === 'error') {
+      return HttpResponse.json(
+        { message: 'Invalid email or password.' },
+        { status: 401 }
+      );
+    }
+
     return HttpResponse.json({
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
