@@ -21,10 +21,12 @@ export default function AuthPage() {
     password?: string;
     displayName?: string;
   }>({});
+  const [shakeToggle, setShakeToggle] = useState(false);
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
     setFieldErrors(prev => ({ ...prev, email: undefined }));
+    setError(null);
     
     if (!val.trim()) {
       setEmailSuggestions([]);
@@ -53,42 +55,40 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setFieldErrors({});
+
+    const errors: { email?: string; password?: string; displayName?: string } = {};
 
     const trimmedEmail = email.trim();
     if (trimmedEmail.length < 1) {
-      setFieldErrors({ email: 'Email is required.' });
-      setLoading(false);
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      setFieldErrors({ email: 'Please enter a valid email address.' });
-      setLoading(false);
-      return;
+      errors.email = 'Email is required.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        errors.email = 'Please enter a valid email address.';
+      }
     }
 
     if (isLogin) {
       if (password.length < 1) {
-        setFieldErrors({ password: 'Password is required.' });
-        setLoading(false);
-        return;
+        errors.password = 'Password is required.';
       }
     } else {
       if (displayName.trim().length < 1) {
-        setFieldErrors({ displayName: 'Username is required.' });
-        setLoading(false);
-        return;
+        errors.displayName = 'Username is required.';
       }
       if (password.length < 8) {
-        setFieldErrors({ password: 'Password must be at least 8 characters long.' });
-        setLoading(false);
-        return;
+        errors.password = 'Password must be at least 8 characters long.';
       }
     }
 
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setShakeToggle(prev => !prev);
+      return;
+    }
+
+    setFieldErrors({});
+    setLoading(true);
     try {
       if (isLogin) {
         await login({ email, password });
@@ -186,7 +186,7 @@ export default function AuthPage() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 flex items-start gap-2.5 text-xs text-red-400">
+            <div className={`bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 flex items-start gap-2.5 text-xs text-red-400 animate-fade-in ${shakeToggle ? 'animate-shake' : 'animate-shake-alt'}`}>
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold mb-0.5">Authentication Error</p>
@@ -212,11 +212,11 @@ export default function AuthPage() {
                   <div className="flex justify-between items-center">
                     <label className="block text-xs font-semibold text-slate-400">Username</label>
                     {fieldErrors.displayName && (
-                      <span className="text-[10px] font-medium text-red-400">{fieldErrors.displayName}</span>
+                      <span className="text-[10px] font-medium text-red-400 animate-error-pop">{fieldErrors.displayName}</span>
                     )}
                   </div>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                  <div className={`relative ${fieldErrors.displayName ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''}`}>
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 z-10">
                       <User className="w-4 h-4" />
                     </span>
                     <input
@@ -225,6 +225,7 @@ export default function AuthPage() {
                       onChange={(e) => {
                         setDisplayName(e.target.value);
                         setFieldErrors(prev => ({ ...prev, displayName: undefined }));
+                        setError(null);
                       }}
                       placeholder="John Doe"
                       className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 border rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
@@ -242,11 +243,11 @@ export default function AuthPage() {
               <div className="flex justify-between items-center">
                 <label className="block text-xs font-semibold text-slate-400">Email Address</label>
                 {fieldErrors.email && (
-                  <span className="text-[10px] font-medium text-red-400">{fieldErrors.email}</span>
+                  <span className="text-[10px] font-medium text-red-400 animate-error-pop">{fieldErrors.email}</span>
                 )}
               </div>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+              <div className={`relative ${fieldErrors.email ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''}`}>
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 z-10">
                   <Mail className="w-4 h-4" />
                 </span>
                 <input
@@ -287,11 +288,11 @@ export default function AuthPage() {
               <div className="flex justify-between items-center">
                 <label className="block text-xs font-semibold text-slate-400">Password</label>
                 {fieldErrors.password && (
-                  <span className="text-[10px] font-medium text-red-400">{fieldErrors.password}</span>
+                  <span className="text-[10px] font-medium text-red-400 animate-error-pop">{fieldErrors.password}</span>
                 )}
               </div>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 pointer-events-none">
+              <div className={`relative ${fieldErrors.password ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''}`}>
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 pointer-events-none z-10">
                   <Lock className="w-4 h-4" />
                 </span>
                 <input
@@ -300,6 +301,7 @@ export default function AuthPage() {
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setFieldErrors(prev => ({ ...prev, password: undefined }));
+                    setError(null);
                   }}
                   placeholder="••••••••"
                   className={`w-full pl-10 pr-10 py-2.5 bg-slate-950 border rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${

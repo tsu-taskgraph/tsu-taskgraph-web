@@ -15,6 +15,9 @@
   --color-brand-950: #451a03;
 
   --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-shake: shake 0.4s ease-in-out;
+  --animate-shake-alt: shake-alt 0.4s ease-in-out;
+  --animate-error-pop: error-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-blob-one: blob-one 16s infinite ease-in-out;
   --animate-blob-two: blob-two 22s infinite ease-in-out;
   --animate-blob-three: blob-three 19s infinite ease-in-out;
@@ -28,6 +31,29 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+  }
+
+  @keyframes shake-alt {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+  }
+
+  @keyframes error-pop {
+    from {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
     }
   }
 
