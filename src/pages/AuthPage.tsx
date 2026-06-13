@@ -45,20 +45,6 @@ export default function AuthPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await login({ email: 'dev@taskgraph.ru', password: 'password' });
-      navigate('/');
-    } catch (err) {
-      console.error(err);
-      setError('Failed to connect to Mock API.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -301,21 +287,6 @@ export default function AuthPage() {
               )}
             </button>
           </form>
-
-          <div className="relative flex py-5 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">or</span>
-            <div className="flex-grow border-t border-slate-800"></div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-slate-800/40 hover:bg-slate-800/80 active:scale-[0.98] border border-slate-700/50 hover:border-brand-500/30 text-slate-300 hover:text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all duration-300 text-sm cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-md"
-          >
-            Sign in as Developer (Mock API)
-          </button>
         </div>
       </div>
     </div>
