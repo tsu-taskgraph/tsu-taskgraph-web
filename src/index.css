@@ -13,6 +13,19 @@
   --color-brand-800: #92400e;
   --color-brand-900: #78350f;
   --color-brand-950: #451a03;
+
+  --animate-fade-in: fade-in 0.2s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 @layer base {

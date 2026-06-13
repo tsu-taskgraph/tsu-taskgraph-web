@@ -71,11 +71,11 @@ export default function AuthPage() {
       <div className="w-full max-w-md z-10">
         <div className="text-center mb-8 flex flex-col items-center">
           <div className="relative mb-4 group">
-            <div className="absolute inset-0 rounded-full bg-brand-500/20 blur-xl group-hover:bg-brand-500/30 transition-all duration-500 animate-pulse pointer-events-none" />
+            <div className="absolute inset-0 rounded-full bg-brand-500/30 blur-xl group-hover:bg-brand-500/45 transition-all duration-500 animate-pulse pointer-events-none" />
             <img
               src={logo}
               alt="TaskGraph Logo"
-              className="relative h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+              className="relative h-20 w-auto object-contain"
             />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
@@ -87,23 +87,35 @@ export default function AuthPage() {
         </div>
 
         <div className="backdrop-blur-xl bg-slate-900/60 border border-slate-800/80 rounded-3xl p-8 shadow-2xl">
-          <div className="flex border-b border-slate-800 pb-4 mb-6">
+          <div className="relative flex border-b border-slate-800 pb-4 mb-6">
             <button
+              type="button"
               onClick={() => { setIsLogin(true); setError(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors cursor-pointer ${isLogin ? 'text-brand-500 border-b-2 border-brand-500 -mb-[18px]' : 'text-slate-400 hover:text-slate-200'
-                }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors duration-300 cursor-pointer ${
+                isLogin ? 'text-brand-500' : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
               <LogIn className="w-4 h-4" />
               Sign In
             </button>
             <button
+              type="button"
               onClick={() => { setIsLogin(false); setError(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors cursor-pointer ${!isLogin ? 'text-brand-500 border-b-2 border-brand-500 -mb-[18px]' : 'text-slate-400 hover:text-slate-200'
-                }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors duration-300 cursor-pointer ${
+                !isLogin ? 'text-brand-500' : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
               <UserPlus className="w-4 h-4" />
               Sign Up
             </button>
+            <div
+              className="absolute bottom-0 h-0.5 bg-brand-500 transition-all duration-300 ease-out"
+              style={{
+                left: isLogin ? '0%' : '50%',
+                width: '50%',
+                transform: 'translateY(1px)'
+              }}
+            />
           </div>
 
           {error && (
@@ -116,28 +128,40 @@ export default function AuthPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-400">Username</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                    <User className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm"
-                  />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div
+              className={`grid transition-all duration-300 ease-in-out ${
+                isLogin ? 'grid-rows-[0fr] mb-0' : 'grid-rows-[1fr] mb-5'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div
+                  className={`pb-1 space-y-2.5 transition-all duration-300 ease-out ${
+                    isLogin
+                      ? 'opacity-0 -translate-y-2 pointer-events-none'
+                      : 'opacity-100 translate-y-0 delay-150'
+                  }`}
+                >
+                  <label className="block text-xs font-semibold text-slate-400">Username</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <User className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      required={!isLogin}
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="John Doe"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400">Email Address</label>
+            <div className="space-y-2.5">
+              <label className="block text-xs font-semibold text-slate-400">Email Address</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Mail className="w-4 h-4" />
@@ -148,13 +172,13 @@ export default function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400">Password</label>
+            <div className="space-y-2.5">
+              <label className="block text-xs font-semibold text-slate-400">Password</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Lock className="w-4 h-4" />
@@ -165,7 +189,7 @@ export default function AuthPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-300 text-sm"
                 />
               </div>
             </div>
@@ -173,15 +197,32 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 mt-2 bg-gradient-to-r from-brand-600 to-orange-600 hover:from-brand-500 hover:to-orange-500 active:scale-[0.98] text-white font-medium rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-brand-900/20 disabled:opacity-50 disabled:pointer-events-none transition-all text-sm cursor-pointer"
+              className="group relative w-full h-10 mt-2 text-white font-medium rounded-xl flex items-center justify-center active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all duration-300 text-sm cursor-pointer overflow-hidden shadow-md"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-600 to-orange-600 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="relative z-10 w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <>
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                  <ArrowRight className="w-4 h-4" />
-                </>
+                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                  <span
+                    className={`absolute flex items-center justify-center gap-1.5 transition-all duration-300 ease-out ${
+                      isLogin ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2 pointer-events-none'
+                    }`}
+                  >
+                    Sign In
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+                  </span>
+                  <span
+                    className={`absolute flex items-center justify-center gap-1.5 transition-all duration-300 ease-out ${
+                      !isLogin ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2 pointer-events-none'
+                    }`}
+                  >
+                    Create Account
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+                  </span>
+                </div>
               )}
             </button>
           </form>
@@ -196,7 +237,7 @@ export default function AuthPage() {
             type="button"
             onClick={handleDemoLogin}
             disabled={loading}
-            className="w-full py-2.5 px-4 bg-slate-800/40 hover:bg-slate-800/80 active:scale-[0.98] border border-slate-700/50 text-slate-300 font-medium rounded-xl flex items-center justify-center gap-2 transition-all text-sm cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 px-4 bg-slate-800/40 hover:bg-slate-800/80 active:scale-[0.98] border border-slate-700/50 hover:border-brand-500/30 text-slate-300 hover:text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all duration-300 text-sm cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-md"
           >
             Sign in as Developer (Mock API)
           </button>
