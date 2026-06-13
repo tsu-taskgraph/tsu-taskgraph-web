@@ -62,11 +62,30 @@ export default function AuthPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-hidden px-4">
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-brand-600/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-orange-600/10 blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
+          <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-600/22 blur-[160px] animate-blob-one" />
+          <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-purple-600/20 blur-[180px] animate-blob-two" />
+          <div className="absolute bottom-[20%] left-[20%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-blue-600/18 blur-[160px] animate-blob-three" />
+          <div className="absolute bottom-[15%] right-[15%] w-[60vw] h-[60vw] min-w-[700px] min-h-[700px] bg-amber-500/12 blur-[170px] animate-blob-four" />
+        </div>
+      </div>
 
-      <div className="absolute w-[800px] h-[800px] border border-slate-900/40 rounded-full pointer-events-none animate-[spin_120s_linear_infinite]" />
-      <div className="absolute w-[600px] h-[600px] border border-dashed border-slate-900/20 rounded-full pointer-events-none animate-[spin_80s_linear_infinite]" />
+      <svg className="absolute inset-0 w-full h-full opacity-[0.06] pointer-events-none z-1 mix-blend-overlay">
+        <filter id="noiseFilter">
+          <feTurbulence 
+            type="fractalNoise" 
+            baseFrequency="0.65" 
+            numOctaves="3" 
+            stitchTiles="stitch" 
+          />
+          <feColorMatrix 
+            type="matrix" 
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.8 0" 
+          />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noiseFilter)" />
+      </svg>
 
       <div className="w-full max-w-md z-10">
         <div className="text-center mb-8 flex flex-col items-center">
@@ -86,7 +105,7 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <div className="backdrop-blur-xl bg-slate-900/60 border border-slate-800/80 rounded-3xl p-8 shadow-2xl">
+        <div className="backdrop-blur-2xl bg-slate-950/40 border border-white/10 rounded-3xl p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
           <div className="relative flex border-b border-slate-800 pb-4 mb-6">
             <button
               type="button"
