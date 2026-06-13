@@ -18,6 +18,7 @@
   --animate-shake: shake 0.4s ease-in-out;
   --animate-shake-alt: shake-alt 0.4s ease-in-out;
   --animate-error-pop: error-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-dropdown-slide: dropdown-slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-blob-one: blob-one 16s infinite ease-in-out;
   --animate-blob-two: blob-two 22s infinite ease-in-out;
   --animate-blob-three: blob-three 19s infinite ease-in-out;
@@ -54,6 +55,17 @@
     to {
       opacity: 1;
       transform: translateX(0);
+    }
+  }
+
+  @keyframes dropdown-slide {
+    from {
+      opacity: 0;
+      transform: scaleY(0);
+    }
+    to {
+      opacity: 1;
+      transform: scaleY(1);
     }
   }
 

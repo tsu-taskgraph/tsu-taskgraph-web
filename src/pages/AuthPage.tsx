@@ -266,7 +266,7 @@ export default function AuthPage() {
               </div>
 
               {showSuggestions && emailSuggestions.length > 0 && (
-                <div className="absolute top-[calc(100%-4px)] left-0 right-0 mt-1 z-20 backdrop-blur-xl bg-slate-950/85 border border-white/10 rounded-xl overflow-hidden shadow-xl">
+                <div className="absolute top-[calc(100%-4px)] left-0 right-0 mt-1 z-20 backdrop-blur-xl bg-slate-950/85 border border-white/10 rounded-xl overflow-hidden shadow-xl animate-dropdown-slide origin-top">
                   {emailSuggestions.map((suggestion) => (
                     <button
                       key={suggestion}
