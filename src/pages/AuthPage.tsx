@@ -90,7 +90,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-hidden px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-y-auto py-8 px-4">
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
           <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-600/22 blur-[160px] animate-blob-one" />
@@ -182,7 +182,7 @@ export default function AuthPage() {
                 isLogin ? 'grid-rows-[0fr] mb-0' : 'grid-rows-[1fr] mb-5'
               }`}
             >
-              <div className="overflow-hidden">
+              <div className="overflow-hidden px-1 py-1 -mx-1 -my-1">
                 <div
                   className={`pb-1 space-y-2.5 transition-all duration-300 ease-out ${
                     isLogin
