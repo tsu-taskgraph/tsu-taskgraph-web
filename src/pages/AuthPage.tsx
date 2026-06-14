@@ -4,6 +4,7 @@ import { LogIn, UserPlus, Mail, Lock, User, ArrowRight, ShieldAlert, Eye, EyeOff
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import logo from '../assets/logo.png';
+import { mapServerErrorToEnglish } from '../api/errors';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -98,18 +99,42 @@ export default function AuthPage() {
       navigate('/');
     } catch (err) {
       console.error(err);
-      const apiMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      setError(
-        apiMessage ||
-        'Failed to connect to the server. Please check your connection and try again.'
-      );
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const apiData = err.response?.data;
+        const apiMessage = apiData?.message || '';
+
+        const mapped = mapServerErrorToEnglish(apiData || apiMessage, status, { isLogin });
+
+        if (mapped.fieldErrors && Object.keys(mapped.fieldErrors).length > 0) {
+          const formErrors: typeof fieldErrors = {};
+          if (mapped.fieldErrors.email) formErrors.email = mapped.fieldErrors.email;
+          if (mapped.fieldErrors.password) formErrors.password = mapped.fieldErrors.password;
+          if (mapped.fieldErrors.displayName) formErrors.displayName = mapped.fieldErrors.displayName;
+
+          if (Object.keys(formErrors).length > 0) {
+            setFieldErrors(formErrors);
+          } else {
+            setError(mapped.message);
+            setShakeToggle(prev => !prev);
+          }
+        } else if (mapped.field === 'email' || mapped.field === 'password' || mapped.field === 'displayName') {
+          setFieldErrors({ [mapped.field]: mapped.message });
+        } else {
+          setError(mapped.message);
+          setShakeToggle(prev => !prev);
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+        setShakeToggle(prev => !prev);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-y-auto py-8 px-4">
+    <div className="relative min-h-dvh flex items-center justify-center bg-slate-950 overflow-y-auto py-8 px-4">
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
           <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-600/22 blur-[160px] animate-blob-one" />
@@ -142,6 +167,9 @@ export default function AuthPage() {
             <img
               src={logo}
               alt="TaskGraph Logo"
+              fetchPriority="high"
+              loading="eager"
+              decoding="sync"
               className="relative h-16 sm:h-20 w-auto object-contain"
             />
           </div>
