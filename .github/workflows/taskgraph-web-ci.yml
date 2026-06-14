@@ -33,6 +33,8 @@ jobs:
         continue-on-error: true
 
       - name: 🏗️ Build project
+        env:
+          VITE_API_URL: "https://taskgraph.orexi4.ru"
         run: npm run build
 
       - name: 🗜️ Compress build artifacts
