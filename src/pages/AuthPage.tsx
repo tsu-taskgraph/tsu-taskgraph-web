@@ -142,18 +142,18 @@ export default function AuthPage() {
             <img
               src={logo}
               alt="TaskGraph Logo"
-              className="relative h-20 w-auto object-contain"
+              className="relative h-16 sm:h-20 w-auto object-contain"
             />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
             Task<span className="text-brand-500 bg-clip-text">Graph</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-xs sm:text-sm text-slate-400 mt-2">
             Semantic task tracker with AI dependency generator
           </p>
         </div>
 
-        <div className="backdrop-blur-2xl bg-slate-950/40 border border-white/10 rounded-3xl p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
+        <div className="backdrop-blur-2xl bg-slate-950/40 border border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
           <div className="relative flex border-b border-slate-800 pb-4 mb-6">
             <button
               type="button"
@@ -209,10 +209,10 @@ export default function AuthPage() {
                       : 'opacity-100 translate-y-0 delay-150'
                   }`}
                 >
-                  <div className="flex justify-between items-center">
-                    <label className="block text-xs font-semibold text-slate-400">Username</label>
+                  <div className="flex justify-between items-baseline gap-2">
+                    <label className="block text-xs font-semibold text-slate-400 shrink-0">Username</label>
                     {fieldErrors.displayName && (
-                      <span className="text-[10px] font-medium text-red-400 animate-error-pop">{fieldErrors.displayName}</span>
+                      <span className="text-[10px] font-medium text-red-400 animate-error-pop text-right leading-none">{fieldErrors.displayName}</span>
                     )}
                   </div>
                   <div className={`relative ${fieldErrors.displayName ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''}`}>
@@ -240,10 +240,10 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-2.5 relative">
-              <div className="flex justify-between items-center">
-                <label className="block text-xs font-semibold text-slate-400">Email Address</label>
+              <div className="flex justify-between items-baseline gap-2">
+                <label className="block text-xs font-semibold text-slate-400 shrink-0">Email Address</label>
                 {fieldErrors.email && (
-                  <span className="text-[10px] font-medium text-red-400 animate-error-pop">{fieldErrors.email}</span>
+                  <span className="text-[10px] font-medium text-red-400 animate-error-pop text-right leading-none">{fieldErrors.email}</span>
                 )}
               </div>
               <div className={`relative ${fieldErrors.email ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''}`}>
@@ -285,10 +285,10 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-2.5">
-              <div className="flex justify-between items-center">
-                <label className="block text-xs font-semibold text-slate-400">Password</label>
+              <div className="flex justify-between items-baseline gap-2">
+                <label className="block text-xs font-semibold text-slate-400 shrink-0">Password</label>
                 {fieldErrors.password && (
-                  <span className="text-[10px] font-medium text-red-400 animate-error-pop">{fieldErrors.password}</span>
+                  <span className="text-[10px] font-medium text-red-400 animate-error-pop text-right leading-none">{fieldErrors.password}</span>
                 )}
               </div>
               <div className={`relative ${fieldErrors.password ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''}`}>
