@@ -10,29 +10,60 @@ export const apiClient = axios.create({
 });
 
 
-export const getAccessToken = () => localStorage.getItem('accessToken');
-export const getRefreshToken = () => localStorage.getItem('refreshToken');
-export const setTokens = (accessToken: string, refreshToken: string) => {
-  localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('refreshToken', refreshToken);
-};
-export const clearTokens = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+export const getAccessToken = () => {
+  try {
+    return localStorage.getItem('accessToken');
+  } catch {
+    return null;
+  }
 };
 
+export const getRefreshToken = () => {
+  try {
+    return localStorage.getItem('refreshToken');
+  } catch {
+    return null;
+  }
+};
+
+export const setTokens = (accessToken: string, refreshToken: string) => {
+  try {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+  } catch (e) {
+    console.warn('localStorage is disabled:', e);
+  }
+};
+
+export const clearTokens = () => {
+  try {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  } catch (e) {
+    console.warn('localStorage is disabled:', e);
+  }
+};
 
 export const getAiSettings = () => {
-  const settings = localStorage.getItem('aiSettings');
-  return settings ? JSON.parse(settings) : null;
+  try {
+    const settings = localStorage.getItem('aiSettings');
+    return settings ? JSON.parse(settings) : null;
+  } catch {
+    return null;
+  }
 };
+
 export const setAiSettings = (settings: {
   provider?: string;
   apiKey?: string;
   model?: string;
   ollamaBaseUrl?: string;
 }) => {
-  localStorage.setItem('aiSettings', JSON.stringify(settings));
+  try {
+    localStorage.setItem('aiSettings', JSON.stringify(settings));
+  } catch (e) {
+    console.warn('localStorage is disabled:', e);
+  }
 };
 
 

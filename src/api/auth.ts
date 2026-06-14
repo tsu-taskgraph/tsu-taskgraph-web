@@ -1,4 +1,4 @@
-import { apiClient, setTokens, clearTokens } from './client';
+import { apiClient, setTokens, clearTokens, getRefreshToken } from './client';
 
 export interface SavedAiSettings {
   provider: 'gemini' | 'openai' | 'anthropic' | 'groq' | 'mistral' | 'ollama' | null;
@@ -41,7 +41,7 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = getRefreshToken();
     try {
       if (refreshToken) {
         await apiClient.post('/api/v1/auth/logout', { refreshToken });
