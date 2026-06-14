@@ -232,9 +232,13 @@ export const handlers = [
   http.post('*/api/v1/auth/login', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
 
+    if (data.email === 'server-error@example.com') {
+      return new HttpResponse(null, { status: 500 });
+    }
+
     if (data.email === 'error@example.com' || data.password === 'error') {
       return HttpResponse.json(
-        { message: 'Invalid email or password.' },
+        { message: 'Неверный логин или пароль.' },
         { status: 401 }
       );
     }
@@ -252,6 +256,31 @@ export const handlers = [
 
   http.post('*/api/v1/auth/register', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
+
+    if (data.email === 'server-error@example.com') {
+      return new HttpResponse(null, { status: 500 });
+    }
+
+    if (data.email === 'conflict-email@example.com') {
+      return HttpResponse.json(
+        { message: 'Этот email адрес уже зарегистрирован.' },
+        { status: 409 }
+      );
+    }
+
+    if (data.displayName === 'conflict-username') {
+      return HttpResponse.json(
+        { message: 'Имя пользователя уже занято.' },
+        { status: 409 }
+      );
+    }
+
+    if (data.password === 'weakpassword') {
+      return HttpResponse.json(
+        { message: 'Пароль слишком простой или короткий.' },
+        { status: 400 }
+      );
+    }
 
     return HttpResponse.json({
       accessToken: 'mock-access-token',
