@@ -1,6 +1,5 @@
 import { initializeFaro, getWebInstrumentations } from '@grafana/faro-web-sdk';
 import { ReactIntegration } from '@grafana/faro-react';
-import { TracingInstrumentation } from '@grafana/faro-web-tracing';
 
 export function initFaro() {
   const faroUrl = import.meta.env.VITE_FARO_URL;
@@ -20,7 +19,6 @@ export function initFaro() {
     instrumentations: [
       ...getWebInstrumentations(),
       new ReactIntegration(),
-      new TracingInstrumentation(),
     ],
   });
 }
