@@ -1,0 +1,93 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DEPLOY_USERNAME: "deployuser"
+  TARGET_DIR: "/home/deployuser/tsu-taskgraph-web"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: Production
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🧹 Lint project
+        run: npm run lint
+        continue-on-error: true
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 🗜️ Compress build artifacts
+        if: github.ref == 'refs/heads/main'
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: 📁 Copy archive to server
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME || env.DEPLOY_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist.tar.gz"
+          target: "${{ env.TARGET_DIR }}/"
+
+      - name: 🚀 Deploy and Extract on Server (Atomic)
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME || env.DEPLOY_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd ${{ env.TARGET_DIR }}
+
+            mkdir -p dist_new
+            tar -xzf dist.tar.gz -C dist_new
+
+            rm -rf dist_old
+            mv dist dist_old || true
+            mv dist_new dist
+
+            rm -f dist.tar.gz
+            echo "🚀 Frontend successfully deployed!"
+
+      - name: 🛠 Rollback on Failure
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME || env.DEPLOY_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ env.TARGET_DIR }}
+            echo "⚠️ Deployment error. Initiating rollback..."
+
+            if [ ! -d dist ] && [ -d dist_old ]; then
+              echo "🔄 Restoring dist from dist_old..."
+              mv dist_old dist
+              echo "✅ Rollback completed. Stable version restored."
+            elif [ -d dist ]; then
+              echo "✅ Active 'dist' folder exists. No action needed."
+            else
+              echo "❌ Error: Neither 'dist' nor 'dist_old' directory found!"
+              exit 1
+            fi
