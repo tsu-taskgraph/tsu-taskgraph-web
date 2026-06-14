@@ -4,6 +4,7 @@ import { LogIn, UserPlus, Mail, Lock, User, ArrowRight, ShieldAlert, Eye, EyeOff
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import logo from '../assets/logo.png';
+import { mapServerErrorToEnglish } from '../api/errors';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -98,11 +99,22 @@ export default function AuthPage() {
       navigate('/');
     } catch (err) {
       console.error(err);
-      const apiMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      setError(
-        apiMessage ||
-        'Failed to connect to the server. Please check your connection and try again.'
-      );
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const apiMessage = err.response?.data?.message || '';
+
+        const mapped = mapServerErrorToEnglish(apiMessage, status, { isLogin });
+
+        if (mapped.field === 'email' || mapped.field === 'password' || mapped.field === 'displayName') {
+          setFieldErrors({ [mapped.field]: mapped.message });
+        } else {
+          setError(mapped.message);
+          setShakeToggle(prev => !prev);
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+        setShakeToggle(prev => !prev);
+      }
     } finally {
       setLoading(false);
     }
