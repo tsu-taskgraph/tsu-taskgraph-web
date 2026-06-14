@@ -101,11 +101,24 @@ export default function AuthPage() {
       console.error(err);
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        const apiMessage = err.response?.data?.message || '';
+        const apiData = err.response?.data;
+        const apiMessage = apiData?.message || '';
 
-        const mapped = mapServerErrorToEnglish(apiMessage, status, { isLogin });
+        const mapped = mapServerErrorToEnglish(apiData || apiMessage, status, { isLogin });
 
-        if (mapped.field === 'email' || mapped.field === 'password' || mapped.field === 'displayName') {
+        if (mapped.fieldErrors && Object.keys(mapped.fieldErrors).length > 0) {
+          const formErrors: typeof fieldErrors = {};
+          if (mapped.fieldErrors.email) formErrors.email = mapped.fieldErrors.email;
+          if (mapped.fieldErrors.password) formErrors.password = mapped.fieldErrors.password;
+          if (mapped.fieldErrors.displayName) formErrors.displayName = mapped.fieldErrors.displayName;
+
+          if (Object.keys(formErrors).length > 0) {
+            setFieldErrors(formErrors);
+          } else {
+            setError(mapped.message);
+            setShakeToggle(prev => !prev);
+          }
+        } else if (mapped.field === 'email' || mapped.field === 'password' || mapped.field === 'displayName') {
           setFieldErrors({ [mapped.field]: mapped.message });
         } else {
           setError(mapped.message);
