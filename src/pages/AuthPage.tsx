@@ -101,7 +101,7 @@ export default function AuthPage() {
       const apiMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
       setError(
         apiMessage ||
-        'There was an error sending your request. Please make sure the mock server is running.'
+        'Failed to connect to the server. Please check your connection and try again.'
       );
     } finally {
       setLoading(false);
