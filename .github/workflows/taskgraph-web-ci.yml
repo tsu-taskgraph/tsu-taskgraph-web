@@ -1,4 +1,4 @@
-name: Deploy Frontend
+name: Deploy Frontend (Docker)
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 env:
   DEPLOY_USERNAME: "deployuser"
   TARGET_DIR: "/home/deployuser/tsu-taskgraph-web"
+  DOCKER_IMAGE: "${{ secrets.DOCKER_USERNAME }}/tsu-taskgraph-web"
 
 jobs:
   build-and-deploy:
@@ -19,40 +20,37 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🧹 Lint project
-        run: npm run lint
-        continue-on-error: true
-
-      - name: 🏗️ Build project
-        env:
-          VITE_API_URL: "https://taskgraph.orexi4.ru"
-          VITE_FARO_URL: ${{ secrets.VITE_FARO_URL }}
-        run: npm run build
-
-      - name: 🗜️ Compress build artifacts
+      - name: 🔐 Login to Docker Hub
         if: github.ref == 'refs/heads/main'
-        run: tar -czf dist.tar.gz -C dist .
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 📁 Copy archive to server
+      - name: 🐳 Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:latest
+            ${{ env.DOCKER_IMAGE }}:${{ github.run_number }}
+          build-args: |
+            VITE_API_URL=https://taskgraph.orexi4.ru
+            VITE_FARO_URL=${{ secrets.VITE_FARO_URL }}
+
+      - name: 📁 Copy compose file to server
         if: github.ref == 'refs/heads/main'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.DEPLOY_USERNAME || env.DEPLOY_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist.tar.gz"
+          source: "docker-compose.prod.yml"
           target: "${{ env.TARGET_DIR }}/"
 
-      - name: 🚀 Deploy and Extract on Server (Atomic)
+      - name: 🚀 Deploy to Server (SSH)
         if: github.ref == 'refs/heads/main'
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -62,16 +60,18 @@ jobs:
           script: |
             set -e
             cd ${{ env.TARGET_DIR }}
-
-            mkdir -p dist_new
-            tar -xzf dist.tar.gz -C dist_new
-
-            rm -rf dist_old
-            mv dist dist_old || true
-            mv dist_new dist
-
-            rm -f dist.tar.gz
-            echo "🚀 Frontend successfully deployed!"
+            
+            echo "🔐 Generating .env file..."
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
+            
+            echo "📥 Pulling latest images..."
+            docker compose -f docker-compose.prod.yaml pull
+            
+            echo "🚀 Starting frontend container..."
+            docker compose -f docker-compose.prod.yaml up -d
+            
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
 
       - name: 🛠 Rollback on Failure
         if: failure() && github.ref == 'refs/heads/main'
@@ -81,16 +81,6 @@ jobs:
           username: ${{ secrets.DEPLOY_USERNAME || env.DEPLOY_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "⚠️ Deployment error. Rolling back to running config..."
             cd ${{ env.TARGET_DIR }}
-            echo "⚠️ Deployment error. Initiating rollback..."
-
-            if [ ! -d dist ] && [ -d dist_old ]; then
-              echo "🔄 Restoring dist from dist_old..."
-              mv dist_old dist
-              echo "✅ Rollback completed. Stable version restored."
-            elif [ -d dist ]; then
-              echo "✅ Active 'dist' folder exists. No action needed."
-            else
-              echo "❌ Error: Neither 'dist' nor 'dist_old' directory found!"
-              exit 1
-            fi
+            docker compose -f docker-compose.prod.yaml up -d
