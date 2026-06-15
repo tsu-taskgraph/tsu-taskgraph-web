@@ -1,11 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FaroErrorBoundary } from '@grafana/faro-react'
-import { initFaro } from './faro'
+// import { initFaro } from './faro'
 import './index.css'
 import App from './App.tsx'
 
-initFaro();
+// initFaro();
 
 async function enableMocking() {
   if (!import.meta.env.DEV) {
