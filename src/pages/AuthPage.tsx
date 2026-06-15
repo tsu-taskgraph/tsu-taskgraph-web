@@ -135,8 +135,11 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="relative min-h-dvh flex items-center justify-center bg-slate-950 overflow-y-auto py-8 px-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade">
+    <div className="relative min-h-dvh flex items-center justify-center bg-gradient-mobile md:bg-slate-950 py-8 px-4">
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 to-transparent pointer-events-none z-2 animate-slow-fade" />
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none z-2 animate-slow-fade" />
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
           <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-600/22 blur-[160px] animate-blob-one" />
           <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-purple-600/20 blur-[180px] animate-blob-two" />
@@ -145,7 +148,7 @@ export default function AuthPage() {
         </div>
       </div>
 
-      <svg className="absolute inset-0 w-full h-full opacity-[0.06] pointer-events-none z-1 mix-blend-overlay animate-slow-fade">
+      <svg className="absolute inset-0 w-full h-full opacity-[0.06] pointer-events-none z-1 mix-blend-overlay animate-slow-fade hidden md:block">
         <filter id="noiseFilter">
           <feTurbulence 
             type="fractalNoise" 
