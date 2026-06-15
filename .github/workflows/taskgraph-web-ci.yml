@@ -47,7 +47,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.DEPLOY_USERNAME || env.DEPLOY_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yaml"
           target: "${{ env.TARGET_DIR }}/"
 
       - name: 🚀 Deploy to Server (SSH)
