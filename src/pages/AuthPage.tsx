@@ -23,6 +23,7 @@ export default function AuthPage() {
     displayName?: string;
   }>({});
   const [shakeToggle, setShakeToggle] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
@@ -170,7 +171,10 @@ export default function AuthPage() {
               fetchPriority="high"
               loading="eager"
               decoding="sync"
-              className="relative h-16 sm:h-20 w-auto object-contain"
+              onLoad={() => setLogoLoaded(true)}
+              className={`relative h-16 sm:h-20 w-auto object-contain transition-opacity duration-700 ease-out ${
+                logoLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
             />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
