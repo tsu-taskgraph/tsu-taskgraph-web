@@ -38,7 +38,6 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:${{ github.run_number }}
           build-args: |
             VITE_API_URL=https://taskgraph.orexi4.ru
-            VITE_FARO_URL=${{ secrets.VITE_FARO_URL }}
 
       - name: 📁 Copy compose file to server
         if: github.ref == 'refs/heads/main'
