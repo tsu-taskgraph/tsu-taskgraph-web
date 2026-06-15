@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: ${DOCKER_USERNAME}/tsu-taskgraph-web:latest
+    container_name: tsu-taskgraph-web
+    ports:
+      - "127.0.0.1:8082:80"
+    restart: unless-stopped
