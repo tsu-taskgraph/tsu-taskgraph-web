@@ -136,7 +136,7 @@ export default function AuthPage() {
 
   return (
     <div className="relative min-h-dvh flex items-center justify-center bg-slate-950 overflow-y-auto py-8 px-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
           <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-600/22 blur-[160px] animate-blob-one" />
           <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-purple-600/20 blur-[180px] animate-blob-two" />
@@ -145,7 +145,7 @@ export default function AuthPage() {
         </div>
       </div>
 
-      <svg className="absolute inset-0 w-full h-full opacity-[0.06] pointer-events-none z-1 mix-blend-overlay">
+      <svg className="absolute inset-0 w-full h-full opacity-[0.06] pointer-events-none z-1 mix-blend-overlay animate-slow-fade">
         <filter id="noiseFilter">
           <feTurbulence 
             type="fractalNoise" 
@@ -162,7 +162,7 @@ export default function AuthPage() {
       </svg>
 
       <div className="w-full max-w-md z-10">
-        <div className="text-center mb-8 flex flex-col items-center">
+        <div className="text-center mb-8 flex flex-col items-center animate-slide-down-fade">
           <div className="relative mb-4 group">
             <div className="absolute inset-0 rounded-full bg-brand-500/30 blur-xl group-hover:bg-brand-500/45 transition-all duration-500 animate-pulse pointer-events-none" />
             <img
@@ -185,7 +185,10 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <div className="backdrop-blur-2xl bg-slate-950/40 border border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
+        <div 
+          className="backdrop-blur-2xl bg-slate-950/40 border border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] animate-zoom-in-fade"
+          style={{ animationDelay: '150ms' }}
+        >
           <div className="relative flex border-b border-slate-800 pb-4 mb-6">
             <button
               type="button"
