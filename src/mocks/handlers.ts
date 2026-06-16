@@ -65,6 +65,51 @@ const projectsList: Project[] = [
     completionPercent: 20,
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+    name: 'Smart IoT Analytics Dashboard',
+    description: 'Панель управления датчиками «умного дома» с real-time графиками и детекцией аномалий на базе ML.',
+    techStack: ['Go', 'Python', 'ClickHouse', 'Next.js', 'TensorFlow', 'MQTT', 'Docker'],
+    status: 'PENDING_AI',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 2,
+    aiEstimate: true,
+    totalEstimatedHours: 80,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+    name: 'TaskGraph Wiki System',
+    description: 'Внутренний сервис база знаний компании с поддержкой Markdown, версионированием и умным поиском.',
+    techStack: ['Python', 'FastAPI', 'Elasticsearch', 'Vue.js', 'Tailwind CSS', 'SQLite'],
+    status: 'COMPLETED',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 16,
+    totalLoggedHours: 16,
+    completionPercent: 100,
+    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 10).toISOString()
+  },
+  {
+    id: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+    name: 'Old Corporate Website',
+    description: 'Устаревший сайт-визитка компании с формой обратной связи и административной панелью управления контентом.',
+    techStack: ['PHP', 'Laravel', 'MySQL', 'Bootstrap', 'jQuery'],
+    status: 'ARCHIVED',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 24,
+    totalLoggedHours: 24,
+    completionPercent: 100,
+    createdAt: new Date(Date.now() - 86400000 * 100).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 80).toISOString()
   }
 ];
 
@@ -74,6 +119,24 @@ const projectGraphs: Record<string, {
   edges: Record<string, unknown>[];
   enrichmentStatus: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 }> = {
+  '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e': {
+    projectId: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'PENDING'
+  },
+  '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f': {
+    projectId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a': {
+    projectId: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
   '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d': {
     projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
     nodes: [

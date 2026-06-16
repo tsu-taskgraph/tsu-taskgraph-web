@@ -242,7 +242,7 @@ export default function DashboardPage() {
       <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
 
       <header className="sticky top-0 z-40 w-full transition-all duration-300 py-3 sm:py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-down-fade">
           <div className="backdrop-blur-xl bg-[#020617]/70 light:bg-white/75 border border-white/10 light:border-slate-200/60 rounded-2xl px-4 sm:px-6 h-16 flex items-center justify-between shadow-lg shadow-black/10 light:shadow-slate-200/10">
             <Link to="/" className="flex items-center gap-3 group/logo cursor-pointer focus:outline-none">
               <div className="relative flex items-center justify-center transition-transform duration-300 group-hover/logo:scale-105">
