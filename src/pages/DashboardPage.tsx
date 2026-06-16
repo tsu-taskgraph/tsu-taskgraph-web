@@ -50,13 +50,18 @@ export default function DashboardPage() {
       setIsClosing(false);
     }, 200);
   };
-  const [form, setForm] = useState({
+
+
+  const [form, setForm] = useState<{
+    name: string;
+    description: string;
+    techStack: string[];
+  }>({
     name: '',
     description: '',
-    backendTech: '',
-    frontendTech: '',
-    otherTech: ''
+    techStack: []
   });
+  const [currentTechInput, setCurrentTechInput] = useState('');
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -108,9 +113,7 @@ export default function DashboardPage() {
       return (
         p.name.toLowerCase().includes(query) ||
         p.description.toLowerCase().includes(query) ||
-        p.techStack.backend.some(t => t.toLowerCase().includes(query)) ||
-        p.techStack.frontend.some(t => t.toLowerCase().includes(query)) ||
-        p.techStack.other.some(t => t.toLowerCase().includes(query))
+        p.techStack.some(t => t.toLowerCase().includes(query))
       );
     }
     return true;
@@ -123,6 +126,24 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Logout error:', err);
     }
+  };
+
+  const addTag = (tagText: string) => {
+    const clean = tagText.replace(/,/g, '').trim();
+    if (clean && !form.techStack.includes(clean)) {
+      setForm(prev => ({
+        ...prev,
+        techStack: [...prev.techStack, clean]
+      }));
+    }
+    setCurrentTechInput('');
+  };
+
+  const removeTag = (indexToRemove: number) => {
+    setForm(prev => ({
+      ...prev,
+      techStack: prev.techStack.filter((_, idx) => idx !== indexToRemove)
+    }));
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -147,16 +168,16 @@ export default function DashboardPage() {
     setSubmitting(true);
 
     try {
-      const techStack = {
-        backend: form.backendTech ? form.backendTech.split(',').map(t => t.trim()).filter(Boolean) : [],
-        frontend: form.frontendTech ? form.frontendTech.split(',').map(t => t.trim()).filter(Boolean) : [],
-        other: form.otherTech ? form.otherTech.split(',').map(t => t.trim()).filter(Boolean) : []
-      };
+      let finalTechStack = [...form.techStack];
+      const trimmedInput = currentTechInput.trim();
+      if (trimmedInput && !finalTechStack.includes(trimmedInput)) {
+        finalTechStack.push(trimmedInput);
+      }
 
       await projectsApi.createProject({
         name: form.name.trim(),
         description: form.description.trim(),
-        techStack,
+        techStack: finalTechStack,
         teamSize: 1,
         aiEstimate: true
       });
@@ -164,10 +185,9 @@ export default function DashboardPage() {
       setForm({
         name: '',
         description: '',
-        backendTech: '',
-        frontendTech: '',
-        otherTech: ''
+        techStack: []
       });
+      setCurrentTechInput('');
       closeModal();
       fetchProjects();
     } catch (err) {
@@ -423,14 +443,17 @@ export default function DashboardPage() {
             </div>
           ) : (
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              key={`${activeFilter}-${searchQuery}-${filteredProjects.length}`}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
               {filteredProjects.map((project, idx) => (
 
                 <div
                   key={project.id}
                   onClick={() => navigate(`/projects/${project.id}`)}
-                  className="group relative cursor-pointer bg-slate-900/40 light:bg-white/60 backdrop-blur-2xl border border-white/10 light:border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl shadow-black/20 light:shadow-slate-200/20 hover:border-brand-500/30 light:hover:border-brand-500/40 transition-all duration-300 hover:-translate-y-1"
-                  style={{ animationDelay: `${idx * 50}ms` }}
+                  className="group relative cursor-pointer bg-slate-900/40 light:bg-white/60 backdrop-blur-2xl border border-white/10 light:border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl shadow-black/20 light:shadow-slate-200/20 hover:border-brand-500/30 light:hover:border-brand-500/40 transition-all duration-300 hover:-translate-y-1 animate-slide-up-fade"
+                  style={{ animationDelay: `${idx * 40}ms` }}
                 >
 
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-500/0 via-brand-500/3 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
@@ -456,51 +479,28 @@ export default function DashboardPage() {
                       {project.description || 'No description provided.'}
                     </p>
 
-                    <div className="flex flex-col gap-2.5 mb-6">
-
-                      {project.techStack.backend.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] text-slate-500 font-semibold mr-1">BE:</span>
-                          {project.techStack.backend.slice(0, 3).map(tech => (
-                            <span key={tech} className="px-2 py-0.5 text-[9px] font-medium bg-brand-500/10 light:bg-brand-500/15 text-brand-400 light:text-brand-700 border border-brand-500/15 light:border-brand-500/20 rounded-md">
+                    {project.techStack.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-6">
+                        {project.techStack.slice(0, 5).map((tech, tIdx) => {
+                          const colors = [
+                            'bg-brand-500/10 text-brand-400 border-brand-500/15 light:bg-brand-500/15 light:text-brand-600 light:border-brand-500/20',
+                            'bg-sky-500/10 text-sky-400 border-sky-500/15 light:bg-sky-500/15 light:text-sky-600 light:border-sky-500/20',
+                            'bg-violet-500/10 text-violet-400 border-violet-500/15 light:bg-violet-500/15 light:text-violet-600 light:border-violet-500/20',
+                            'bg-emerald-500/10 text-emerald-400 border-emerald-500/15 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/20',
+                            'bg-amber-500/10 text-amber-400 border-amber-500/15 light:bg-amber-500/15 light:text-amber-600 light:border-amber-500/20'
+                          ];
+                          const colorClass = colors[tIdx % colors.length];
+                          return (
+                            <span key={tech} className={`px-2 py-0.5 text-[9px] font-medium border rounded-md ${colorClass}`}>
                               {tech}
                             </span>
-                          ))}
-                          {project.techStack.backend.length > 3 && (
-                            <span className="text-[9px] text-slate-500 font-medium">+{project.techStack.backend.length - 3}</span>
-                          )}
-                        </div>
-                      )}
-
-                      {project.techStack.frontend.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] text-slate-500 font-semibold mr-1">FE:</span>
-                          {project.techStack.frontend.slice(0, 3).map(tech => (
-                            <span key={tech} className="px-2 py-0.5 text-[9px] font-medium bg-sky-500/10 light:bg-sky-500/15 text-sky-400 light:text-sky-700 border border-sky-500/15 light:border-sky-500/20 rounded-md">
-                              {tech}
-                            </span>
-                          ))}
-                          {project.techStack.frontend.length > 3 && (
-                            <span className="text-[9px] text-slate-500 font-medium">+{project.techStack.frontend.length - 3}</span>
-                          )}
-                        </div>
-                      )}
-
-                      {project.techStack.other.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] text-slate-500 font-semibold mr-1">Tools:</span>
-                          {project.techStack.other.slice(0, 3).map(tech => (
-                            <span key={tech} className="px-2 py-0.5 text-[9px] font-medium bg-violet-500/10 light:bg-violet-500/15 text-violet-400 light:text-violet-700 border border-violet-500/15 light:border-violet-500/20 rounded-md">
-                              {tech}
-                            </span>
-                          ))}
-                          {project.techStack.other.length > 3 && (
-                            <span className="text-[9px] text-slate-500 font-medium">+{project.techStack.other.length - 3}</span>
-                          )}
-                        </div>
-                      )}
-
-                    </div>
+                          );
+                        })}
+                        {project.techStack.length > 5 && (
+                          <span className="text-[9px] text-slate-500 font-medium">+{project.techStack.length - 5}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="border-t border-white/5 light:border-slate-200/80 pt-4 flex flex-col gap-3">
@@ -571,7 +571,7 @@ export default function DashboardPage() {
             }`}
         >
           <div
-            className={`bg-slate-900/90 light:bg-white border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative overflow-hidden transition-all duration-200 ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100 animate-zoom-in-fade'
+            className={`bg-slate-900/90 light:bg-white/95 backdrop-blur-2xl border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative overflow-hidden transition-all duration-200 ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100 animate-zoom-in-fade'
               } ${shakeToggle && !fieldErrors.name && !fieldErrors.description ? 'animate-shake' : ''}`}
           >
             <div className="flex justify-between items-center mb-5 pb-3 border-b border-white/5 light:border-slate-200/80">
@@ -615,7 +615,7 @@ export default function DashboardPage() {
                     setFieldErrors(prev => ({ ...prev, name: undefined }));
                     setFormError(null);
                   }}
-                  className={`w-full bg-slate-950 light:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 focus:ring-1 ${fieldErrors.name
+                  className={`w-full bg-slate-950 light:bg-slate-50 light:focus:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 focus:ring-1 ${fieldErrors.name
                     ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
                     }`}
@@ -642,7 +642,7 @@ export default function DashboardPage() {
                     setFieldErrors(prev => ({ ...prev, description: undefined }));
                     setFormError(null);
                   }}
-                  className={`w-full bg-slate-950 light:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 resize-none focus:ring-1 ${fieldErrors.description
+                  className={`w-full bg-slate-950 light:bg-slate-50 light:focus:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 resize-none focus:ring-1 ${fieldErrors.description
                     ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
                     }`}
@@ -650,45 +650,54 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="proj-be" className="text-xs font-semibold text-slate-400 light:text-slate-500">
-                  Backend Tech Stack
+                <label htmlFor="proj-tech" className="text-xs font-semibold text-slate-400 light:text-slate-500">
+                  Technologies / Tech Stack
                 </label>
-                <input
-                  id="proj-be"
-                  type="text"
-                  placeholder="e.g. Java, Spring Boot, PostgreSQL (comma-separated)"
-                  value={form.backendTech}
-                  onChange={e => setForm(p => ({ ...p, backendTech: e.target.value }))}
-                  className="w-full bg-slate-950 light:bg-white border border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500 focus:ring-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="proj-fe" className="text-xs font-semibold text-slate-400 light:text-slate-500">
-                  Frontend Tech Stack
-                </label>
-                <input
-                  id="proj-fe"
-                  type="text"
-                  placeholder="e.g. React, TypeScript, Tailwind CSS (comma-separated)"
-                  value={form.frontendTech}
-                  onChange={e => setForm(p => ({ ...p, frontendTech: e.target.value }))}
-                  className="w-full bg-slate-950 light:bg-white border border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500 focus:ring-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="proj-other" className="text-xs font-semibold text-slate-400 light:text-slate-500">
-                  Databases & Other Tools
-                </label>
-                <input
-                  id="proj-other"
-                  type="text"
-                  placeholder="e.g. Docker, Redis, Nginx, Git (comma-separated)"
-                  value={form.otherTech}
-                  onChange={e => setForm(p => ({ ...p, otherTech: e.target.value }))}
-                  className="w-full bg-slate-950 light:bg-white border border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500 focus:ring-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300"
-                />
+                <div className="w-full bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-200 rounded-xl px-3 py-2 flex flex-wrap gap-2 items-center focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all duration-300 min-h-[44px]">
+                  {form.techStack.map((tech, idx) => (
+                    <span
+                      key={`${tech}-${idx}`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/25 rounded-lg animate-zoom-in-fade light:bg-brand-500/15 light:text-brand-650"
+                    >
+                      <span>{tech}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(idx)}
+                        className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800/80 light:hover:bg-slate-200 light:hover:text-slate-900 transition-colors cursor-pointer"
+                      >
+                        <X className="h-2 w-2" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    id="proj-tech"
+                    type="text"
+                    placeholder={form.techStack.length === 0 ? "e.g. React (press Enter or comma to add)" : ""}
+                    value={currentTechInput}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val.endsWith(',')) {
+                        addTag(val);
+                      } else {
+                        setCurrentTechInput(val);
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addTag(currentTechInput);
+                      } else if (e.key === 'Backspace' && !currentTechInput) {
+                        if (form.techStack.length > 0) {
+                          removeTag(form.techStack.length - 1);
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      addTag(currentTechInput);
+                    }}
+                    className="flex-1 min-w-[120px] bg-transparent border-0 p-0 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:ring-0 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-white/5 light:border-slate-200/80">
@@ -696,7 +705,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={closeModal}
                   disabled={submitting}
-                  className="group relative h-9 px-4 text-xs font-semibold rounded-xl flex items-center justify-center active:scale-[0.98] disabled:opacity-50 transition-all duration-300 cursor-pointer overflow-hidden border border-slate-700 light:border-slate-200"
+                  className="group relative h-10 px-5 text-sm font-semibold rounded-xl flex items-center justify-center active:scale-[0.98] disabled:opacity-50 transition-all duration-300 cursor-pointer overflow-hidden border border-slate-700 light:border-slate-200"
                 >
                   <div className="absolute inset-0 bg-slate-800/20 light:bg-slate-100/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <span className="relative z-10 text-slate-300 light:text-slate-600 group-hover:text-white light:group-hover:text-slate-900 transition-colors duration-300">Cancel</span>
@@ -705,7 +714,7 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="group relative h-9 px-4 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none transition-all duration-300 cursor-pointer overflow-hidden shadow-md shadow-brand-500/10 hover:shadow-brand-500/20 shrink-0"
+                  className="group relative h-10 px-5 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none transition-all duration-300 cursor-pointer overflow-hidden shadow-md shadow-brand-500/10 hover:shadow-brand-500/20 shrink-0"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-600 to-orange-600 transition-opacity duration-300" />
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

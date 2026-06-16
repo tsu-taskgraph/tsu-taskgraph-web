@@ -1,10 +1,6 @@
 import { apiClient } from './client';
 
-export interface TechStack {
-  backend: string[];
-  frontend: string[];
-  other: string[];
-}
+export type TechStack = string[];
 
 export interface ProjectMember {
   userId: string;

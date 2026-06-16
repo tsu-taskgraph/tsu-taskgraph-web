@@ -22,11 +22,7 @@ interface Project {
   id: string;
   name: string;
   description: string;
-  techStack: {
-    backend: string[];
-    frontend: string[];
-    other: string[];
-  };
+  techStack: string[];
   status: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
   ownerId: string;
   teamSize: number;
@@ -59,11 +55,7 @@ const projectsList: Project[] = [
     id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
     name: 'E-Commerce Store (Spring & React)',
     description: 'MVP интернет-магазина с авторизацией, каталогом товаров, корзиной и интеграцией с СБП.',
-    techStack: {
-      backend: ['Java', 'Spring Boot', 'PostgreSQL'],
-      frontend: ['React', 'TypeScript', 'Tailwind CSS'],
-      other: ['Redis', 'Docker'],
-    },
+    techStack: ['Java', 'Spring Boot', 'PostgreSQL', 'React', 'TypeScript', 'Tailwind CSS', 'Redis', 'Docker'],
     status: 'ACTIVE',
     ownerId: '00000000-0000-0000-0000-000000000000',
     teamSize: 3,
@@ -342,11 +334,7 @@ export const handlers = [
       id: newProjectId,
       name: data.name as string,
       description: data.description as string || '',
-      techStack: {
-        backend: techStack?.backend || [],
-        frontend: techStack?.frontend || [],
-        other: techStack?.other || []
-      },
+      techStack: Array.isArray(techStack) ? techStack : [],
       status: data.aiEstimate ? 'PENDING_AI' : 'ACTIVE',
       ownerId: '00000000-0000-0000-0000-000000000000',
       teamSize: data.teamSize as number || 1,
