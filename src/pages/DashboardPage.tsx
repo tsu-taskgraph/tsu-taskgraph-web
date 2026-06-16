@@ -62,6 +62,19 @@ export default function DashboardPage() {
     techStack: []
   });
   const [currentTechInput, setCurrentTechInput] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -208,7 +221,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 light:bg-[#f1f5f9] text-slate-100 light:text-slate-900 flex flex-col font-sans overflow-x-hidden transition-colors duration-300">
+    <div className="relative min-h-screen bg-slate-950 light:bg-[#f1f5f9] text-slate-100 light:text-slate-900 flex flex-col font-sans transition-colors duration-300">
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
@@ -241,52 +254,60 @@ export default function DashboardPage() {
       <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
       <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
 
-      <header className="sticky top-0 z-40 w-full transition-all duration-300 py-3 sm:py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-down-fade">
-          <div className="backdrop-blur-xl bg-[#020617]/70 light:bg-white/75 border border-white/10 light:border-slate-200/60 rounded-2xl px-4 sm:px-6 h-16 flex items-center justify-between shadow-lg shadow-black/10 light:shadow-slate-200/10">
-            <Link to="/" className="flex items-center gap-3 group/logo cursor-pointer focus:outline-none">
-              <div className="relative flex items-center justify-center transition-transform duration-300 group-hover/logo:scale-105">
-                <div className="absolute inset-0 bg-brand-500/20 blur-md rounded-full group-hover/logo:bg-brand-500/35 transition-all"></div>
-                <img src={logo} alt="TaskGraph Logo" className="h-9 w-auto relative z-10 animate-fade-in" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-brand-400 light:from-brand-500 to-amber-500 light:to-amber-600 bg-clip-text text-transparent tracking-tight transition-all duration-300 group-hover/logo:opacity-90">
-                TaskGraph
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-full border border-brand-500/30 light:border-brand-500/40 bg-brand-500/10 light:bg-brand-500/15 text-brand-400 light:text-brand-600 flex items-center justify-center font-bold text-sm">
-                  {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+      <div className="sticky top-0 z-40 w-full h-[88px] sm:h-24 pointer-events-none">
+        <header className={`w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto ${
+          isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'
+        }`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className={`backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] px-4 sm:px-6 h-16 flex items-center justify-between animate-header-fade-in ${
+              isScrolled 
+                ? 'bg-[#020617]/70 light:bg-white/70 border border-brand-500/20 light:border-brand-500/20 rounded-xl shadow-lg shadow-brand-500/5' 
+                : 'bg-[#020617]/70 light:bg-white/75 border border-white/10 light:border-slate-200/60 rounded-2xl shadow-lg shadow-black/10 light:shadow-slate-200/10'
+            }`}>
+              <Link to="/" className="flex items-center gap-3 group/logo cursor-pointer focus:outline-none">
+                <div className="relative flex items-center justify-center transition-transform duration-300 group-hover/logo:scale-105">
+                  <div className="absolute inset-0 bg-brand-500/20 blur-md rounded-full group-hover/logo:bg-brand-500/35 transition-all"></div>
+                  <img src={logo} alt="TaskGraph Logo" className="h-9 w-auto relative z-10" />
                 </div>
-                <span className="text-sm font-medium text-slate-300 light:text-slate-700">
-                  {user?.displayName || 'User'}
+                <span className="text-xl font-bold bg-gradient-to-r from-brand-400 light:from-brand-500 to-amber-500 light:to-amber-600 bg-clip-text text-transparent tracking-tight transition-all duration-300 group-hover/logo:opacity-90">
+                  TaskGraph
                 </span>
+              </Link>
+
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-full border border-brand-500/30 light:border-brand-500/40 bg-brand-500/10 light:bg-brand-500/15 text-brand-400 light:text-brand-600 flex items-center justify-center font-bold text-sm">
+                    {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <span className="text-sm font-medium text-slate-300 light:text-slate-700">
+                    {user?.displayName || 'User'}
+                  </span>
+                </div>
+
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center justify-center p-2 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:text-white text-slate-400 transition-colors duration-300 active:scale-95 cursor-pointer light:border-slate-200 light:hover:bg-slate-100 light:hover:text-slate-900 light:text-slate-600 group"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'light' ? (
+                    <Moon className="h-3.5 w-3.5 transition-transform duration-500 group-hover:-rotate-12 group-hover:scale-110" />
+                  ) : (
+                    <Sun className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-90 group-hover:scale-110" />
+                  )}
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:text-white text-slate-400 transition-all text-xs font-medium cursor-pointer light:border-slate-200 light:hover:bg-slate-100 light:hover:text-slate-900 light:text-slate-600"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Log Out</span>
+                </button>
               </div>
-
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center p-2 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:text-white text-slate-400 transition-colors duration-300 active:scale-95 cursor-pointer light:border-slate-200 light:hover:bg-slate-100 light:hover:text-slate-900 light:text-slate-600 group"
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? (
-                  <Moon className="h-3.5 w-3.5 transition-transform duration-500 group-hover:-rotate-12 group-hover:scale-110" />
-                ) : (
-                  <Sun className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-90 group-hover:scale-110" />
-                )}
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:text-white text-slate-400 transition-all text-xs font-medium cursor-pointer light:border-slate-200 light:hover:bg-slate-100 light:hover:text-slate-900 light:text-slate-600"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Log Out</span>
-              </button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
 
       <main className="relative z-20 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
 
