@@ -657,46 +657,61 @@ export default function DashboardPage() {
                   {form.techStack.map((tech, idx) => (
                     <span
                       key={`${tech}-${idx}`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/25 rounded-lg animate-zoom-in-fade light:bg-brand-500/15 light:text-brand-650"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/25 rounded-lg animate-zoom-in-fade light:bg-brand-500/10 light:text-brand-700 light:border-brand-500/20"
                     >
                       <span>{tech}</span>
                       <button
                         type="button"
                         onClick={() => removeTag(idx)}
-                        className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800/80 light:hover:bg-slate-200 light:hover:text-slate-900 transition-colors cursor-pointer"
+                        className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800/80 light:text-slate-400 light:hover:bg-slate-200 light:hover:text-slate-900 transition-colors cursor-pointer"
                       >
                         <X className="h-2 w-2" />
                       </button>
                     </span>
                   ))}
-                  <input
-                    id="proj-tech"
-                    type="text"
-                    placeholder={form.techStack.length === 0 ? "e.g. React (press Enter or comma to add)" : ""}
-                    value={currentTechInput}
-                    onChange={e => {
-                      const val = e.target.value;
-                      if (val.endsWith(',')) {
-                        addTag(val);
-                      } else {
-                        setCurrentTechInput(val);
-                      }
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addTag(currentTechInput);
-                      } else if (e.key === 'Backspace' && !currentTechInput) {
-                        if (form.techStack.length > 0) {
-                          removeTag(form.techStack.length - 1);
+                  <div className="flex-1 flex items-center min-w-[140px] gap-2">
+                    <input
+                      id="proj-tech"
+                      type="text"
+                      placeholder={form.techStack.length === 0 ? "e.g. React (press Enter or comma to add)" : ""}
+                      value={currentTechInput}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val.endsWith(',')) {
+                          addTag(val);
+                        } else {
+                          setCurrentTechInput(val);
                         }
-                      }
-                    }}
-                    onBlur={() => {
-                      addTag(currentTechInput);
-                    }}
-                    className="flex-1 min-w-[120px] bg-transparent border-0 p-0 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:ring-0 focus:outline-none"
-                  />
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag(currentTechInput);
+                        } else if (e.key === 'Backspace' && !currentTechInput) {
+                          if (form.techStack.length > 0) {
+                            removeTag(form.techStack.length - 1);
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        addTag(currentTechInput);
+                      }}
+                      className="flex-1 bg-transparent border-0 p-0 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:ring-0 focus:outline-none"
+                    />
+                    {currentTechInput.trim() && (
+                      <button
+                        type="button"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                        }}
+                        onClick={() => addTag(currentTechInput)}
+                        className="p-1.5 rounded-lg text-brand-400 hover:bg-slate-800/80 hover:text-white light:text-brand-600 light:hover:bg-brand-500/10 light:hover:text-brand-700 transition-colors cursor-pointer shrink-0"
+                        title="Add technology"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
