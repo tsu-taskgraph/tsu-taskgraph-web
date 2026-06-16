@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant light (&:where(.light, .light *));
+
 @theme {
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   --color-brand-50: #fffbeb;
@@ -183,8 +185,7 @@
   }
 
   ::selection {
-    background-color: rgba(245, 158, 11, 0.3);
-    color: #fde68a;
+    background-color: rgba(245, 158, 11, 0.35);
   }
 }
 
@@ -219,4 +220,26 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+.light-gradient-mobile {
+  background-color: #f1f5f9;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.16) 0%, transparent 60%),
+    radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.14) 0%, transparent 60%),
+    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.09) 0%, transparent 60%);
+}
+
+@media (min-width: 768px) {
+  .light-gradient-mobile {
+    background-image: none !important;
+  }
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.12);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.25);
 }

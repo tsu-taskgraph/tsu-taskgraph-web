@@ -3,6 +3,7 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectWorkspacePage from './pages/ProjectWorkspacePage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,13 +14,13 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#020617]">
+      <div className="flex min-h-screen items-center justify-center bg-[#020617] light:bg-slate-50">
         <div className="flex flex-col items-center gap-4">
           <div className="relative h-12 w-12">
             <div className="absolute inset-0 rounded-full border-4 border-brand-500/20"></div>
             <div className="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
           </div>
-          <span className="text-sm font-medium text-slate-400 animate-pulse">Restoring session...</span>
+          <span className="text-sm font-medium text-slate-400 light:text-slate-600 animate-pulse">Restoring session...</span>
         </div>
       </div>
     );
@@ -34,33 +35,35 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth" element={<AuthPage />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
 
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/projects/:projectId"
-            element={
-              <ProtectedRoute>
-                <ProjectWorkspacePage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/projects/:projectId"
+              element={
+                <ProtectedRoute>
+                  <ProjectWorkspacePage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
