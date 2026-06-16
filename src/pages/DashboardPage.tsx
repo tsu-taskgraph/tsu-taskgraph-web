@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Folder,
   Plus,
@@ -37,10 +37,19 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; description?: string }>({});
   const [shakeToggle, setShakeToggle] = useState(false);
+
+  const closeModal = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsModalOpen(false);
+      setIsClosing(false);
+    }, 200);
+  };
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -159,7 +168,7 @@ export default function DashboardPage() {
         frontendTech: '',
         otherTech: ''
       });
-      setIsModalOpen(false);
+      closeModal();
       fetchProjects();
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
@@ -183,10 +192,10 @@ export default function DashboardPage() {
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
-          <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-zinc-900/20 light:bg-zinc-300/4 blur-[200px] animate-blob-one" />
-          <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-zinc-800/15 light:bg-zinc-200/4 blur-[220px] animate-blob-two" />
-          <div className="absolute bottom-[20%] left-[20%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-zinc-900/15 light:bg-zinc-300/4 blur-[200px] animate-blob-three" />
-          <div className="absolute bottom-[15%] right-[15%] w-[60vw] h-[60vw] min-w-[700px] min-h-[700px] bg-zinc-900/8 light:bg-zinc-200/3 blur-[210px] animate-blob-four" />
+          <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-600/10 light:bg-indigo-500/5 blur-[180px] animate-blob-one" />
+          <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-purple-600/8 light:bg-purple-500/4 blur-[200px] animate-blob-two" />
+          <div className="absolute bottom-[20%] left-[20%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-blue-600/8 light:bg-blue-500/4 blur-[180px] animate-blob-three" />
+          <div className="absolute bottom-[15%] right-[15%] w-[60vw] h-[60vw] min-w-[700px] min-h-[700px] bg-amber-500/5 light:bg-amber-400/3 blur-[190px] animate-blob-four" />
         </div>
       </div>
 
@@ -213,17 +222,18 @@ export default function DashboardPage() {
       <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
       <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
 
-      <header className="relative z-40 border-b border-white/10 light:border-slate-200/80 bg-[#020617] light:bg-[#f1f5f9] md:bg-slate-900/40 md:light:bg-white/60 backdrop-blur-md sticky top-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-brand-500/20 blur-md rounded-full"></div>
-              <img src={logo} alt="TaskGraph Logo" className="h-9 w-auto relative z-10" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-brand-400 light:from-brand-500 to-amber-500 light:to-amber-600 bg-clip-text text-transparent tracking-tight">
-              TaskGraph
-            </span>
-          </div>
+      <header className="sticky top-0 z-40 w-full transition-all duration-300 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="backdrop-blur-xl bg-slate-950/45 light:bg-[#f1f5f9]/55 border border-white/10 light:border-slate-200/60 rounded-2xl px-4 sm:px-6 h-16 flex items-center justify-between shadow-lg shadow-black/10 light:shadow-slate-200/10">
+            <Link to="/" className="flex items-center gap-3 group/logo cursor-pointer focus:outline-none">
+              <div className="relative flex items-center justify-center transition-transform duration-300 group-hover/logo:scale-105">
+                <div className="absolute inset-0 bg-brand-500/20 blur-md rounded-full group-hover/logo:bg-brand-500/35 transition-all"></div>
+                <img src={logo} alt="TaskGraph Logo" className="h-9 w-auto relative z-10 animate-fade-in" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-brand-400 light:from-brand-500 to-amber-500 light:to-amber-600 bg-clip-text text-transparent tracking-tight transition-all duration-300 group-hover/logo:opacity-90">
+                TaskGraph
+              </span>
+            </Link>
 
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2.5">
@@ -237,7 +247,7 @@ export default function DashboardPage() {
 
             <button
               onClick={toggleTheme}
-              className="flex items-center justify-center p-2 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:text-white text-slate-400 transition-all hover:scale-105 active:scale-95 cursor-pointer light:border-slate-200 light:hover:bg-slate-100 light:hover:text-slate-900 light:text-slate-600 group"
+              className="flex items-center justify-center p-2 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:text-white text-slate-400 transition-colors duration-300 active:scale-95 cursor-pointer light:border-slate-200 light:hover:bg-slate-100 light:hover:text-slate-900 light:text-slate-600 group"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? (
@@ -256,7 +266,8 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
       <main className="relative z-20 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
 
@@ -330,9 +341,9 @@ export default function DashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveFilter(tab.id)}
-                className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all cursor-pointer ${activeFilter === tab.id
-                  ? 'bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-400 border-brand-500/40 shadow-inner light:from-brand-500/10 light:to-orange-500/10 light:text-brand-600 light:border-brand-500/40'
-                  : 'bg-slate-900/40 text-slate-400 border-white/5 hover:bg-slate-800/40 hover:text-slate-200 light:bg-white/60 light:text-slate-600 light:border-slate-200/60 light:hover:bg-slate-100 light:hover:text-slate-900'
+                className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer ${activeFilter === tab.id
+                  ? 'bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-400 border-brand-500/40 shadow-inner light:from-brand-500/10 light:to-orange-500/10 light:text-brand-600 light:border-brand-500/40 shadow-md shadow-brand-500/5'
+                  : 'bg-slate-900/40 text-slate-400 border-white/5 hover:bg-slate-800/40 hover:text-slate-200 hover:border-slate-700 light:bg-white/60 light:text-slate-600 light:border-slate-200/60 light:hover:bg-slate-100 light:hover:text-slate-900'
                   }`}
               >
                 {tab.label}
@@ -547,18 +558,22 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <footer className="relative z-20 border-t border-white/5 light:border-slate-200/80 py-6 mt-16 bg-[#020617] light:bg-[#f1f5f9] md:bg-slate-950/80 md:light:bg-slate-50 transition-colors duration-300">
+      <footer className="relative z-20 py-8 mt-16 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 font-medium">
           TaskGraph — Semantical Task Tracker. All rights reserved.
         </div>
       </footer>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-
+        <div 
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-200 ${
+            isClosing ? 'opacity-0' : 'opacity-100 animate-fade-in'
+          }`}
+        >
           <div
-            className={`bg-slate-900/90 light:bg-white border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative overflow-hidden animate-zoom-in-fade ${shakeToggle ? 'animate-shake' : 'animate-shake-alt'
-              }`}
+            className={`bg-slate-900/90 light:bg-white border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative overflow-hidden transition-all duration-200 ${
+              isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100 animate-zoom-in-fade'
+            } ${shakeToggle && !fieldErrors.name && !fieldErrors.description ? 'animate-shake' : ''}`}
           >
             <div className="flex justify-between items-center mb-5 pb-3 border-b border-white/5 light:border-slate-200/80">
               <div className="flex items-center gap-2">
@@ -566,7 +581,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-bold text-white light:text-slate-900 tracking-tight">Create New Project</h3>
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeModal}
                 className="h-6 w-6 rounded-lg hover:bg-slate-800 light:hover:bg-slate-100 text-slate-400 hover:text-white light:text-slate-500 light:hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
@@ -581,7 +596,9 @@ export default function DashboardPage() {
 
             <form onSubmit={handleCreateProject} className="flex flex-col gap-4">
 
-              <div className="flex flex-col gap-1.5">
+              <div className={`flex flex-col gap-1.5 transition-all ${
+                fieldErrors.name ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''
+              }`}>
                 <div className="flex justify-between items-baseline">
                   <label htmlFor="proj-name" className="text-xs font-semibold text-slate-400 light:text-slate-500">
                     Project Name <span className="text-brand-500">*</span>
@@ -600,14 +617,17 @@ export default function DashboardPage() {
                     setFieldErrors(prev => ({ ...prev, name: undefined }));
                     setFormError(null);
                   }}
-                  className={`w-full bg-slate-950 light:bg-white border rounded-xl px-3.5 py-2 text-sm text-slate-200 light:text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500/20 transition-all ${fieldErrors.name
-                    ? 'border-red-500/50 focus:border-red-500 light:border-red-400/60 light:focus:border-red-500'
-                    : 'border-white/10 light:border-slate-200 focus:border-brand-500'
-                    }`}
+                  className={`w-full bg-slate-950 light:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 focus:ring-1 ${
+                    fieldErrors.name
+                      ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-white/10 light:border-slate-200 focus:border-brand-500 focus:ring-brand-500/20'
+                  }`}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className={`flex flex-col gap-1.5 transition-all ${
+                fieldErrors.description ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''
+              }`}>
                 <div className="flex justify-between items-baseline">
                   <label htmlFor="proj-desc" className="text-xs font-semibold text-slate-400 light:text-slate-500">
                     Description <span className="text-brand-500">*</span>
@@ -626,10 +646,11 @@ export default function DashboardPage() {
                     setFieldErrors(prev => ({ ...prev, description: undefined }));
                     setFormError(null);
                   }}
-                  className={`w-full bg-slate-950 light:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-200 light:text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500/20 transition-all resize-none ${fieldErrors.description
-                    ? 'border-red-500/50 focus:border-red-500 light:border-red-400/60 light:focus:border-red-500'
-                    : 'border-white/10 light:border-slate-200 focus:border-brand-500'
-                    }`}
+                  className={`w-full bg-slate-950 light:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 resize-none focus:ring-1 ${
+                    fieldErrors.description
+                      ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-white/10 light:border-slate-200 focus:border-brand-500 focus:ring-brand-500/20'
+                  }`}
                 />
               </div>
 
@@ -643,7 +664,7 @@ export default function DashboardPage() {
                   placeholder="e.g. Java, Spring Boot, PostgreSQL (comma-separated)"
                   value={form.backendTech}
                   onChange={e => setForm(p => ({ ...p, backendTech: e.target.value }))}
-                  className="w-full bg-slate-950 light:bg-white border border-white/10 light:border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-200 light:text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
+                  className="w-full bg-slate-950 light:bg-white border border-white/10 light:border-slate-200 focus:border-brand-500 focus:ring-brand-500/20 focus:ring-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300"
                 />
               </div>
 
@@ -657,7 +678,7 @@ export default function DashboardPage() {
                   placeholder="e.g. React, TypeScript, Tailwind CSS (comma-separated)"
                   value={form.frontendTech}
                   onChange={e => setForm(p => ({ ...p, frontendTech: e.target.value }))}
-                  className="w-full bg-slate-950 light:bg-white border border-white/10 light:border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-200 light:text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
+                  className="w-full bg-slate-950 light:bg-white border border-white/10 light:border-slate-200 focus:border-brand-500 focus:ring-brand-500/20 focus:ring-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300"
                 />
               </div>
 
@@ -671,16 +692,16 @@ export default function DashboardPage() {
                   placeholder="e.g. Docker, Redis, Nginx, Git (comma-separated)"
                   value={form.otherTech}
                   onChange={e => setForm(p => ({ ...p, otherTech: e.target.value }))}
-                  className="w-full bg-slate-950 light:bg-white border border-white/10 light:border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-200 light:text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
+                  className="w-full bg-slate-950 light:bg-white border border-white/10 light:border-slate-200 focus:border-brand-500 focus:ring-brand-500/20 focus:ring-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300"
                 />
               </div>
 
               <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-white/5 light:border-slate-200/80">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeModal}
                   disabled={submitting}
-                  className="px-4 py-2 border border-slate-700 light:border-slate-200 hover:bg-slate-800 light:hover:bg-slate-100 text-slate-300 light:text-slate-600 hover:text-white light:hover:text-slate-900 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-slate-700 light:border-slate-200 hover:bg-slate-800 light:hover:bg-slate-100 text-slate-300 light:text-slate-600 hover:text-white light:hover:text-slate-900 text-xs font-semibold rounded-xl transition-all duration-300 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -688,10 +709,17 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-brand-600 to-orange-600 hover:from-brand-500 hover:to-orange-500 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-brand-500/10 hover:shadow-brand-500/20 active:scale-98 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="group relative h-9 px-4 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none transition-all duration-300 cursor-pointer overflow-hidden shadow-md shadow-brand-500/10 hover:shadow-brand-500/20 shrink-0"
                 >
-                  {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>Create Project</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-600 to-orange-600 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {submitting ? (
+                    <Loader2 className="relative z-10 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="relative z-10 h-3.5 w-3.5" />
+                  )}
+                  <span className="relative z-10">Create Project</span>
                 </button>
               </div>
 
