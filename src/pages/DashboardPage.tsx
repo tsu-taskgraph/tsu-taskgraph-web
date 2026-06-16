@@ -183,10 +183,10 @@ export default function DashboardPage() {
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
-          <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-indigo-950/40 light:bg-indigo-500/15 blur-[200px] animate-blob-one" />
-          <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-purple-950/30 light:bg-purple-500/12 blur-[220px] animate-blob-two" />
-          <div className="absolute bottom-[20%] left-[20%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-slate-900/35 light:bg-blue-500/12 blur-[200px] animate-blob-three" />
-          <div className="absolute bottom-[15%] right-[15%] w-[60vw] h-[60vw] min-w-[700px] min-h-[700px] bg-amber-950/15 light:bg-amber-400/9 blur-[210px] animate-blob-four" />
+          <div className="absolute top-[20%] left-[15%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-zinc-900/20 light:bg-zinc-300/4 blur-[200px] animate-blob-one" />
+          <div className="absolute top-[15%] right-[15%] w-[65vw] h-[65vw] min-w-[750px] min-h-[750px] bg-zinc-800/15 light:bg-zinc-200/4 blur-[220px] animate-blob-two" />
+          <div className="absolute bottom-[20%] left-[20%] w-[55vw] h-[55vw] min-w-[650px] min-h-[650px] bg-zinc-900/15 light:bg-zinc-300/4 blur-[200px] animate-blob-three" />
+          <div className="absolute bottom-[15%] right-[15%] w-[60vw] h-[60vw] min-w-[700px] min-h-[700px] bg-zinc-900/8 light:bg-zinc-200/3 blur-[210px] animate-blob-four" />
         </div>
       </div>
 
@@ -207,13 +207,13 @@ export default function DashboardPage() {
       </svg>
 
       <div className={`fixed inset-0 transition-colors duration-300 z-0 pointer-events-none md:hidden ${
-        theme === 'light' ? 'light-gradient-mobile' : 'bg-gradient-mobile'
+        theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'
       }`} />
 
       <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
       <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
 
-      <header className="relative z-40 border-b border-white/10 light:border-slate-200/80 bg-slate-900/40 light:bg-white/60 backdrop-blur-md sticky top-0">
+      <header className="relative z-40 border-b border-white/10 light:border-slate-200/80 bg-[#020617] light:bg-[#f1f5f9] md:bg-slate-900/40 md:light:bg-white/60 backdrop-blur-md sticky top-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center">
@@ -547,7 +547,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <footer className="relative z-20 border-t border-white/5 light:border-slate-200/80 py-6 mt-16 bg-slate-950/80 light:bg-slate-50 transition-colors duration-300">
+      <footer className="relative z-20 border-t border-white/5 light:border-slate-200/80 py-6 mt-16 bg-[#020617] light:bg-[#f1f5f9] md:bg-slate-950/80 md:light:bg-slate-50 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 font-medium">
           TaskGraph — Semantical Task Tracker. All rights reserved.
         </div>
