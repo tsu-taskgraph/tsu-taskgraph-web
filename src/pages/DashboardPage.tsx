@@ -248,22 +248,20 @@ export default function DashboardPage() {
         <rect width="100%" height="100%" filter="url(#noiseFilter)" />
       </svg>
 
-      <div className={`fixed inset-0 transition-colors duration-300 z-0 pointer-events-none md:hidden ${theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'
+      <div className={`absolute inset-0 transition-colors duration-300 z-0 pointer-events-none md:hidden ${theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'
         }`} />
 
-      <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
-      <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-10 animate-slow-fade" />
+      <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 animate-slow-fade" />
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 animate-slow-fade" />
 
       <div className="sticky top-0 z-40 w-full h-[88px] sm:h-24 pointer-events-none">
-        <header className={`w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto ${
-          isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'
-        }`}>
+        <header className={`w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'
+          }`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className={`backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] px-4 sm:px-6 h-16 flex items-center justify-between animate-header-fade-in ${
-              isScrolled 
-                ? 'bg-[#020617]/70 light:bg-white/70 border border-brand-500/20 light:border-brand-500/20 rounded-xl shadow-lg shadow-brand-500/5' 
-                : 'bg-[#020617]/70 light:bg-white/75 border border-white/10 light:border-slate-200/60 rounded-2xl shadow-lg shadow-black/10 light:shadow-slate-200/10'
-            }`}>
+            <div className={`backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] px-4 sm:px-6 h-16 flex items-center justify-between animate-header-fade-in ${isScrolled
+              ? 'bg-[#020617]/70 light:bg-white/70 border border-brand-500/20 light:border-brand-500/20 rounded-xl shadow-lg shadow-brand-500/5'
+              : 'bg-[#020617]/70 light:bg-white/75 border border-white/10 light:border-slate-200/60 rounded-2xl shadow-lg shadow-black/10 light:shadow-slate-200/10'
+              }`}>
               <Link to="/" className="flex items-center gap-3 group/logo cursor-pointer focus:outline-none">
                 <div className="relative flex items-center justify-center transition-transform duration-300 group-hover/logo:scale-105">
                   <div className="absolute inset-0 bg-brand-500/20 blur-md rounded-full group-hover/logo:bg-brand-500/35 transition-all"></div>
@@ -580,7 +578,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <footer className="relative z-20 py-8 mt-16 transition-colors duration-300">
+      <footer className="relative z-40 py-8 mt-16 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 font-medium">
           TaskGraph — Semantical Task Tracker. All rights reserved.
         </div>
