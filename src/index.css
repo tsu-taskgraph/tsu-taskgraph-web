@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
+@variant light (&:where(.light, .light *));
+
 @theme {
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+
   --color-brand-50: #fffbeb;
   --color-brand-100: #fef3c7;
   --color-brand-200: #fde68a;
@@ -16,7 +19,7 @@
 
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-shake: shake 0.4s ease-in-out;
-  --animate-shake-alt: shake-alt 0.4s ease-in-out;
+  --animate-shake-alt: shake 0.4s ease-in-out;
   --animate-error-pop: error-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-dropdown-slide: dropdown-slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-blob-one: blob-one 16s infinite ease-in-out;
@@ -27,12 +30,14 @@
   --animate-slide-down-fade: slide-down-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-zoom-in-fade: zoom-in-fade 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-slow-fade: slow-fade 1.5s ease-out both;
+  --animate-header-fade-in: header-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes fade-in {
     from {
       opacity: 0;
       transform: translateY(-4px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -40,15 +45,21 @@
   }
 
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-4px); }
-    40%, 80% { transform: translateX(4px); }
-  }
 
-  @keyframes shake-alt {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-4px); }
-    40%, 80% { transform: translateX(4px); }
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    20%,
+    60% {
+      transform: translateX(-4px);
+    }
+
+    40%,
+    80% {
+      transform: translateX(4px);
+    }
   }
 
   @keyframes error-pop {
@@ -56,6 +67,7 @@
       opacity: 0;
       transform: translateX(8px);
     }
+
     to {
       opacity: 1;
       transform: translateX(0);
@@ -67,6 +79,7 @@
       opacity: 0;
       transform: scaleY(0);
     }
+
     to {
       opacity: 1;
       transform: scaleY(1);
@@ -78,6 +91,7 @@
       opacity: 0;
       transform: translateY(16px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -89,9 +103,20 @@
       opacity: 0;
       transform: translateY(-16px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes header-fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
     }
   }
 
@@ -100,6 +125,7 @@
       opacity: 0;
       transform: scale(0.96) translateY(8px);
     }
+
     to {
       opacity: 1;
       transform: scale(1) translateY(0);
@@ -110,20 +136,25 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
   }
 
   @keyframes blob-one {
-    0%, 100% {
+
+    0%,
+    100% {
       border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
       transform: translate(0px, 0px) scale(1) rotate(0deg);
     }
+
     33% {
       border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%;
       transform: translate(80px, -100px) scale(1.12) rotate(120deg);
     }
+
     66% {
       border-radius: 28% 72% 35% 65% / 40% 60% 40% 60%;
       transform: translate(-60px, 60px) scale(0.88) rotate(240deg);
@@ -131,10 +162,13 @@
   }
 
   @keyframes blob-two {
-    0%, 100% {
+
+    0%,
+    100% {
       border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
       transform: translate(0px, 0px) scale(1) rotate(0deg);
     }
+
     50% {
       border-radius: 30% 70% 70% 30% / 60% 30% 70% 40%;
       transform: translate(-90px, 110px) scale(1.18) rotate(180deg);
@@ -142,14 +176,18 @@
   }
 
   @keyframes blob-three {
-    0%, 100% {
+
+    0%,
+    100% {
       border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
       transform: translate(0px, 0px) scale(1) rotate(0deg);
     }
+
     33% {
       border-radius: 40% 60% 30% 70% / 50% 40% 60% 50%;
       transform: translate(-40px, -60px) scale(0.92) rotate(-120deg);
     }
+
     66% {
       border-radius: 70% 30% 50% 50% / 30% 70% 30% 70%;
       transform: translate(100px, 40px) scale(1.08) rotate(-240deg);
@@ -157,10 +195,13 @@
   }
 
   @keyframes blob-four {
-    0%, 100% {
+
+    0%,
+    100% {
       border-radius: 35% 65% 55% 45% / 45% 55% 45% 55%;
       transform: translate(0px, 0px) scale(1) rotate(0deg);
     }
+
     50% {
       border-radius: 65% 35% 45% 55% / 55% 45% 55% 45%;
       transform: translate(90px, -70px) scale(1.2) rotate(180deg);
@@ -169,54 +210,140 @@
 }
 
 @layer base {
-  html, body, #root {
+
+  *,
+  ::before,
+  ::after {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  html,
+  body,
+  #root {
     min-height: 100dvh;
-    background-color: #020617;
+    background: #020617 !important;
     margin: 0;
     padding: 0;
+
+    &.light,
+    .light & {
+      background: #f1f5f9 !important;
+    }
   }
+
   body {
-    color: #f1f5f9;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: var(--font-sans);
   }
 
   ::selection {
-    background-color: rgba(245, 158, 11, 0.3);
-    color: #fde68a;
+    background-color: rgba(245, 158, 11, 0.35);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.12);
+
+    &:hover {
+      background: rgba(15, 23, 42, 0.25);
+    }
   }
 }
 
-.bg-gradient-mobile {
-  background-color: #020617;
-  background-image: 
-    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 50%),
-    radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
-}
-
-@media (min-width: 768px) {
+@layer utilities {
   .bg-gradient-mobile {
-    background-image: none !important;
+    background-color: #020617;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 50%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
   }
-}
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+  .dashboard-bg-mobile {
+    background-color: #020617;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.07) 0%, transparent 50%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
+  }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+  .light-gradient-mobile {
+    background-color: #f1f5f9;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.16) 0%, transparent 60%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.14) 0%, transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.09) 0%, transparent 60%);
+  }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-}
+  .light-dashboard-bg-mobile {
+    background-color: #f1f5f9;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 60%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.04) 0%, transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  @media (min-width: 768px) {
+
+    .bg-gradient-mobile,
+    .dashboard-bg-mobile,
+    .light-gradient-mobile,
+    .light-dashboard-bg-mobile {
+      background-image: none !important;
+    }
+  }
+
+  .modal-content-exit {
+    animation: fadeOutContent 0.2s forwards;
+  }
+
+  .modal-overlay-exit {
+    animation: fadeOutOverlay 0.2s 0.2s forwards;
+  }
+
+  @keyframes fadeOutContent {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+
+  @keyframes fadeOutOverlay {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
 }
