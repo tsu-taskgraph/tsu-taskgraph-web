@@ -628,18 +628,18 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-2 animate-slide-up-fade">
-                <div className="flex items-center gap-3 text-xs text-slate-400 light:text-slate-500">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-5 pt-6 pb-4 animate-slide-up-fade">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-400 light:text-slate-500 text-center">
                   <span>
                     Showing {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} projects
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">per page:</span>
+                  <div className="flex items-center gap-1.5 mt-1 sm:mt-0">
+                    <span className="text-slate-500 hidden sm:inline">per page:</span>
                     {[9, 18, 36].map(n => (
                       <button
                         key={n}
                         onClick={() => handlePageSizeChange(n)}
-                        className={`px-2 py-0.5 text-xs font-semibold rounded-md border transition-all cursor-pointer ${pageSize === n
+                        className={`px-2 py-0.5 text-[11px] sm:text-xs font-semibold rounded-md border transition-all cursor-pointer ${pageSize === n
                           ? 'bg-brand-500/15 text-brand-400 border-brand-500/30 light:bg-brand-500/10 light:text-brand-600 light:border-brand-500/30'
                           : 'bg-slate-800/40 text-slate-400 border-slate-700/40 hover:bg-slate-700/40 hover:text-slate-200 light:bg-slate-100 light:text-slate-500 light:border-slate-200 light:hover:bg-slate-200'
                           }`}
@@ -650,23 +650,23 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap justify-center items-center gap-1.5 w-full lg:w-auto">
                   <button
                     onClick={() => setCurrentPage(0)}
                     disabled={currentPage === 0}
-                    className="px-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                    className="hidden sm:block px-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
                   >
                     First
                   </button>
                   <button
                     onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
                     disabled={currentPage === 0}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
                   >
                     Prev
                   </button>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center justify-center gap-1">
                     {(() => {
                       const pages: (number | 'ellipsis')[] = [];
                       const maxVisible = 5;
@@ -683,12 +683,12 @@ export default function DashboardPage() {
                       }
                       return pages.map((p, i) =>
                         p === 'ellipsis' ? (
-                          <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-slate-500">...</span>
+                          <span key={`ellipsis-${i}`} className="px-1 sm:px-1.5 text-[11px] sm:text-xs text-slate-500">...</span>
                         ) : (
                           <button
                             key={p}
                             onClick={() => setCurrentPage(p)}
-                            className={`min-w-[32px] h-8 px-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${currentPage === p
+                            className={`min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 px-1.5 sm:px-2 text-[11px] sm:text-xs font-semibold rounded-lg border transition-all cursor-pointer ${currentPage === p
                               ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 light:bg-brand-500/10 light:text-brand-600 light:border-brand-500/30'
                               : 'border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900'
                               }`}
@@ -703,14 +703,14 @@ export default function DashboardPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={currentPage >= totalPages - 1}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
                   >
                     Next
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages - 1)}
                     disabled={currentPage >= totalPages - 1}
-                    className="px-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                    className="hidden sm:block px-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
                   >
                     Last
                   </button>
