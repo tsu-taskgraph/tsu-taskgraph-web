@@ -22,11 +22,7 @@ interface Project {
   id: string;
   name: string;
   description: string;
-  techStack: {
-    backend: string[];
-    frontend: string[];
-    other: string[];
-  };
+  techStack: string[];
   status: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
   ownerId: string;
   teamSize: number;
@@ -59,11 +55,7 @@ const projectsList: Project[] = [
     id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
     name: 'E-Commerce Store (Spring & React)',
     description: 'MVP интернет-магазина с авторизацией, каталогом товаров, корзиной и интеграцией с СБП.',
-    techStack: {
-      backend: ['Java', 'Spring Boot', 'PostgreSQL'],
-      frontend: ['React', 'TypeScript', 'Tailwind CSS'],
-      other: ['Redis', 'Docker'],
-    },
+    techStack: ['Java', 'Spring Boot', 'PostgreSQL', 'React', 'TypeScript', 'Tailwind CSS', 'Redis', 'Docker'],
     status: 'ACTIVE',
     ownerId: '00000000-0000-0000-0000-000000000000',
     teamSize: 3,
@@ -72,6 +64,141 @@ const projectsList: Project[] = [
     totalLoggedHours: 8,
     completionPercent: 20,
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+    name: 'Smart IoT Analytics Dashboard',
+    description: 'Панель управления датчиками «умного дома» с real-time графиками и детекцией аномалий на базе ML.',
+    techStack: ['Go', 'Python', 'ClickHouse', 'Next.js', 'TensorFlow', 'MQTT', 'Docker'],
+    status: 'PENDING_AI',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 2,
+    aiEstimate: true,
+    totalEstimatedHours: 80,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+    name: 'TaskGraph Wiki System',
+    description: 'Внутренний сервис база знаний компании с поддержкой Markdown, версионированием и умным поиском.',
+    techStack: ['Python', 'FastAPI', 'Elasticsearch', 'Vue.js', 'Tailwind CSS', 'SQLite'],
+    status: 'COMPLETED',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 16,
+    totalLoggedHours: 16,
+    completionPercent: 100,
+    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 10).toISOString()
+  },
+  {
+    id: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+    name: 'Old Corporate Website',
+    description: 'Устаревший сайт-визитка компании с формой обратной связи и административной панелью управления контентом.',
+    techStack: ['PHP', 'Laravel', 'MySQL', 'Bootstrap', 'jQuery'],
+    status: 'ARCHIVED',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 24,
+    totalLoggedHours: 24,
+    completionPercent: 100,
+    createdAt: new Date(Date.now() - 86400000 * 100).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 80).toISOString()
+  },
+  {
+    id: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+    name: 'CRM System for Sales',
+    description: 'Система управления взаимоотношениями с клиентами с воронкой продаж, интеграцией с телефонией и авто-отчетностью.',
+    techStack: ['Node.js', 'Express', 'MongoDB', 'React', 'Tailwind CSS', 'WebSockets'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 4,
+    aiEstimate: true,
+    totalEstimatedHours: 120,
+    totalLoggedHours: 45,
+    completionPercent: 37,
+    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+    name: 'Mobile Fitness Tracker App',
+    description: 'Мобильное приложение для отслеживания тренировок, сна, потребления калорий с интеграцией с Apple Health.',
+    techStack: ['React Native', 'TypeScript', 'Redux Toolkit', 'Node.js', 'GraphQL', 'PostgreSQL'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 3,
+    aiEstimate: true,
+    totalEstimatedHours: 90,
+    totalLoggedHours: 30,
+    completionPercent: 33,
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d',
+    name: 'AI-Powered Code Reviewer',
+    description: 'Инструмент для автоматического анализа Pull Request с использованием LLM и генерацией отчетов об ошибках.',
+    techStack: ['Python', 'FastAPI', 'PyTorch', 'LangChain', 'Docker', 'GitHub API'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 2,
+    aiEstimate: true,
+    totalEstimatedHours: 60,
+    totalLoggedHours: 15,
+    completionPercent: 25,
+    createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e',
+    name: 'Distributed Cache Service',
+    description: 'Высокопроизводительное распределенное хранилище кэша в памяти с поддержкой репликации и вытеснения LRU.',
+    techStack: ['Rust', 'gRPC', 'Protobuf', 'Linux', 'Tokio'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 40,
+    totalLoggedHours: 10,
+    completionPercent: 25,
+    createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f',
+    name: 'Analytical Data Pipeline',
+    description: 'Конвейер сбора и обработки логов активности пользователей с последующей выгрузкой в Data Warehouse.',
+    techStack: ['Scala', 'Apache Spark', 'Kafka', 'HDFS', 'Airflow', 'ClickHouse'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 2,
+    aiEstimate: true,
+    totalEstimatedHours: 100,
+    totalLoggedHours: 20,
+    completionPercent: 20,
+    createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d',
+    name: 'E-Learning Platform API',
+    description: 'RESTful API для образовательной платформы с курсами, лекциями, тестами и автоматической проверкой заданий.',
+    techStack: ['Kotlin', 'Spring Boot', 'Spring Security', 'PostgreSQL', 'Liquibase', 'Redis'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 3,
+    aiEstimate: true,
+    totalEstimatedHours: 75,
+    totalLoggedHours: 15,
+    completionPercent: 20,
+    createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
     updatedAt: new Date().toISOString()
   }
 ];
@@ -82,6 +209,60 @@ const projectGraphs: Record<string, {
   edges: Record<string, unknown>[];
   enrichmentStatus: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 }> = {
+  '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e': {
+    projectId: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'PENDING'
+  },
+  '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f': {
+    projectId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a': {
+    projectId: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b': {
+    projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c': {
+    projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d': {
+    projectId: '7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e': {
+    projectId: '8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  '9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f': {
+    projectId: '9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
+  'a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d': {
+    projectId: 'a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d',
+    nodes: [],
+    edges: [],
+    enrichmentStatus: 'COMPLETED'
+  },
   '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d': {
     projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
     nodes: [
@@ -324,12 +505,29 @@ export const handlers = [
     return HttpResponse.json(userProfile.aiSettings);
   }),
 
-  http.get('*/api/v1/projects', () => {
+  http.get('*/api/v1/projects', ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const page = parseInt(url.searchParams.get('page') || '0', 10);
+    const size = parseInt(url.searchParams.get('size') || '12', 10);
+
+    let filtered = [...projectsList];
+
+    if (status && status !== 'ALL') {
+      filtered = filtered.filter(p => p.status === status);
+    }
+
+    const totalElements = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+    const safePage = Math.min(page, totalPages - 1);
+    const start = safePage * size;
+    const content = filtered.slice(start, start + size);
+
     return HttpResponse.json({
-      content: projectsList,
-      totalElements: projectsList.length,
-      totalPages: 1,
-      page: 0
+      content,
+      totalElements,
+      totalPages,
+      page: safePage
     });
   }),
 
@@ -342,11 +540,7 @@ export const handlers = [
       id: newProjectId,
       name: data.name as string,
       description: data.description as string || '',
-      techStack: {
-        backend: techStack?.backend || [],
-        frontend: techStack?.frontend || [],
-        other: techStack?.other || []
-      },
+      techStack: Array.isArray(techStack) ? techStack : [],
       status: data.aiEstimate ? 'PENDING_AI' : 'ACTIVE',
       ownerId: '00000000-0000-0000-0000-000000000000',
       teamSize: data.teamSize as number || 1,
