@@ -65,4 +65,20 @@ export const authApi = {
     const response = await apiClient.put<SavedAiSettings>('/api/v1/users/me/ai-settings', data);
     return response.data;
   },
+
+  async uploadAvatar(file: File): Promise<UserProfile> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<UserProfile>('/api/v1/users/me/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  async deleteAvatar(): Promise<UserProfile> {
+    const response = await apiClient.delete<UserProfile>('/api/v1/users/me/avatar');
+    return response.data;
+  },
 };

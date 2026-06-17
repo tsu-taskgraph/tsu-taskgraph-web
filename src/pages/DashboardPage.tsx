@@ -25,6 +25,7 @@ import { mapServerErrorToEnglish } from '../api/errors';
 import logo from '../assets/logo.png';
 import { SafariTopBar } from '../components/SafariTopBar';
 import { SafariBottomBar } from '../components/SafariBottomBar';
+import UserProfileDrawer from '../components/UserProfileDrawer';
 
 export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme();
@@ -48,6 +49,7 @@ export default function DashboardPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; description?: string }>({});
@@ -142,7 +144,6 @@ export default function DashboardPage() {
     }
   }, [pageSize]);
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
@@ -152,6 +153,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!searchQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalSearchResults(null);
       fetchProjects(currentPage, pageSize, activeFilter);
     }
@@ -159,6 +161,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (searchQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAllForSearch(activeFilter, searchQuery);
     }
   }, [searchQuery, activeFilter, fetchAllForSearch]);
@@ -166,6 +169,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (localSearchResults && searchQuery.trim()) {
       const start = currentPage * pageSize;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProjects(localSearchResults.slice(start, start + pageSize));
       setTotalElements(localTotalElements);
     }
@@ -235,7 +239,7 @@ export default function DashboardPage() {
     setSubmitting(true);
 
     try {
-      let finalTechStack = [...form.techStack];
+      const finalTechStack = [...form.techStack];
       const trimmedInput = currentTechInput.trim();
       if (trimmedInput && !finalTechStack.includes(trimmedInput)) {
         finalTechStack.push(trimmedInput);
@@ -327,14 +331,22 @@ export default function DashboardPage() {
               </Link>
 
               <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-full border border-brand-500/30 light:border-brand-500/40 bg-brand-500/10 light:bg-brand-500/15 text-brand-400 light:text-brand-600 flex items-center justify-center font-bold text-sm">
-                    {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                <button
+                  onClick={() => setIsProfileOpen(true)}
+                  className="flex items-center gap-2.5 hover:opacity-80 active:scale-95 transition-all cursor-pointer group/avatar"
+                  aria-label="Open profile"
+                >
+                  <div className="h-8 w-8 rounded-full border border-brand-500/30 light:border-brand-500/40 bg-brand-500/10 light:bg-brand-500/15 text-brand-400 light:text-brand-600 flex items-center justify-center font-bold text-sm overflow-hidden shrink-0">
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.displayName} className="h-full w-full object-cover" />
+                    ) : (
+                      user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-slate-300 light:text-slate-700">
+                  <span className="hidden sm:inline text-sm font-medium text-slate-300 light:text-slate-700 group-hover/avatar:text-brand-400 transition-colors">
                     {user?.displayName || 'User'}
                   </span>
-                </div>
+                </button>
 
                 <button
                   onClick={toggleTheme}
@@ -918,6 +930,11 @@ export default function DashboardPage() {
         </>
       )}
 
+      <UserProfileDrawer
+        key={isProfileOpen ? `open-${user?.displayName}-${user?.avatarUrl}` : 'closed'}
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
     </div>
   );
 }

@@ -1,0 +1,297 @@
+import React, { useState, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { authApi } from '../api/auth';
+import { X, Camera, Trash2, Loader2, User, Mail, Check } from 'lucide-react';
+import { SafariTopBar } from './SafariTopBar';
+import { SafariBottomBar } from './SafariBottomBar';
+import axios from 'axios';
+import { mapServerErrorToEnglish } from '../api/errors';
+
+interface UserProfileDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
+  const { user, updateUser } = useAuth();
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (!user) return null;
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!displayName.trim() || displayName === user.displayName) return;
+
+    setIsSavingName(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const updatedUser = await authApi.updateProfile({ displayName: displayName.trim() });
+      updateUser(updatedUser);
+      setSuccess('Имя успешно обновлено');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, status);
+      setError(parsed.message || 'Не удалось обновить имя.');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadFile(file);
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    setIsUploadingAvatar(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const updatedUser = await authApi.uploadAvatar(file);
+      updateUser(updatedUser);
+      setSuccess('Аватар успешно обновлен');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, status);
+      setError(parsed.message || 'Не удалось загрузить аватар.');
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!user.avatarUrl || isDeletingAvatar) return;
+
+    setIsDeletingAvatar(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const updatedUser = await authApi.deleteAvatar();
+      updateUser(updatedUser);
+      setSuccess('Аватар успешно удален');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, status);
+      setError(parsed.message || 'Не удалось удалить аватар.');
+    } finally {
+      setIsDeletingAvatar(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await uploadFile(file);
+    }
+  };
+
+  const isNameUnchanged = displayName.trim() === user.displayName || !displayName.trim();
+
+  return (
+    <>
+      {isOpen && (
+        <>
+          <div className="md:hidden">
+            <SafariTopBar colorClass="light:bg-black/60" zIndexClass="z-[10000]" />
+            <SafariBottomBar colorClass="light:bg-[#59585E]" zIndexClass="z-[10000]" />
+          </div>
+
+          <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-950 light:from-[#616264] to-transparent pointer-events-none z-60" />
+          <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-950 light:from-[#59585E] to-transparent pointer-events-none z-60" />
+        </>
+      )}
+
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      />
+
+      <div
+        className={`fixed top-0 right-0 bottom-0 z-50 w-full sm:max-w-md bg-slate-950/95 light:bg-white/95 border-l border-white/10 light:border-slate-200 shadow-2xl backdrop-blur-2xl flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/5 light:border-slate-200/80">
+          <h2 className="text-lg font-bold text-white light:text-slate-900 tracking-tight flex items-center gap-2">
+            <User className="h-5 w-5 text-brand-500" />
+            Профиль пользователя
+          </h2>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 rounded-lg hover:bg-slate-800 light:hover:bg-slate-100 text-slate-400 hover:text-white light:text-slate-500 light:hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 text-xs text-red-400 font-medium flex items-center gap-2">
+              <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 text-xs text-emerald-400 font-medium flex items-center gap-2">
+              <Check className="h-4 w-4 shrink-0" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col items-center gap-3">
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`relative group h-28 w-28 rounded-full border-2 cursor-pointer transition-all duration-300 overflow-hidden flex items-center justify-center
+                ${isDragOver
+                  ? 'border-brand-500 bg-brand-500/10 scale-105'
+                  : 'border-white/10 hover:border-brand-500/50 light:border-slate-200 light:hover:border-brand-500/60 bg-slate-900/50 light:bg-slate-50/50'
+                }`}
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.displayName}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              ) : (
+                <span className="text-3xl font-extrabold text-brand-400 light:text-brand-600">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                </span>
+              )}
+
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1 text-[10px] text-white font-medium">
+                <Camera className="h-5 w-5 text-brand-400" />
+                <span>Загрузить фото</span>
+              </div>
+
+              {isUploadingAvatar && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-brand-500 animate-spin" />
+                </div>
+              )}
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-slate-900/60 border border-white/5 hover:border-brand-500/30 text-slate-300 transition-all cursor-pointer hover:bg-slate-800/60 light:bg-slate-50 light:border-slate-200 light:text-slate-700 light:hover:bg-slate-100 flex items-center gap-1"
+              >
+                Выбрать файл
+              </button>
+
+              {user.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  disabled={isDeletingAvatar || isUploadingAvatar}
+                  className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 transition-all cursor-pointer hover:bg-red-500/20 flex items-center gap-1"
+                  title="Удалить аватар"
+                >
+                  {isDeletingAvatar ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  Удалить
+                </button>
+              )}
+            </div>
+
+            <span className="text-[10px] text-slate-500 text-center max-w-[200px]">
+              JPEG, PNG, WEBP или GIF, макс. 5 MB. Перетащите изображение в область аватара.
+            </span>
+          </div>
+
+          <hr className="border-white/5 light:border-slate-200/80" />
+
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <Mail className="h-3 w-3" />
+                Email
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={user.email}
+                  disabled
+                  className="w-full h-10 px-3.5 rounded-xl border border-white/5 light:border-slate-200 bg-slate-900/30 light:bg-slate-100 text-slate-400 light:text-slate-500 text-sm font-medium cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveName} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <User className="h-3 w-3" />
+                  Имя пользователя
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Введите имя"
+                    className="w-full h-10 px-3.5 rounded-xl border border-white/10 light:border-slate-200 bg-slate-900/40 light:bg-slate-50 text-white light:text-slate-900 text-sm font-medium focus:border-brand-500/50 light:focus:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/10 light:focus:ring-brand-500/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isNameUnchanged || isSavingName}
+                className="group relative h-10 px-5 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all duration-300 cursor-pointer overflow-hidden shadow-md shadow-brand-500/10 hover:shadow-brand-500/20 shrink-0 bg-gradient-to-r from-brand-500 to-orange-500 hover:from-brand-600 hover:to-orange-600 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 light:disabled:from-slate-200 light:disabled:to-slate-200 light:disabled:text-slate-400"
+              >
+                {isSavingName && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Сохранить имя
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

@@ -492,6 +492,69 @@ export const handlers = [
     return HttpResponse.json(userProfile);
   }),
 
+  http.patch('*/api/v1/users/me', async ({ request }) => {
+    const data = await request.json() as { displayName: string };
+    if (!data.displayName || data.displayName.trim() === '') {
+      return HttpResponse.json(
+        { message: 'Имя пользователя не может быть пустым.' },
+        { status: 400 }
+      );
+    }
+    userProfile.displayName = data.displayName;
+    return HttpResponse.json(userProfile);
+  }),
+
+  http.post('*/api/v1/users/me/avatar', async ({ request }) => {
+    try {
+      const formData = await request.formData();
+      const file = formData.get('file') as File;
+
+      if (!file) {
+        return HttpResponse.json(
+          { message: 'Файл аватара не предоставлен.' },
+          { status: 400 }
+        );
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        return HttpResponse.json(
+          { message: 'Размер файла превышает лимит 5 MB.' },
+          { status: 400 }
+        );
+      }
+
+      if (!file.type.startsWith('image/')) {
+        return HttpResponse.json(
+          { message: 'Неподдерживаемый формат файла. Разрешены только изображения.' },
+          { status: 400 }
+        );
+      }
+
+      const buffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer);
+      let binary = '';
+      const len = uint8Array.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      userProfile.avatarUrl = `data:${file.type};base64,${base64}`;
+
+      return HttpResponse.json(userProfile);
+    } catch (err) {
+      console.error('Error processing avatar mock:', err);
+      return HttpResponse.json(
+        { message: 'Ошибка при обработке файла.' },
+        { status: 500 }
+      );
+    }
+  }),
+
+  http.delete('*/api/v1/users/me/avatar', () => {
+    userProfile.avatarUrl = null;
+    return HttpResponse.json(userProfile);
+  }),
+
   http.put('*/api/v1/users/me/ai-settings', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
     userProfile.aiSettings = {
