@@ -505,12 +505,29 @@ export const handlers = [
     return HttpResponse.json(userProfile.aiSettings);
   }),
 
-  http.get('*/api/v1/projects', () => {
+  http.get('*/api/v1/projects', ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const page = parseInt(url.searchParams.get('page') || '0', 10);
+    const size = parseInt(url.searchParams.get('size') || '12', 10);
+
+    let filtered = [...projectsList];
+
+    if (status && status !== 'ALL') {
+      filtered = filtered.filter(p => p.status === status);
+    }
+
+    const totalElements = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+    const safePage = Math.min(page, totalPages - 1);
+    const start = safePage * size;
+    const content = filtered.slice(start, start + size);
+
     return HttpResponse.json({
-      content: projectsList,
-      totalElements: projectsList.length,
-      totalPages: 1,
-      page: 0
+      content,
+      totalElements,
+      totalPages,
+      page: safePage
     });
   }),
 

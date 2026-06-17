@@ -31,12 +31,20 @@ export default function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [allProjects, setAllProjects] = useState<ProjectResponse[]>([]);
+  const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize, setPageSize] = useState(9);
 
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'PENDING_AI'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+
+  const [localSearchResults, setLocalSearchResults] = useState<ProjectResponse[] | null>(null);
+  const [localTotalElements, setLocalTotalElements] = useState(0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -68,71 +76,115 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const fetchProjects = async () => {
+  const fetchProjects = React.useCallback(async (page: number, size: number, status: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await projectsApi.listProjects({ page: 0, size: 100 });
-      setAllProjects(response.content || []);
+      const params: Parameters<typeof projectsApi.listProjects>[0] = { page, size };
+
+      if (status !== 'ALL') {
+        params.status = status as typeof params.status;
+      }
+
+      const response = await projectsApi.listProjects(params);
+      setProjects(response.content || []);
+      setTotalElements(response.totalElements);
+      setTotalPages(response.totalPages);
+      setCurrentPage(response.page);
     } catch (err) {
-      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, status);
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
       setError(parsed.message);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const response = await projectsApi.listProjects({ page: 0, size: 100 });
-        if (active) {
-          setAllProjects(response.content || []);
-        }
-      } catch (err) {
-        if (active) {
-          const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-          const parsed = mapServerErrorToEnglish(err, status);
-          setError(parsed.message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      active = false;
-    };
   }, []);
 
-  const filteredProjects = allProjects.filter(p => {
-    if (activeFilter !== 'ALL' && p.status !== activeFilter) {
-      return false;
-    }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query) ||
-        p.techStack.some(t => t.toLowerCase().includes(query))
+  const fetchAllForSearch = React.useCallback(async (status: string, query: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Parameters<typeof projectsApi.listProjects>[0] = { page: 0, size: 100 };
+      if (status !== 'ALL') {
+        params.status = status as typeof params.status;
+      }
+      const response = await projectsApi.listProjects(params);
+      const all = response.content || [];
+
+      const q = query.toLowerCase().trim();
+      const filtered = all.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.techStack.some(t => t.toLowerCase().includes(q))
       );
+
+      setLocalSearchResults(filtered);
+      setLocalTotalElements(filtered.length);
+      setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
+      setCurrentPage(0);
+      setProjects(filtered.slice(0, pageSize));
+      setTotalElements(filtered.length);
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      setError(parsed.message);
+      setProjects([]);
+      setLocalSearchResults(null);
+    } finally {
+      setLoading(false);
     }
-    return true;
-  });
+  }, [pageSize]);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setLocalSearchResults(null);
+      fetchProjects(currentPage, pageSize, activeFilter);
+    }
+  }, [currentPage, pageSize, activeFilter, searchQuery, fetchProjects]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      fetchAllForSearch(activeFilter, searchQuery);
+    }
+  }, [searchQuery, activeFilter, fetchAllForSearch]);
+
+  useEffect(() => {
+    if (localSearchResults && searchQuery.trim()) {
+      const start = currentPage * pageSize;
+      setProjects(localSearchResults.slice(start, start + pageSize));
+      setTotalElements(localTotalElements);
+    }
+  }, [currentPage, pageSize, localSearchResults, localTotalElements, searchQuery]);
+
+  const handleFilterChange = (filter: typeof activeFilter) => {
+    setActiveFilter(filter);
+    setCurrentPage(0);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    setCurrentPage(0);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(0);
+  };
 
   const handleLogout = async () => {
     try {
@@ -204,7 +256,7 @@ export default function DashboardPage() {
       });
       setCurrentTechInput('');
       closeModal();
-      fetchProjects();
+      fetchProjects(0, pageSize, activeFilter);
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, status);
@@ -216,10 +268,10 @@ export default function DashboardPage() {
   };
 
   const stats = {
-    total: allProjects.length,
-    active: allProjects.filter(p => p.status === 'ACTIVE' || p.status === 'PENDING_AI').length,
-    completed: allProjects.filter(p => p.status === 'COMPLETED').length,
-    hours: allProjects.reduce((sum, p) => sum + (p.totalLoggedHours || 0), 0)
+    total: totalElements,
+    active: projects.filter(p => p.status === 'ACTIVE' || p.status === 'PENDING_AI').length,
+    completed: projects.filter(p => p.status === 'COMPLETED').length,
+    hours: projects.reduce((sum, p) => sum + (p.totalLoggedHours || 0), 0)
   };
 
   return (
@@ -380,7 +432,7 @@ export default function DashboardPage() {
             ).map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
+                onClick={() => handleFilterChange(tab.id)}
                 className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all duration-300 active:scale-97 cursor-pointer will-change-transform ${activeFilter === tab.id
                   ? 'bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-400 border-brand-500/40 shadow-inner light:from-brand-500/10 light:to-orange-500/10 light:text-brand-600 light:border-brand-500/40'
                   : 'bg-slate-900/40 text-slate-400 border-white/5 hover:bg-slate-800/40 hover:text-slate-200 hover:border-slate-700 light:bg-white/60 light:text-slate-600 light:border-slate-200/60 light:hover:bg-slate-100 light:hover:text-slate-900'
@@ -397,13 +449,13 @@ export default function DashboardPage() {
               <input
                 type="text"
                 placeholder="Search projects..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={e => handleSearchChange(e.target.value)}
                 className="w-full bg-slate-900/40 light:bg-white border border-white/10 light:border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-200 light:text-slate-900 placeholder-slate-500 light:placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
               />
-              {searchQuery && (
+              {searchInput && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => handleSearchChange('')}
                   className="absolute right-3 top-2.5 hover:text-white light:hover:text-slate-900 text-slate-500 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
@@ -436,24 +488,24 @@ export default function DashboardPage() {
               <h3 className="text-red-400 font-bold text-lg">Error loading projects</h3>
               <p className="text-slate-400 text-sm mt-2">{error}</p>
               <button
-                onClick={fetchProjects}
+                onClick={() => fetchProjects(currentPage, pageSize, activeFilter)}
                 className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30 text-xs font-semibold rounded-xl transition-all cursor-pointer"
               >
                 Try Again
               </button>
             </div>
-          ) : filteredProjects.length === 0 ? (
+          ) : projects.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-20 bg-slate-900/20 light:bg-white/40 border border-dashed border-white/5 light:border-slate-200 rounded-2xl p-8 max-w-lg mx-auto">
               <div className="h-14 w-14 rounded-2xl bg-slate-900/60 light:bg-white/80 border border-white/5 light:border-slate-200 text-slate-500 light:text-slate-400 flex items-center justify-center mb-5">
                 <FolderOpen className="h-7 w-7" />
               </div>
               <h3 className="text-white light:text-slate-900 font-bold text-lg">No projects found</h3>
               <p className="text-slate-400 light:text-slate-600 text-sm mt-1 max-w-sm">
-                {searchQuery || activeFilter !== 'ALL'
+                {searchInput || activeFilter !== 'ALL'
                   ? "No projects match your search query or filters. Try adjusting them."
                   : "You haven't created any projects yet. Start by creating a new one!"}
               </p>
-              {!searchQuery && activeFilter === 'ALL' && (
+              {!searchInput && activeFilter === 'ALL' && (
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="mt-6 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 light:bg-white light:hover:bg-slate-50 text-slate-200 light:text-slate-700 border border-white/10 light:border-slate-200 text-sm font-semibold rounded-xl transition-all cursor-pointer"
@@ -463,118 +515,208 @@ export default function DashboardPage() {
               )}
             </div>
           ) : (
+            <>
+              <div
+                key={`${activeFilter}-${searchQuery}-${pageSize}-${currentPage}`}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {projects.map((project, idx) => (
 
-            <div
-              key={`${activeFilter}-${searchQuery}-${filteredProjects.length}`}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredProjects.map((project, idx) => (
+                  <div
+                    key={project.id}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    className="group relative cursor-pointer bg-slate-900/40 light:bg-white/60 backdrop-blur-2xl border border-white/10 light:border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl shadow-black/20 light:shadow-slate-200/20 hover:border-brand-500/30 light:hover:border-brand-500/40 transition-all duration-300 hover:-translate-y-1 animate-slide-up-fade"
+                    style={{ animationDelay: `${idx * 40}ms` }}
+                  >
 
-                <div
-                  key={project.id}
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                  className="group relative cursor-pointer bg-slate-900/40 light:bg-white/60 backdrop-blur-2xl border border-white/10 light:border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl shadow-black/20 light:shadow-slate-200/20 hover:border-brand-500/30 light:hover:border-brand-500/40 transition-all duration-300 hover:-translate-y-1 animate-slide-up-fade"
-                  style={{ animationDelay: `${idx * 40}ms` }}
-                >
-
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-500/0 via-brand-500/3 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-                  <div>
-                    <div className="flex justify-between items-start gap-4">
-                      <h3 className="text-base font-bold text-slate-100 light:text-slate-900 group-hover:text-brand-400 light:group-hover:text-brand-600 transition-colors tracking-tight line-clamp-1">
-                        {project.name}
-                      </h3>
-                      <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border shrink-0 ${project.status === 'ACTIVE'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30'
-                        : project.status === 'COMPLETED'
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 light:bg-blue-500/15 light:text-blue-700 light:border-blue-500/30'
-                          : project.status === 'ARCHIVED'
-                            ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20 light:bg-amber-500/15 light:text-amber-700 light:border-amber-500/30'
-                        }`}>
-                        {project.status.replace('_', ' ')}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-400 light:text-slate-600 line-clamp-2 mt-2.5 mb-5 leading-relaxed">
-                      {project.description || 'No description provided.'}
-                    </p>
-
-                    {project.techStack.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 mb-6">
-                        {project.techStack.slice(0, 5).map((tech, tIdx) => {
-                          const colors = [
-                            'bg-brand-500/10 text-brand-400 border-brand-500/15 light:bg-brand-500/15 light:text-brand-600 light:border-brand-500/20',
-                            'bg-sky-500/10 text-sky-400 border-sky-500/15 light:bg-sky-500/15 light:text-sky-600 light:border-sky-500/20',
-                            'bg-violet-500/10 text-violet-400 border-violet-500/15 light:bg-violet-500/15 light:text-violet-600 light:border-violet-500/20',
-                            'bg-emerald-500/10 text-emerald-400 border-emerald-500/15 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/20',
-                            'bg-amber-500/10 text-amber-400 border-amber-500/15 light:bg-amber-500/15 light:text-amber-600 light:border-amber-500/20'
-                          ];
-                          const colorClass = colors[tIdx % colors.length];
-                          return (
-                            <span key={tech} className={`px-2 py-0.5 text-[9px] font-medium border rounded-md ${colorClass}`}>
-                              {tech}
-                            </span>
-                          );
-                        })}
-                        {project.techStack.length > 5 && (
-                          <span className="text-[9px] text-slate-500 font-medium">+{project.techStack.length - 5}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border-t border-white/5 light:border-slate-200/80 pt-4 flex flex-col gap-3">
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-500/0 via-brand-500/3 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
                     <div>
-                      <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 light:text-slate-500 mb-1">
-                        <span>Completion Progress</span>
-                        <span className="text-white light:text-slate-900 font-semibold">{project.completionPercent}%</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-800/80 light:bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-brand-500 to-orange-500 rounded-full transition-all duration-500"
-                          style={{ width: `${project.completionPercent}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 light:text-slate-600 font-medium mt-1">
-
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-slate-500" />
-                        <span>
-                          {project.totalLoggedHours || 0}h
-                          {project.totalEstimatedHours ? ` / ${project.totalEstimatedHours}h` : ''}
+                      <div className="flex justify-between items-start gap-4">
+                        <h3 className="text-base font-bold text-slate-100 light:text-slate-900 group-hover:text-brand-400 light:group-hover:text-brand-600 transition-colors tracking-tight line-clamp-1">
+                          {project.name}
+                        </h3>
+                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border shrink-0 ${project.status === 'ACTIVE'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30'
+                          : project.status === 'COMPLETED'
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 light:bg-blue-500/15 light:text-blue-700 light:border-blue-500/30'
+                            : project.status === 'ARCHIVED'
+                              ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200'
+                              : 'bg-amber-500/10 text-amber-400 border-amber-500/20 light:bg-amber-500/15 light:text-amber-700 light:border-amber-500/30'
+                          }`}>
+                          {project.status.replace('_', ' ')}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1">
-                        <div className="flex -space-x-2 overflow-hidden">
-                          {(project.members || []).slice(0, 3).map((member, mIdx) => (
-                            <div
-                              key={member.userId || mIdx}
-                              className="inline-block h-5 w-5 rounded-full border border-slate-900 light:border-white bg-slate-800 light:bg-slate-100 text-[9px] text-slate-300 light:text-slate-700 font-bold flex items-center justify-center"
-                              title={member.displayName}
-                            >
-                              {member.displayName.charAt(0).toUpperCase()}
-                            </div>
-                          ))}
-                          {project.members && project.members.length > 3 && (
-                            <div className="inline-block h-5 w-5 rounded-full border border-slate-900 light:border-white bg-slate-800 light:bg-slate-100 text-[8px] text-brand-400 light:text-brand-600 font-bold flex items-center justify-center">
-                              +{project.members.length - 3}
-                            </div>
+                      <p className="text-xs text-slate-400 light:text-slate-600 line-clamp-2 mt-2.5 mb-5 leading-relaxed">
+                        {project.description || 'No description provided.'}
+                      </p>
+
+                      {project.techStack.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 mb-6">
+                          {project.techStack.slice(0, 5).map((tech, tIdx) => {
+                            const colors = [
+                              'bg-brand-500/10 text-brand-400 border-brand-500/15 light:bg-brand-500/15 light:text-brand-600 light:border-brand-500/20',
+                              'bg-sky-500/10 text-sky-400 border-sky-500/15 light:bg-sky-500/15 light:text-sky-600 light:border-sky-500/20',
+                              'bg-violet-500/10 text-violet-400 border-violet-500/15 light:bg-violet-500/15 light:text-violet-600 light:border-violet-500/20',
+                              'bg-emerald-500/10 text-emerald-400 border-emerald-500/15 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/20',
+                              'bg-amber-500/10 text-amber-400 border-amber-500/15 light:bg-amber-500/15 light:text-amber-600 light:border-amber-500/20'
+                            ];
+                            const colorClass = colors[tIdx % colors.length];
+                            return (
+                              <span key={tech} className={`px-2 py-0.5 text-[9px] font-medium border rounded-md ${colorClass}`}>
+                                {tech}
+                              </span>
+                            );
+                          })}
+                          {project.techStack.length > 5 && (
+                            <span className="text-[9px] text-slate-500 font-medium">+{project.techStack.length - 5}</span>
                           )}
                         </div>
-                        <Users className="h-3 w-3 text-slate-500 ml-1" />
+                      )}
+                    </div>
+
+                    <div className="border-t border-white/5 light:border-slate-200/80 pt-4 flex flex-col gap-3">
+
+                      <div>
+                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 light:text-slate-500 mb-1">
+                          <span>Completion Progress</span>
+                          <span className="text-white light:text-slate-900 font-semibold">{project.completionPercent}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-800/80 light:bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-brand-500 to-orange-500 rounded-full transition-all duration-500"
+                            style={{ width: `${project.completionPercent}%` }}
+                          ></div>
+                        </div>
                       </div>
 
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 light:text-slate-600 font-medium mt-1">
+
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-slate-500" />
+                          <span>
+                            {project.totalLoggedHours || 0}h
+                            {project.totalEstimatedHours ? ` / ${project.totalEstimatedHours}h` : ''}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <div className="flex -space-x-2 overflow-hidden">
+                            {(project.members || []).slice(0, 3).map((member, mIdx) => (
+                              <div
+                                key={member.userId || mIdx}
+                                className="inline-block h-5 w-5 rounded-full border border-slate-900 light:border-white bg-slate-800 light:bg-slate-100 text-[9px] text-slate-300 light:text-slate-700 font-bold flex items-center justify-center"
+                                title={member.displayName}
+                              >
+                                {member.displayName.charAt(0).toUpperCase()}
+                              </div>
+                            ))}
+                            {project.members && project.members.length > 3 && (
+                              <div className="inline-block h-5 w-5 rounded-full border border-slate-900 light:border-white bg-slate-800 light:bg-slate-100 text-[8px] text-brand-400 light:text-brand-600 font-bold flex items-center justify-center">
+                                +{project.members.length - 3}
+                              </div>
+                            )}
+                          </div>
+                          <Users className="h-3 w-3 text-slate-500 ml-1" />
+                        </div>
+
+                      </div>
                     </div>
+
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-2 animate-slide-up-fade">
+                <div className="flex items-center gap-3 text-xs text-slate-400 light:text-slate-500">
+                  <span>
+                    Showing {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} projects
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-500">per page:</span>
+                    {[9, 18, 36].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => handlePageSizeChange(n)}
+                        className={`px-2 py-0.5 text-xs font-semibold rounded-md border transition-all cursor-pointer ${pageSize === n
+                          ? 'bg-brand-500/15 text-brand-400 border-brand-500/30 light:bg-brand-500/10 light:text-brand-600 light:border-brand-500/30'
+                          : 'bg-slate-800/40 text-slate-400 border-slate-700/40 hover:bg-slate-700/40 hover:text-slate-200 light:bg-slate-100 light:text-slate-500 light:border-slate-200 light:hover:bg-slate-200'
+                          }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage(0)}
+                    disabled={currentPage === 0}
+                    className="px-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                    disabled={currentPage === 0}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                  >
+                    Prev
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const pages: (number | 'ellipsis')[] = [];
+                      const maxVisible = 5;
+                      if (totalPages <= maxVisible) {
+                        for (let i = 0; i < totalPages; i++) pages.push(i);
+                      } else {
+                        pages.push(0);
+                        if (currentPage > 2) pages.push('ellipsis');
+                        const start = Math.max(1, currentPage - 1);
+                        const end = Math.min(totalPages - 2, currentPage + 1);
+                        for (let i = start; i <= end; i++) pages.push(i);
+                        if (currentPage < totalPages - 3) pages.push('ellipsis');
+                        pages.push(totalPages - 1);
+                      }
+                      return pages.map((p, i) =>
+                        p === 'ellipsis' ? (
+                          <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-slate-500">...</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`min-w-[32px] h-8 px-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${currentPage === p
+                              ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 light:bg-brand-500/10 light:text-brand-600 light:border-brand-500/30'
+                              : 'border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900'
+                              }`}
+                          >
+                            {p + 1}
+                          </button>
+                        )
+                      );
+                    })()}
                   </div>
 
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={currentPage >= totalPages - 1}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages - 1)}
+                    disabled={currentPage >= totalPages - 1}
+                    className="px-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 transition-all cursor-pointer"
+                  >
+                    Last
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            </>
           )}
 
         </div>
