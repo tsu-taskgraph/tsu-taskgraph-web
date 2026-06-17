@@ -50,7 +50,7 @@ export default function DashboardPage() {
     setTimeout(() => {
       setIsModalOpen(false);
       setIsClosing(false);
-    }, 200);
+    }, 400);
   };
 
 
@@ -593,16 +593,15 @@ export default function DashboardPage() {
             <SafariBottomBar colorClass="light:bg-[#59585E]" zIndexClass="z-[10000]" />
           </div>
 
-          <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-950 light:hidden to-transparent pointer-events-none z-60" />
+          <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-950 light:from-[#616264] to-transparent pointer-events-none z-60" />
           <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-950 light:from-[#59585E] to-transparent pointer-events-none z-60" />
 
-          <div
-            className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-200 ${isClosing ? 'opacity-0' : 'opacity-100 animate-fade-in'
-              }`}
-          >
+          <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-200 
+            ${isClosing ? 'modal-overlay-exit' : 'animate-fade-in'}`}>
             <div
-              className={`bg-slate-900/90 light:bg-white/95 backdrop-blur-2xl border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative overflow-hidden transition-all duration-200 ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100 animate-zoom-in-fade'
-                } ${shakeToggle && !fieldErrors.name && !fieldErrors.description ? 'animate-shake' : ''}`}
+              className={`bg-slate-900/90 light:bg-white/95 backdrop-blur-2xl border border-white/10 rounded-2xl w-full max-w-lg p-6 
+                ${isClosing ? 'modal-content-exit' : 'animate-zoom-in-fade'}
+                ${shakeToggle && !fieldErrors.name && !fieldErrors.description ? 'animate-shake' : ''}`}
             >
               <div className="flex justify-between items-center mb-5 pb-3 border-b border-white/5 light:border-slate-200/80">
                 <div className="flex items-center gap-2">

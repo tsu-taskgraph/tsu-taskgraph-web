@@ -316,4 +316,34 @@
       background-image: none !important;
     }
   }
+
+  .modal-content-exit {
+    animation: fadeOutContent 0.2s forwards;
+  }
+
+  .modal-overlay-exit {
+    animation: fadeOutOverlay 0.2s 0.2s forwards;
+  }
+
+  @keyframes fadeOutContent {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+
+  @keyframes fadeOutOverlay {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
 }
