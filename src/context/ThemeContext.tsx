@@ -27,9 +27,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('light');
     }
 
-    root.style.backgroundColor = bgColor;
-    document.body.style.backgroundColor = bgColor;
-
     let themeColorMeta = document.querySelector('meta[name="theme-color"]');
     if (!themeColorMeta) {
       themeColorMeta = document.createElement('meta');

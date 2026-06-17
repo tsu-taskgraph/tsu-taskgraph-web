@@ -251,8 +251,8 @@ export default function DashboardPage() {
       <div className={`absolute inset-0 transition-colors duration-300 z-0 pointer-events-none md:hidden ${theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'
         }`} />
 
-      <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 md:animate-slow-fade" />
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 md:animate-slow-fade" />
+      <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 md:animate-slow-fade" />
+      <div className="md:hidden absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 md:animate-slow-fade" />
 
       <div className="sticky top-0 z-40 w-full h-[88px] sm:h-24 pointer-events-none">
         <header className={`w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'
