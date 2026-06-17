@@ -321,7 +321,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
             <div className="bg-slate-900/40 light:bg-white/60 backdrop-blur-xl border border-white/10 light:border-slate-200/80 rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-black/10 light:shadow-slate-200/30 hover:border-brand-500/20 light:hover:border-brand-500/30 transition-all duration-300">
               <div className="flex flex-col">

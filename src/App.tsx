@@ -15,7 +15,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#020617] light:bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#020617] light:bg-[#f1f5f9]">
         <div className="flex flex-col items-center gap-4">
           <div className="relative h-12 w-12">
             <div className="absolute inset-0 rounded-full border-4 border-brand-500/20"></div>
