@@ -29,12 +29,18 @@ export default function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawer
 
   useEffect(() => {
     if (isOpen) {
-      setDisplayName(user?.displayName || '');
       setError(null);
       setSuccess(null);
       setFieldErrors({});
+      setDisplayName(user?.displayName || '');
     }
-  }, [isOpen, user]);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    }
+  }, [user?.displayName]);
 
   if (!user) return null;
 
