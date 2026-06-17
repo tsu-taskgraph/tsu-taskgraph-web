@@ -23,6 +23,8 @@ import { projectsApi } from '../api/projects';
 import type { ProjectResponse } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
 import logo from '../assets/logo.png';
+import { SafariTopBar } from '../components/SafariTopBar';
+import { SafariBottomBar } from '../components/SafariBottomBar';
 
 export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme();
@@ -222,6 +224,11 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen bg-slate-950 light:bg-[#f1f5f9] text-slate-100 light:text-slate-900 flex flex-col font-sans transition-colors duration-300">
+
+      <div className="md:hidden">
+        <SafariTopBar colorClass={isModalOpen ? "bg-black/60" : "hidden"} zIndexClass="z-[10000]" />
+        <SafariBottomBar colorClass={isModalOpen ? "bg-black/60" : "hidden"} zIndexClass="z-[10000]" />
+      </div>
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
@@ -586,8 +593,8 @@ export default function DashboardPage() {
 
       {isModalOpen && (
         <>
-          <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-60" />
-          <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-60" />
+          <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-950 light:hidden to-transparent pointer-events-none z-60" />
+          <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-950 light:hidden to-transparent pointer-events-none z-60" />
 
           <div
             className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-200 ${isClosing ? 'opacity-0' : 'opacity-100 animate-fade-in'
