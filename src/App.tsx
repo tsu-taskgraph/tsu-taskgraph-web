@@ -4,6 +4,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProjectWorkspacePage from './pages/ProjectWorkspacePage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { SafariTopBar } from './components/SafariTopBar';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 function App() {
   return (
     <ThemeProvider>
+      <SafariTopBar />
       <AuthProvider>
         <BrowserRouter>
           <Routes>
