@@ -15,7 +15,7 @@ export default function AuthPage() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -31,14 +31,14 @@ export default function AuthPage() {
     setEmail(val);
     setFieldErrors(prev => ({ ...prev, email: undefined }));
     setError(null);
-    
+
     if (!val.trim()) {
       setEmailSuggestions([]);
       return;
     }
 
     const popularDomains = ['gmail.com', 'yandex.ru', 'mail.ru', 'outlook.com'];
-    
+
     if (!val.includes('@')) {
       setEmailSuggestions(popularDomains.map(d => `${val}@${d}`));
     } else {
@@ -137,9 +137,8 @@ export default function AuthPage() {
   };
 
   return (
-    <div className={`relative min-h-dvh flex items-center justify-center py-8 px-4 transition-colors duration-300 ${
-      theme === 'light' ? 'light-gradient-mobile md:bg-[#f1f5f9]' : 'bg-gradient-mobile md:bg-slate-950'
-    }`}>
+    <div className={`relative min-h-dvh flex items-center justify-center py-8 px-4 transition-colors duration-300 ${theme === 'light' ? 'light-gradient-mobile md:bg-[#f1f5f9]' : 'bg-gradient-mobile md:bg-slate-950'
+      }`}>
       <button
         type="button"
         onClick={toggleTheme}
@@ -153,8 +152,8 @@ export default function AuthPage() {
         )}
       </button>
 
-      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-2 animate-slow-fade" />
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-2 animate-slow-fade" />
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-2 md:animate-slow-fade" />
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-2 md:animate-slow-fade" />
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] w-[160%] h-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
@@ -167,15 +166,15 @@ export default function AuthPage() {
 
       <svg className="absolute inset-0 w-full h-full opacity-[0.06] light:opacity-[0.03] pointer-events-none z-1 mix-blend-overlay animate-slow-fade hidden md:block">
         <filter id="noiseFilter">
-          <feTurbulence 
-            type="fractalNoise" 
-            baseFrequency="0.65" 
-            numOctaves="3" 
-            stitchTiles="stitch" 
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.65"
+            numOctaves="3"
+            stitchTiles="stitch"
           />
-          <feColorMatrix 
-            type="matrix" 
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.8 0" 
+          <feColorMatrix
+            type="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.8 0"
           />
         </filter>
         <rect width="100%" height="100%" filter="url(#noiseFilter)" />
@@ -192,9 +191,8 @@ export default function AuthPage() {
               loading="eager"
               decoding="sync"
               onLoad={() => setLogoLoaded(true)}
-              className={`relative h-16 sm:h-20 w-auto object-contain transition-opacity duration-700 ease-out ${
-                logoLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`relative h-16 sm:h-20 w-auto object-contain transition-opacity duration-700 ease-out ${logoLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
             />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white light:text-slate-900">
@@ -205,7 +203,7 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <div 
+        <div
           className="backdrop-blur-2xl bg-slate-950/40 border border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] light:bg-white/60 light:border-slate-200/80 light:shadow-[0_25px_50px_-12px_rgba(15,23,42,0.08)] animate-zoom-in-fade"
           style={{ animationDelay: '150ms' }}
         >
@@ -213,9 +211,8 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => { setIsLogin(true); setError(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors duration-300 cursor-pointer ${
-                isLogin ? 'text-brand-500' : 'text-slate-400 hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors duration-300 cursor-pointer ${isLogin ? 'text-brand-500' : 'text-slate-400 hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800'
+                }`}
             >
               <LogIn className="w-4 h-4" />
               Sign In
@@ -223,9 +220,8 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => { setIsLogin(false); setError(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors duration-300 cursor-pointer ${
-                !isLogin ? 'text-brand-500' : 'text-slate-400 hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors duration-300 cursor-pointer ${!isLogin ? 'text-brand-500' : 'text-slate-400 hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800'
+                }`}
             >
               <UserPlus className="w-4 h-4" />
               Sign Up
@@ -252,17 +248,15 @@ export default function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div
-              className={`grid transition-all duration-300 ease-in-out ${
-                isLogin ? 'grid-rows-[0fr] mb-0' : 'grid-rows-[1fr] mb-5'
-              }`}
+              className={`grid transition-all duration-300 ease-in-out ${isLogin ? 'grid-rows-[0fr] mb-0' : 'grid-rows-[1fr] mb-5'
+                }`}
             >
               <div className="overflow-hidden px-1 py-1 -mx-1 -my-1">
                 <div
-                  className={`pb-1 space-y-2.5 transition-all duration-300 ease-out ${
-                    isLogin
+                  className={`pb-1 space-y-2.5 transition-all duration-300 ease-out ${isLogin
                       ? 'opacity-0 -translate-y-2 pointer-events-none'
                       : 'opacity-100 translate-y-0 delay-150'
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-baseline gap-2">
                     <label className="block text-xs font-semibold text-slate-400 light:text-slate-500 shrink-0">Username</label>
@@ -283,11 +277,10 @@ export default function AuthPage() {
                         setError(null);
                       }}
                       placeholder="John Doe"
-                      className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 light:bg-white border rounded-xl text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
-                        fieldErrors.displayName
+                      className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 light:bg-white border rounded-xl text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${fieldErrors.displayName
                           ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                           : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
-                      }`}
+                        }`}
                     />
                   </div>
                 </div>
@@ -312,11 +305,10 @@ export default function AuthPage() {
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   placeholder="name@example.com"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 light:bg-white border rounded-xl text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
-                    fieldErrors.email
+                  className={`w-full pl-10 pr-4 py-2.5 bg-slate-950 light:bg-white border rounded-xl text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${fieldErrors.email
                       ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -359,11 +351,10 @@ export default function AuthPage() {
                     setError(null);
                   }}
                   placeholder="••••••••"
-                  className={`w-full pl-10 pr-10 py-2.5 bg-slate-950 light:bg-white border rounded-xl text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${
-                    fieldErrors.password
+                  className={`w-full pl-10 pr-10 py-2.5 bg-slate-950 light:bg-white border rounded-xl text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 text-sm focus:ring-1 ${fieldErrors.password
                       ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
-                  }`}
+                    }`}
                 />
                 <button
                   type="button"
@@ -388,17 +379,15 @@ export default function AuthPage() {
               ) : (
                 <div className="relative z-10 w-full h-full flex items-center justify-center">
                   <span
-                    className={`absolute flex items-center justify-center gap-1.5 transition-all duration-300 ease-out ${
-                      isLogin ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2 pointer-events-none'
-                    }`}
+                    className={`absolute flex items-center justify-center gap-1.5 transition-all duration-300 ease-out ${isLogin ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2 pointer-events-none'
+                      }`}
                   >
                     Sign In
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
                   </span>
                   <span
-                    className={`absolute flex items-center justify-center gap-1.5 transition-all duration-300 ease-out ${
-                      !isLogin ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2 pointer-events-none'
-                    }`}
+                    className={`absolute flex items-center justify-center gap-1.5 transition-all duration-300 ease-out ${!isLogin ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2 pointer-events-none'
+                      }`}
                   >
                     Create Account
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />

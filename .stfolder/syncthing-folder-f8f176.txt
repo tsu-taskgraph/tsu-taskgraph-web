@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: tsu-taskgraph-web
+created: 2026-06-17T03:29:23+07:00
