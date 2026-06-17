@@ -43,6 +43,56 @@ export interface ProjectsListResponse {
   page: number;
 }
 
+export interface TaskEnrichment {
+  checklist: string[];
+  pitfalls: string[];
+  links: { title: string; url: string }[];
+  rawMarkdown: string;
+}
+
+export interface TaskNode {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  status: 'LOCKED' | 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
+  category: 'BACKEND' | 'FRONTEND' | 'DEVOPS' | 'TESTING' | 'DOCUMENTATION' | 'DESIGN' | 'OTHER' | null;
+  layer: number;
+  positionX: number;
+  positionY: number;
+  assignees: {
+    userId: string;
+    displayName: string;
+    avatarUrl: string | null;
+  }[];
+  enrichment: TaskEnrichment | null;
+  completionPercent: number;
+  estimatedHours: number | null;
+  loggedHours: number;
+  startDate: string | null;
+  dueDate: string | null;
+  wikiPageId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EdgeResponse {
+  id: string;
+  sourceTaskId: string;
+  targetTaskId: string;
+}
+
+export interface ProjectGraphResponse {
+  projectId: string;
+  nodes: TaskNode[];
+  edges: EdgeResponse[];
+  enrichmentStatus: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+}
+
+export interface CreateProjectResponse extends ProjectResponse {
+  graph: ProjectGraphResponse;
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -53,8 +103,8 @@ export const projectsApi = {
     return response.data;
   },
 
-  async createProject(data: CreateProjectRequest): Promise<ProjectResponse> {
-    const response = await apiClient.post<ProjectResponse>('/api/v1/projects', data);
+  async createProject(data: CreateProjectRequest): Promise<CreateProjectResponse> {
+    const response = await apiClient.post<CreateProjectResponse>('/api/v1/projects', data);
     return response.data;
   }
 };
