@@ -4,6 +4,7 @@
 
 @theme {
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+
   --color-brand-50: #fffbeb;
   --color-brand-100: #fef3c7;
   --color-brand-200: #fde68a;
@@ -18,7 +19,7 @@
 
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-shake: shake 0.4s ease-in-out;
-  --animate-shake-alt: shake-alt 0.4s ease-in-out;
+  --animate-shake-alt: shake 0.4s ease-in-out;
   --animate-error-pop: error-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-dropdown-slide: dropdown-slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-blob-one: blob-one 16s infinite ease-in-out;
@@ -44,24 +45,6 @@
   }
 
   @keyframes shake {
-
-    0%,
-    100% {
-      transform: translateX(0);
-    }
-
-    20%,
-    60% {
-      transform: translateX(-4px);
-    }
-
-    40%,
-    80% {
-      transform: translateX(4px);
-    }
-  }
-
-  @keyframes shake-alt {
 
     0%,
     100% {
@@ -240,111 +223,97 @@
   body,
   #root {
     min-height: 100dvh;
-    background-color: #020617;
+    background: #020617 !important;
     margin: 0;
     padding: 0;
-  }
 
-  html.light,
-  html.light body,
-  html.light #root {
-    background-color: #f1f5f9;
+    &.light,
+    .light & {
+      background: #f1f5f9 !important;
+    }
   }
 
   body {
-    color: #f1f5f9;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: var(--font-sans);
   }
 
-  html.light body {
-    color: #0f172a;
-  }
-
   ::selection {
     background-color: rgba(245, 158, 11, 0.35);
   }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.12);
+
+    &:hover {
+      background: rgba(15, 23, 42, 0.25);
+    }
+  }
 }
 
-.bg-gradient-mobile {
-  background-color: #020617;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 50%),
-    radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
-}
-
-@media (min-width: 768px) {
+@layer utilities {
   .bg-gradient-mobile {
-    background-image: none !important;
+    background-color: #020617;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 50%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
   }
-}
 
-.dashboard-bg-mobile {
-  background-color: #020617;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.07) 0%, transparent 50%),
-    radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
-}
-
-.light-dashboard-bg-mobile {
-  background-color: #f1f5f9;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 60%),
-    radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.04) 0%, transparent 60%),
-    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
-    radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
-}
-
-@media (min-width: 768px) {
-
-  .dashboard-bg-mobile,
-  .light-dashboard-bg-mobile {
-    background-image: none !important;
+  .dashboard-bg-mobile {
+    background-color: #020617;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.07) 0%, transparent 50%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
   }
-}
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.light-gradient-mobile {
-  background-color: #f1f5f9;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.16) 0%, transparent 60%),
-    radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.14) 0%, transparent 60%),
-    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
-    radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.09) 0%, transparent 60%);
-}
-
-@media (min-width: 768px) {
   .light-gradient-mobile {
-    background-image: none !important;
+    background-color: #f1f5f9;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.16) 0%, transparent 60%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.14) 0%, transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.09) 0%, transparent 60%);
   }
-}
 
-.light ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
-}
+  .light-dashboard-bg-mobile {
+    background-color: #f1f5f9;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 60%),
+      radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.04) 0%, transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
+      radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
+  }
 
-.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.25);
+  @media (min-width: 768px) {
+
+    .bg-gradient-mobile,
+    .dashboard-bg-mobile,
+    .light-gradient-mobile,
+    .light-dashboard-bg-mobile {
+      background-image: none !important;
+    }
+  }
 }
