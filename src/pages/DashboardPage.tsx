@@ -931,7 +931,6 @@ export default function DashboardPage() {
       )}
 
       <UserProfileDrawer
-        key={isProfileOpen ? `open-${user?.displayName}-${user?.avatarUrl}` : 'closed'}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />
