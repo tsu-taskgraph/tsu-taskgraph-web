@@ -375,12 +375,22 @@ export default function DashboardPage() {
               <div className="flex sm:hidden items-center">
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className={`p-2 rounded-xl transition-all cursor-pointer ${isMobileMenuOpen
+                  className={`p-2 rounded-xl transition-colors duration-300 cursor-pointer overflow-hidden ${isMobileMenuOpen
                     ? 'bg-brand-500/10 text-brand-400 light:bg-brand-500/15 light:text-brand-600'
                     : 'text-slate-400 hover:bg-slate-800/50 hover:text-white light:text-slate-500 light:hover:bg-slate-100 light:hover:text-slate-900'
                     }`}
+                  aria-label="Toggle mobile menu"
                 >
-                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  <div className="relative h-5 w-5 flex items-center justify-center">
+                    <Menu
+                      className={`absolute transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'opacity-0 scale-50 rotate-90' : 'opacity-100 scale-100 rotate-0'
+                        }`}
+                    />
+                    <X
+                      className={`absolute transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'
+                        }`}
+                    />
+                  </div>
                 </button>
               </div>
             </div>
