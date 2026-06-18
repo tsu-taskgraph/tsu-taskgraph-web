@@ -31,13 +31,17 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const timer = window.setTimeout(() => {
       setError(null);
       setSuccess(null);
       setFieldErrors({});
       setDisplayName(user?.displayName || '');
       setActiveTab('profile');
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [isOpen, user?.displayName]);
 
   if (!user) return null;
