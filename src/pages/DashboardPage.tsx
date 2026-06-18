@@ -86,6 +86,18 @@ export default function DashboardPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (isModalOpen || isProfileOpen || isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen, isProfileOpen, isMobileMenuOpen]);
+
   const fetchProjects = React.useCallback(async (page: number, size: number, status: string) => {
     setLoading(true);
     setError(null);
