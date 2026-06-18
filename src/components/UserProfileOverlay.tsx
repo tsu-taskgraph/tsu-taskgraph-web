@@ -38,13 +38,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
       setDisplayName(user?.displayName || '');
       setActiveTab('profile');
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (user?.displayName) {
-      setDisplayName(user.displayName);
-    }
-  }, [user?.displayName]);
+  }, [isOpen, user?.displayName]);
 
   if (!user) return null;
 
@@ -79,10 +73,33 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
     }
   };
 
+  const validateAndUploadFile = async (file: File) => {
+    setError(null);
+    setSuccess(null);
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file format. Please upload JPEG, PNG, WEBP, or GIF.');
+      setShakeToggle(prev => !prev);
+      return;
+    }
+
+    const MAX_SIZE_MB = 5;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`File is too large. Maximum allowed size is ${MAX_SIZE_MB} MB.`);
+      setShakeToggle(prev => !prev);
+      return;
+    }
+
+    await uploadFile(file);
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await uploadFile(file);
+      await validateAndUploadFile(file);
+    } else if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -98,8 +115,14 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, status);
-      setError(parsed.message || 'Failed to upload avatar.');
+
+      if (status === 413) {
+        setError('File is too large.');
+      } else {
+        const parsed = mapServerErrorToEnglish(err, status);
+        setError(parsed.message || 'Failed to upload avatar.');
+      }
+      setShakeToggle(prev => !prev);
     } finally {
       setIsUploadingAvatar(false);
       if (fileInputRef.current) {
@@ -124,6 +147,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, status);
       setError(parsed.message || 'Failed to delete avatar.');
+      setShakeToggle(prev => !prev);
     } finally {
       setIsDeletingAvatar(false);
     }
@@ -143,7 +167,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      await uploadFile(file);
+      await validateAndUploadFile(file);
     }
   };
 
@@ -166,6 +190,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
       <div
         className={`fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 pt-[10vh] transition-all duration-200
           ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
       >
         <div
           className={`bg-slate-900/90 light:bg-white/95 backdrop-blur-2xl border border-white/10 rounded-2xl w-full max-w-lg flex flex-col transition-all duration-300
@@ -188,23 +213,29 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
 
           <div className="flex border-b border-white/5 light:border-slate-200/80 px-5 shrink-0">
             <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'profile'
-                  ? 'border-brand-500 text-brand-400 light:text-brand-600 light:border-brand-600'
-                  : 'border-transparent text-slate-400 light:text-slate-500 hover:text-slate-200 light:hover:text-slate-700'
-              }`}
+              onClick={() => {
+                setActiveTab('profile');
+                setError(null);
+                setSuccess(null);
+              }}
+              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${activeTab === 'profile'
+                ? 'border-brand-500 text-brand-400 light:text-brand-600 light:border-brand-600'
+                : 'border-transparent text-slate-400 light:text-slate-500 hover:text-slate-200 light:hover:text-slate-700'
+                }`}
             >
               <User className="h-3.5 w-3.5" />
               Profile
             </button>
             <button
-              onClick={() => setActiveTab('ai-settings')}
-              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'ai-settings'
-                  ? 'border-brand-500 text-brand-400 light:text-brand-600 light:border-brand-600'
-                  : 'border-transparent text-slate-400 light:text-slate-500 hover:text-slate-200 light:hover:text-slate-700'
-              }`}
+              onClick={() => {
+                setActiveTab('ai-settings');
+                setError(null);
+                setSuccess(null);
+              }}
+              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${activeTab === 'ai-settings'
+                ? 'border-brand-500 text-brand-400 light:text-brand-600 light:border-brand-600'
+                : 'border-transparent text-slate-400 light:text-slate-500 hover:text-slate-200 light:hover:text-slate-700'
+                }`}
             >
               <Cpu className="h-3.5 w-3.5" />
               AI Provider
@@ -213,7 +244,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
 
           <div className="flex-1 overflow-y-auto p-5">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 mb-4 text-xs text-red-400 font-medium flex items-center gap-2">
+              <div className={`bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 mb-4 text-xs text-red-400 font-medium flex items-center gap-2 transition-all ${shakeToggle ? 'animate-shake' : 'animate-shake-alt'}`}>
                 <span>{error}</span>
               </div>
             )}
@@ -267,7 +298,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    accept="image/*"
+                    accept="image/jpeg, image/png, image/webp, image/gif"
                     className="hidden"
                   />
 

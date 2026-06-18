@@ -153,6 +153,9 @@ export const mapServerErrorToEnglish = (
   if (status === 404) {
     return { message: 'Requested resource not found.' };
   }
+  if (status === 413) {
+    return { message: 'File is too large.' };
+  }
   if (status === 500) {
     return { message: 'Internal server error. Please try again later.' };
   }
