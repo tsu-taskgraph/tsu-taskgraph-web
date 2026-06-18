@@ -25,7 +25,7 @@ import { mapServerErrorToEnglish } from '../api/errors';
 import logo from '../assets/logo.png';
 import { SafariTopBar } from '../components/SafariTopBar';
 import { SafariBottomBar } from '../components/SafariBottomBar';
-import UserProfileDrawer from '../components/UserProfileDrawer';
+import UserProfileOverlay from '../components/UserProfileOverlay';
 
 export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme();
@@ -930,7 +930,7 @@ export default function DashboardPage() {
         </>
       )}
 
-      <UserProfileDrawer
+      <UserProfileOverlay
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />
