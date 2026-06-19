@@ -290,8 +290,6 @@ function formatHours(hours: number | null | undefined) {
 function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   const task = data.task;
   const viewMode = data.viewMode;
-  const index = data.index ?? 0;
-  const delayMs = index * 60; // 60ms stagger per node
   const status = statusConfig[task.status] ?? statusConfig.AVAILABLE;
   const skin = statusSkin[task.status] ?? statusSkin.AVAILABLE;
   const StatusIcon = status.icon;
@@ -313,13 +311,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   if (viewMode === 'dot') {
     return (
-      <div
-        className="group relative flex items-center justify-center pointer-events-auto animate-zoom-in-fade"
-        style={{
-          animationDelay: `${delayMs}ms`,
-          animationFillMode: 'both'
-        }}
-      >
+      <div className="group relative flex items-center justify-center pointer-events-auto">
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
 
         <div
@@ -376,11 +368,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   if (viewMode === 'label') {
     return (
       <div
-        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-zoom-in-fade`}
-        style={{
-          animationDelay: `${delayMs}ms`,
-          animationFillMode: 'both'
-        }}
+        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
       >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
         <Handle type="source" position={Position.Right} className={hiddenHandleClass} />
@@ -433,11 +421,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   return (
     <div
-      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-zoom-in-fade`}
-      style={{
-        animationDelay: `${delayMs}ms`,
-        animationFillMode: 'both'
-      }}
+      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
     >
       <Handle
         type="target"
@@ -618,7 +602,7 @@ export default function ProjectWorkspacePage() {
   const [edgeType, setEdgeType] = useState<EdgeTypeMode>('default');
   const [nodes, setNodes, onNodesChange] = useNodesState<TaskFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
-  const [edgesVisible, setEdgesVisible] = useState(false);
+  const [edgesVisible, setEdgesVisible] = useState(true);
 
   const nodeTypes = useMemo(() => ({ taskNode: TaskNodeCard }), []);
 
@@ -689,11 +673,7 @@ export default function ProjectWorkspacePage() {
 
   useEffect(() => {
     if (graph) {
-      setEdgesVisible(false);
-      const timer = setTimeout(() => {
-        setEdgesVisible(true);
-      }, 700);
-      return () => clearTimeout(timer);
+      setEdgesVisible(true);
     } else {
       setEdgesVisible(false);
     }

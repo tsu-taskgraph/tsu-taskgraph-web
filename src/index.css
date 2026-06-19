@@ -386,6 +386,10 @@
     --xy-selection-border-default: 1px dotted rgba(245, 158, 11, 0.45);
     color: inherit;
 
+    .react-flow__renderer {
+      animation: zoom-in-fade 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
     .react-flow__pane {
       cursor: grab;
 
