@@ -20,9 +20,7 @@ import '@xyflow/react/dist/style.css';
 import {
   AlertCircle,
   ArrowLeft,
-  BookOpen,
   CheckCircle2,
-  ChevronRight,
   Circle,
   CircleDashed,
   Clock,
@@ -30,19 +28,18 @@ import {
   GitBranch,
   GitCommit,
   Hourglass,
-  Layers3,
   LayoutGrid,
-  Loader2,
   Lock,
   Minus,
+  Moon,
   Network,
   RefreshCw,
   ShieldAlert,
   Sparkles,
   Spline,
+  Sun,
   Tag,
   UserRound,
-  Users,
   Zap
 } from 'lucide-react';
 import { projectsApi, type ProjectGraphResponse, type ProjectResponse, type TaskNode } from '../api/projects';
@@ -167,11 +164,6 @@ function getInitials(displayName: string) {
   if (parts.length === 0) return 'U';
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
-}
-
-function formatDate(date: string | null | undefined) {
-  if (!date) return 'Not set';
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(date));
 }
 
 function getTaskProgress(task: TaskNode) {
@@ -438,25 +430,19 @@ function mapGraphToFlow(
 
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [project, setProject] = useState<ProjectResponse | null>(null);
   const [graph, setGraph] = useState<ProjectGraphResponse | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('label');
-  const [edgeType, setEdgeType] = useState<EdgeTypeMode>('smoothstep');
+  const [edgeType, setEdgeType] = useState<EdgeTypeMode>('default');
   const [nodes, setNodes, onNodesChange] = useNodesState<TaskFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
 
   const nodeTypes = useMemo(() => ({ taskNode: TaskNodeCard }), []);
-
-  const selectedTask = useMemo(() => {
-    if (!graph) return null;
-    return graph.nodes.find((node) => node.id === selectedTaskId) ?? graph.nodes[0] ?? null;
-  }, [graph, selectedTaskId]);
 
   const graphStats = useMemo(() => {
     const allNodes = graph?.nodes ?? [];
@@ -497,7 +483,6 @@ export default function ProjectWorkspacePage() {
       ]);
       setProject(projectResponse);
       setGraph(graphResponse);
-      setSelectedTaskId((current) => current ?? graphResponse.nodes[0]?.id ?? null);
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
@@ -619,6 +604,18 @@ export default function ProjectWorkspacePage() {
                   </div>
                 )}
                 <button
+                  onClick={toggleTheme}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/50 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-white active:scale-95 light:border-slate-200 light:text-slate-600 light:hover:bg-slate-100 light:hover:text-slate-900"
+                  aria-label="Toggle theme"
+                  title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                >
+                  {theme === 'light' ? (
+                    <Moon className="h-4 w-4 transition-transform duration-500 hover:-rotate-12" />
+                  ) : (
+                    <Sun className="h-4 w-4 transition-transform duration-500 hover:rotate-90" />
+                  )}
+                </button>
+                <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
                   className="flex h-9 items-center gap-2 rounded-xl border border-slate-700/50 px-3 text-xs font-semibold text-slate-400 transition-all hover:bg-slate-800/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200 light:text-slate-600 light:hover:bg-slate-100 light:hover:text-slate-900"
@@ -686,7 +683,6 @@ export default function ProjectWorkspacePage() {
                     nodeTypes={nodeTypes}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
-                    onNodeClick={(_event, node) => setSelectedTaskId(node.id)}
                     fitView
                     fitViewOptions={{ padding: 0.2 }}
                     minZoom={0.2}
@@ -702,10 +698,12 @@ export default function ProjectWorkspacePage() {
                       className="opacity-35 light:opacity-25"
                     />
                     <MiniMap
+                      position="bottom-left"
                       zoomable
                       pannable
                       nodeStrokeWidth={3}
-                      className="hidden md:block lg:!mr-[400px] !bg-slate-900/90 light:!bg-white/95 !border !border-white/10 light:!border-slate-200 backdrop-blur-md !rounded-xl !shadow-2xl overflow-hidden [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200"
+                      bgColor="transparent"
+                      className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-slate-900/80 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:!bg-white/90 light:shadow-slate-200/30 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200"
                       nodeColor={(node) => {
                         const taskNode = node as TaskFlowNode;
                         const status = taskNode.data.task.status;
@@ -715,15 +713,16 @@ export default function ProjectWorkspacePage() {
                         if (status === 'LOCKED') return theme === 'light' ? 'rgba(148, 163, 184, 0.45)' : 'rgba(71, 85, 105, 0.55)';
                         return theme === 'light' ? 'rgba(79, 70, 229, 0.55)' : 'rgba(99, 102, 241, 0.7)';
                       }}
-                      maskColor={theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.3)'}
+                      maskColor={theme === 'light' ? 'rgba(241, 245, 249, 0.5)' : 'rgba(2, 6, 23, 0.6)'}
                       style={{ width: 140, height: 100 }}
                     />
                     <Controls
                       position="bottom-left"
-                      className="!mb-4 !ml-4 !bg-slate-900/90 light:!bg-white/95 !border !border-white/10 light:!border-slate-200 backdrop-blur-md !rounded-xl !shadow-2xl overflow-hidden [&_.react-flow__controls-button]:!bg-slate-900/80 [&_.react-flow__controls-button]:!border-white/10 [&_.react-flow__controls-button]:!text-slate-300 [&_.react-flow__controls-button_svg]:!fill-slate-300 hover:[&_.react-flow__controls-button]:!bg-slate-800 light:[&_.react-flow__controls-button]:!bg-white light:[&_.react-flow__controls-button]:!border-slate-200 light:[&_.react-flow__controls-button]:!text-slate-700 light:[&_.react-flow__controls-button_svg]:!fill-slate-700 light:hover:[&_.react-flow__controls-button]:!bg-slate-100"
+                      orientation="horizontal"
+                      className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-slate-900/80 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:!bg-white/90 light:shadow-slate-200/30"
                     />
 
-                    <Panel position="bottom-center" className="!mb-4 hidden md:block lg:!mr-[400px]">
+                    <Panel position="bottom-center" className="!mb-4 hidden md:block">
                       <div className="flex flex-col items-center gap-3">
                         <div className="flex items-center gap-3">
                           <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:bg-white/90 light:shadow-slate-200/30">
@@ -831,161 +830,6 @@ export default function ProjectWorkspacePage() {
                   </ReactFlow>
                 )}
               </div>
-
-              <aside className="relative z-30 mt-[72dvh] flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/25 backdrop-blur-xl light:border-slate-200/80 light:bg-white/85 light:shadow-slate-200/30 lg:fixed lg:bottom-4 lg:right-4 lg:top-28 lg:mt-0 lg:w-[380px] lg:overflow-y-auto">
-                {selectedTask ? (
-                  <>
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <span className={`inline-flex rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${statusConfig[selectedTask.status].badgeClass}`}>
-                          {statusConfig[selectedTask.status].label}
-                        </span>
-                        <h2 className="mt-3 text-xl font-bold tracking-tight text-white light:text-slate-900">{selectedTask.title}</h2>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-400 light:text-slate-600">
-                          {selectedTask.description || 'No task description provided.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-3 light:border-slate-200/70 light:bg-slate-50/70">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Category</span>
-                        <p className="mt-1 text-sm font-semibold text-slate-200 light:text-slate-800">{selectedTask.category ?? 'OTHER'}</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-3 light:border-slate-200/70 light:bg-slate-50/70">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Layer</span>
-                        <p className="mt-1 text-sm font-semibold text-slate-200 light:text-slate-800">{selectedTask.layer ?? 'Auto'}</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-3 light:border-slate-200/70 light:bg-slate-50/70">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Estimate</span>
-                        <p className="mt-1 text-sm font-semibold text-slate-200 light:text-slate-800">{selectedTask.estimatedHours ?? 0}h</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-3 light:border-slate-200/70 light:bg-slate-50/70">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Logged</span>
-                        <p className="mt-1 text-sm font-semibold text-slate-200 light:text-slate-800">{selectedTask.loggedHours ?? 0}h</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 light:border-slate-200/70 light:bg-slate-50/70">
-                      <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-400 light:text-slate-500">
-                        <span>Task progress</span>
-                        <span className="font-bold text-white light:text-slate-900">{getTaskProgress(selectedTask)}%</span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-800 light:bg-slate-200">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-brand-500 to-orange-500"
-                          style={{ width: `${getTaskProgress(selectedTask)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                      <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 light:border-slate-200/70 light:bg-slate-50/70">
-                        <div className="flex items-center gap-2 text-sm font-bold text-white light:text-slate-900">
-                          <Users className="h-4 w-4 text-brand-400 light:text-brand-600" />
-                          Assignees
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {(selectedTask.assignees ?? []).length > 0 ? selectedTask.assignees.map((assignee) => (
-                            <div key={assignee.userId} className="flex items-center gap-2 rounded-xl border border-white/5 bg-slate-900/70 px-2.5 py-2 light:border-slate-200 light:bg-white">
-                              <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-brand-500/10 text-[10px] font-bold text-brand-300 light:text-brand-700">
-                                {assignee.avatarUrl ? <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-full w-full object-cover" /> : getInitials(assignee.displayName)}
-                              </div>
-                              <span className="text-xs font-medium text-slate-300 light:text-slate-700">{assignee.displayName}</span>
-                            </div>
-                          )) : (
-                            <span className="text-sm text-slate-500">No assignees yet.</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 light:border-slate-200/70 light:bg-slate-50/70">
-                        <div className="flex items-center gap-2 text-sm font-bold text-white light:text-slate-900">
-                          <Layers3 className="h-4 w-4 text-sky-400 light:text-sky-600" />
-                          Schedule
-                        </div>
-                        <div className="mt-3 grid gap-2 text-xs text-slate-400 light:text-slate-600">
-                          <div className="flex justify-between gap-4">
-                            <span>Start date</span>
-                            <span className="font-semibold text-slate-200 light:text-slate-800">{formatDate(selectedTask.startDate)}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span>Due date</span>
-                            <span className="font-semibold text-slate-200 light:text-slate-800">{formatDate(selectedTask.dueDate)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedTask.enrichment && (
-                      <div className="flex flex-col gap-3">
-                        {selectedTask.enrichment.checklist.length > 0 && (
-                          <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 light:border-slate-200/70 light:bg-slate-50/70">
-                            <h3 className="flex items-center gap-2 text-sm font-bold text-white light:text-slate-900">
-                              <CheckCircle2 className="h-4 w-4 text-emerald-400 light:text-emerald-600" />
-                              Checklist
-                            </h3>
-                            <ul className="mt-3 space-y-2">
-                              {selectedTask.enrichment.checklist.map((item) => (
-                                <li key={item} className="flex gap-2 text-xs leading-relaxed text-slate-400 light:text-slate-600">
-                                  <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-400 light:text-brand-600" />
-                                  <span>{item}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {selectedTask.enrichment.pitfalls.length > 0 && (
-                          <div className="rounded-2xl border border-amber-500/10 bg-amber-500/5 p-4 light:border-amber-500/20 light:bg-amber-500/10">
-                            <h3 className="flex items-center gap-2 text-sm font-bold text-amber-300 light:text-amber-700">
-                              <AlertCircle className="h-4 w-4" />
-                              Pitfalls
-                            </h3>
-                            <ul className="mt-3 space-y-2">
-                              {selectedTask.enrichment.pitfalls.map((item) => (
-                                <li key={item} className="text-xs leading-relaxed text-amber-100/80 light:text-amber-800/80">• {item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {selectedTask.enrichment.links.length > 0 && (
-                          <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 light:border-slate-200/70 light:bg-slate-50/70">
-                            <h3 className="flex items-center gap-2 text-sm font-bold text-white light:text-slate-900">
-                              <BookOpen className="h-4 w-4 text-blue-400 light:text-blue-600" />
-                              Docs
-                            </h3>
-                            <div className="mt-3 flex flex-col gap-2">
-                              {selectedTask.enrichment.links.map((link) => (
-                                <a
-                                  key={`${link.title}-${link.url}`}
-                                  href={link.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="truncate rounded-xl border border-white/5 bg-slate-900/70 px-3 py-2 text-xs font-medium text-blue-300 transition-colors hover:border-blue-500/20 hover:bg-blue-500/10 light:border-slate-200 light:bg-white light:text-blue-700 light:hover:bg-blue-50"
-                                >
-                                  {link.title}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/60 text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
-                      <Loader2 className="h-7 w-7" />
-                    </div>
-                    <h2 className="mt-4 text-lg font-bold text-white light:text-slate-900">Select a task</h2>
-                    <p className="mt-2 max-w-xs text-sm text-slate-400 light:text-slate-600">
-                      Click any custom node on the ReactFlow canvas to inspect status, assignees, estimates and enrichment details.
-                    </p>
-                  </div>
-                )}
-              </aside>
             </section>
           </>
         )}

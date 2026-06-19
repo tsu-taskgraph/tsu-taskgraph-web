@@ -227,7 +227,6 @@
     margin: 0;
     padding: 0;
 
-    &.light,
     .light & {
       background: #f1f5f9 !important;
     }
@@ -246,31 +245,41 @@
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-  }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 9999px;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.25);
+    &-track {
+      background: transparent;
     }
-  }
 
-  .light ::-webkit-scrollbar-thumb {
-    background: rgba(15, 23, 42, 0.12);
+    &-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
 
-    &:hover {
-      background: rgba(15, 23, 42, 0.25);
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .light & {
+        background: rgba(15, 23, 42, 0.12);
+
+        &:hover {
+          background: rgba(15, 23, 42, 0.25);
+        }
+      }
     }
   }
 }
 
 @layer utilities {
+
+  .bg-gradient-mobile,
+  .dashboard-bg-mobile,
+  .light-gradient-mobile,
+  .light-dashboard-bg-mobile {
+    @media (min-width: 768px) {
+      background-image: none !important;
+    }
+  }
+
   .bg-gradient-mobile {
     background-color: #020617;
     background-image:
@@ -305,16 +314,6 @@
       radial-gradient(circle at 80% 15%, rgba(147, 51, 234, 0.04) 0%, transparent 60%),
       radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
       radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
-  }
-
-  @media (min-width: 768px) {
-
-    .bg-gradient-mobile,
-    .dashboard-bg-mobile,
-    .light-gradient-mobile,
-    .light-dashboard-bg-mobile {
-      background-image: none !important;
-    }
   }
 
   .modal-content-exit {
@@ -355,62 +354,108 @@
     --xy-selection-background-color-default: rgba(245, 158, 11, 0.08);
     --xy-selection-border-default: 1px dotted rgba(245, 158, 11, 0.45);
     color: inherit;
-  }
 
-  .taskgraph-flow .react-flow__pane {
-    cursor: grab;
-  }
+    .react-flow__pane {
+      cursor: grab;
 
-  .taskgraph-flow .react-flow__pane:active {
-    cursor: grabbing;
-  }
+      &:active {
+        cursor: grabbing;
+      }
+    }
 
-  .taskgraph-flow .react-flow__controls {
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 1rem;
-    background: rgba(15, 23, 42, 0.82);
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(18px);
-  }
+    .react-flow__controls,
+    .react-flow__minimap {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(18px);
 
-  .taskgraph-flow .react-flow__controls-button {
-    width: 34px;
-    height: 34px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: transparent;
-    color: rgb(203, 213, 225);
-    fill: currentColor;
-  }
+      .light & {
+        border-color: rgba(226, 232, 240, 0.9);
+        background: rgba(255, 255, 255, 0.82);
+      }
+    }
 
-  .taskgraph-flow .react-flow__controls-button:hover {
-    background: rgba(245, 158, 11, 0.12);
-    color: rgb(251, 191, 36);
-  }
+    .react-flow__controls-button {
+      width: 34px;
+      height: 34px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      color: rgb(203, 213, 225);
+      fill: currentColor;
 
-  .taskgraph-flow .react-flow__minimap {
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 1rem;
-    background: rgba(15, 23, 42, 0.82);
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(18px);
-  }
+      &:hover {
+        background: rgba(245, 158, 11, 0.12);
+        color: rgb(251, 191, 36);
+      }
 
-  .light .taskgraph-flow .react-flow__controls,
-  .light .taskgraph-flow .react-flow__minimap {
-    border-color: rgba(226, 232, 240, 0.9);
-    background: rgba(255, 255, 255, 0.82);
-    box-shadow: 0 18px 45px rgba(148, 163, 184, 0.22);
-  }
+      .light & {
+        border-bottom-color: rgba(226, 232, 240, 0.9);
+        color: rgb(71, 85, 105);
 
-  .light .taskgraph-flow .react-flow__controls-button {
-    border-bottom-color: rgba(226, 232, 240, 0.9);
-    color: rgb(71, 85, 105);
-  }
+        &:hover {
+          background: rgba(245, 158, 11, 0.10);
+          color: rgb(217, 119, 6);
+        }
+      }
+    }
 
-  .light .taskgraph-flow .react-flow__controls-button:hover {
-    background: rgba(245, 158, 11, 0.10);
-    color: rgb(217, 119, 6);
+    .taskgraph-corner-controls.react-flow__controls,
+    .taskgraph-corner-minimap.react-flow__minimap {
+      overflow: hidden !important;
+      border: 1px solid rgba(255, 255, 255, 0.10) !important;
+      border-radius: 0.875rem !important;
+      background: rgba(15, 23, 42, 0.90) !important;
+      backdrop-filter: blur(16px) !important;
+
+      .light & {
+        border-color: rgba(226, 232, 240, 0.95) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+      }
+    }
+
+    .taskgraph-corner-controls {
+      .react-flow__controls-button {
+        width: 34px !important;
+        height: 34px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+        background: transparent !important;
+        color: rgb(203, 213, 225) !important;
+        fill: currentColor !important;
+
+        svg {
+          fill: currentColor !important;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06) !important;
+          color: rgb(241, 245, 249) !important;
+        }
+
+        .light & {
+          border-bottom-color: rgba(226, 232, 240, 0.95) !important;
+          color: rgb(51, 65, 85) !important;
+
+          &:hover {
+            background: rgba(241, 245, 249, 0.90) !important;
+            color: rgb(15, 23, 42) !important;
+          }
+        }
+      }
+
+      &.horizontal .react-flow__controls-button {
+        border-bottom: 0 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+
+        &:last-child {
+          border-right: 0 !important;
+        }
+
+        .light & {
+          border-right-color: rgba(226, 232, 240, 0.95) !important;
+        }
+      }
+    }
   }
 }
