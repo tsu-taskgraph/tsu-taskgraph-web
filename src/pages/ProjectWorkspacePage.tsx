@@ -12,6 +12,8 @@ import {
   Position,
   useEdgesState,
   useNodesState,
+  ReactFlowProvider,
+  useStore,
   type Edge,
   type Node,
   type NodeProps
@@ -59,6 +61,8 @@ type TaskFlowNodeData = {
 };
 
 type TaskFlowNode = Node<TaskFlowNodeData, 'taskNode'>;
+type LayerHeaderNode = Node<{ label: string }, 'layerHeader'>;
+type WorkspaceNode = TaskFlowNode | LayerHeaderNode;
 type TaskFlowEdge = Edge;
 
 type TaskStatus = TaskNode['status'];
@@ -540,25 +544,103 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   );
 }
 
+function TopologicalLanesHeader({
+  show,
+  columnWidth,
+  viewMode,
+  uniqueLayers
+}: {
+  show: boolean;
+  columnWidth: number;
+  viewMode: ViewMode;
+  uniqueLayers: number[];
+}) {
+  const transform = useStore((state) => state.transform);
+  if (!show || !uniqueLayers || uniqueLayers.length === 0) return null;
+
+  const [tx, , tzoom] = transform;
+  const centerOffset = viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159;
+
+  return (
+    <div className="absolute inset-x-0 top-0 pointer-events-none z-30 h-[200px] overflow-hidden">
+      {uniqueLayers.map((layer) => {
+        const screenX = tx + (layer * columnWidth + centerOffset) * tzoom;
+
+        return (
+          <div
+            key={layer}
+            className="absolute transition-opacity duration-300"
+            style={{
+              left: `${screenX}px`,
+              top: '112px',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="rounded-full border border-slate-800/80 bg-[#020617]/75 px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 backdrop-blur-md shadow-md light:border-slate-300/80 light:bg-white/90 light:text-slate-500">
+              Layer {layer}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LayerHeaderNode() {
+  return (
+    <div className="pointer-events-none select-none flex flex-col items-center justify-center -translate-x-1/2 w-[300px]">
+      <div className="h-[12000px] w-px border-l border-dashed border-slate-800/40 light:border-slate-300/60 mt-[-6000px]" />
+    </div>
+  );
+}
+
 function mapGraphToFlow(
   graph: ProjectGraphResponse,
   theme: ThemeMode,
   viewMode: ViewMode,
   edgeType: EdgeTypeMode,
-  edgesVisible: boolean
-): { nodes: TaskFlowNode[]; edges: TaskFlowEdge[] } {
+  edgesVisible: boolean,
+  showTopologicalLanes: boolean
+): { nodes: WorkspaceNode[]; edges: TaskFlowEdge[] } {
   const nodeStatus = new Map(graph.nodes.map((node) => [node.id, node.status]));
+  const columnWidth = 400;
 
-  const nodes: TaskFlowNode[] = graph.nodes.map((task, index) => ({
-    id: task.id,
-    type: 'taskNode',
-    position: {
-      x: typeof task.positionX === 'number' ? task.positionX : (task.layer ?? index) * 300,
-      y: typeof task.positionY === 'number' ? task.positionY : (index % 3) * 220
-    },
-    data: { task, viewMode, index },
-    draggable: true
-  }));
+  const taskNodes: WorkspaceNode[] = graph.nodes.map((task, index) => {
+    const layer = task.layer ?? 0;
+    const x = layer * columnWidth;
+    const y = typeof task.positionY === 'number' ? task.positionY : (index % 3) * 220;
+
+    return {
+      id: task.id,
+      type: 'taskNode',
+      position: { x, y },
+      data: { task, viewMode, index },
+      draggable: true
+    };
+  });
+
+  let nodes = [...taskNodes];
+
+  if (showTopologicalLanes) {
+    const uniqueLayers = Array.from(new Set(graph.nodes.map(n => n.layer).filter(l => typeof l === 'number'))) as number[];
+    uniqueLayers.sort((a, b) => a - b);
+
+    const headerNodes: WorkspaceNode[] = uniqueLayers.map((layer) => ({
+      id: `layer-header-${layer}`,
+      type: 'layerHeader',
+      position: {
+        x: layer * columnWidth + (viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159),
+        y: -100
+      },
+      data: { label: String(layer) },
+      draggable: false,
+      selectable: false,
+      deletable: false,
+      style: { zIndex: -10, pointerEvents: 'none' } as React.CSSProperties
+    }));
+
+    nodes = [...headerNodes, ...taskNodes];
+  }
 
   const edges: TaskFlowEdge[] = graph.edges.map((edge) => {
     const targetStatus = nodeStatus.get(edge.targetTaskId) ?? 'AVAILABLE';
@@ -606,11 +688,15 @@ export default function ProjectWorkspacePage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('label');
   const [edgeType, setEdgeType] = useState<EdgeTypeMode>('default');
-  const [nodes, setNodes, onNodesChange] = useNodesState<TaskFlowNode>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<WorkspaceNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
   const [edgesVisible, setEdgesVisible] = useState(true);
+  const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
 
-  const nodeTypes = useMemo(() => ({ taskNode: TaskNodeCard }), []);
+  const nodeTypes = useMemo(() => ({
+    taskNode: TaskNodeCard,
+    layerHeader: LayerHeaderNode
+  }), []);
 
   const graphStats = useMemo(() => {
     const allNodes = graph?.nodes ?? [];
@@ -692,7 +778,7 @@ export default function ProjectWorkspacePage() {
       return;
     }
 
-    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible);
+    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
     setNodes((currentNodes) => {
       const currentNodeById = new Map(currentNodes.map((node) => [node.id, node]));
 
@@ -707,7 +793,13 @@ export default function ProjectWorkspacePage() {
       });
     });
     setEdges(flow.edges);
-  }, [edgeType, graph, setEdges, setNodes, theme, viewMode, edgesVisible]);
+  }, [edgeType, graph, setEdges, setNodes, theme, viewMode, edgesVisible, showTopologicalLanes]);
+
+  const uniqueLayers = useMemo(() => {
+    if (!graph) return [];
+    const layers = Array.from(new Set(graph.nodes.map(n => n.layer).filter(l => typeof l === 'number'))) as number[];
+    return layers.sort((a, b) => a - b);
+  }, [graph]);
 
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
@@ -858,147 +950,168 @@ export default function ProjectWorkspacePage() {
                     </div>
                   </div>
                 ) : (
-                  <ReactFlow<TaskFlowNode, TaskFlowEdge>
-                    nodes={nodes}
-                    edges={edges}
-                    nodeTypes={nodeTypes}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    fitView
-                    fitViewOptions={{ padding: 0.2 }}
-                    minZoom={0.2}
-                    maxZoom={2}
-                    proOptions={{ hideAttribution: true }}
-                    colorMode={theme}
-                    className="taskgraph-flow bg-transparent [&_.react-flow__attribution]:!bg-slate-900/70 [&_.react-flow__attribution]:!text-slate-500 light:[&_.react-flow__attribution]:!bg-white/80 light:[&_.react-flow__attribution]:!text-slate-500"
-                  >
-                    <Background
-                      color={theme === 'light' ? 'rgba(100,116,139,0.26)' : 'rgba(148,163,184,0.18)'}
-                      gap={22}
-                      size={0.9}
-                      className="opacity-35 light:opacity-30"
-                    />
-                    <MiniMap
-                      position="bottom-left"
-                      zoomable
-                      pannable
-                      nodeStrokeWidth={3}
-                      bgColor="transparent"
-                      className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200 animate-slide-up-fade [animation-delay:150ms]"
-                      nodeColor={(node) => {
-                        const taskNode = node as TaskFlowNode;
-                        const status = taskNode.data.task.status;
+                  <ReactFlowProvider>
+                    <ReactFlow<WorkspaceNode, TaskFlowEdge>
+                      nodes={nodes}
+                      edges={edges}
+                      nodeTypes={nodeTypes}
+                      onNodesChange={onNodesChange}
+                      onEdgesChange={onEdgesChange}
+                      fitView
+                      fitViewOptions={{ padding: 0.2 }}
+                      minZoom={0.2}
+                      maxZoom={2}
+                      proOptions={{ hideAttribution: true }}
+                      colorMode={theme}
+                      className="taskgraph-flow bg-transparent [&_.react-flow__attribution]:!bg-slate-900/70 [&_.react-flow__attribution]:!text-slate-500 light:[&_.react-flow__attribution]:!bg-white/80 light:[&_.react-flow__attribution]:!text-slate-500"
+                    >
+                      <Background
+                        color={theme === 'light' ? 'rgba(100,116,139,0.26)' : 'rgba(148,163,184,0.18)'}
+                        gap={22}
+                        size={0.9}
+                        className="opacity-35 light:opacity-30"
+                      />
+                      <MiniMap
+                        position="bottom-left"
+                        zoomable
+                        pannable
+                        nodeStrokeWidth={3}
+                        bgColor="transparent"
+                        className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200 animate-slide-up-fade [animation-delay:150ms]"
+                        nodeColor={(node) => {
+                          if (node.type === 'layerHeader') return 'transparent';
+                          const taskNode = node as TaskFlowNode;
+                          const status = taskNode.data.task.status;
 
-                        if (status === 'IN_PROGRESS') return theme === 'light' ? 'rgba(245, 158, 11, 0.75)' : 'rgba(251, 191, 36, 0.8)';
-                        if (status === 'COMPLETED') return theme === 'light' ? 'rgba(16, 185, 129, 0.75)' : 'rgba(52, 211, 153, 0.8)';
-                        if (status === 'LOCKED') return theme === 'light' ? 'rgba(148, 163, 184, 0.45)' : 'rgba(71, 85, 105, 0.55)';
-                        return theme === 'light' ? 'rgba(79, 70, 229, 0.55)' : 'rgba(99, 102, 241, 0.7)';
-                      }}
-                      maskColor={theme === 'light' ? 'rgba(241, 245, 249, 0.5)' : 'rgba(2, 6, 23, 0.6)'}
-                      style={{ width: 140, height: 100 }}
-                    />
-                    <Controls
-                      position="bottom-left"
-                      orientation="horizontal"
-                      className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:150ms]"
-                    />
+                          if (status === 'IN_PROGRESS') return theme === 'light' ? 'rgba(245, 158, 11, 0.75)' : 'rgba(251, 191, 36, 0.8)';
+                          if (status === 'COMPLETED') return theme === 'light' ? 'rgba(16, 185, 129, 0.75)' : 'rgba(52, 211, 153, 0.8)';
+                          if (status === 'LOCKED') return theme === 'light' ? 'rgba(148, 163, 184, 0.45)' : 'rgba(71, 85, 105, 0.55)';
+                          return theme === 'light' ? 'rgba(79, 70, 229, 0.55)' : 'rgba(99, 102, 241, 0.7)';
+                        }}
+                        maskColor={theme === 'light' ? 'rgba(241, 245, 249, 0.5)' : 'rgba(2, 6, 23, 0.6)'}
+                        style={{ width: 140, height: 100 }}
+                      />
+                      <Controls
+                        position="bottom-left"
+                        orientation="horizontal"
+                        className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:150ms]"
+                      />
 
-                    <Panel position="bottom-center" className="!mb-6 hidden lg:block">
-                      <div className="flex items-stretch gap-3 animate-slide-up-fade [animation-delay:250ms]">
+                      <Panel position="bottom-center" className="!mb-6 hidden lg:block">
+                        <div className="flex items-stretch gap-3 animate-slide-up-fade [animation-delay:250ms]">
 
-                        <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
-                          <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
-                            <span
-                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
-                                ? 'translate-x-0'
-                                : activeViewOffset === 1
-                                  ? 'translate-x-[calc(100%+0.25rem)]'
-                                  : 'translate-x-[calc(200%+0.5rem)]'
-                                }`}
-                            />
-                            {viewModes.map(({ key, label, icon: Icon }) => {
-                              const active = viewMode === key;
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => setViewMode(key)}
-                                  className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
-                                    ? 'text-white'
-                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                    }`}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  <span>{label}</span>
-                                </button>
-                              );
-                            })}
+                          <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
+                            <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
+                              <span
+                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
+                                  ? 'translate-x-0'
+                                  : activeViewOffset === 1
+                                    ? 'translate-x-[calc(100%+0.25rem)]'
+                                    : 'translate-x-[calc(200%+0.5rem)]'
+                                  }`}
+                              />
+                              {viewModes.map(({ key, label, icon: Icon }) => {
+                                const active = viewMode === key;
+                                return (
+                                  <button
+                                    key={key}
+                                    onClick={() => setViewMode(key)}
+                                    className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
+                                      ? 'text-white'
+                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                      }`}
+                                  >
+                                    <Icon className="h-4 w-4" />
+                                    <span>{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
+                            <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
+                              <span
+                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
+                                  ? 'translate-x-0'
+                                  : activeEdgeTypeOffset === 1
+                                    ? 'translate-x-[calc(100%+0.25rem)]'
+                                    : activeEdgeTypeOffset === 2
+                                      ? 'translate-x-[calc(200%+0.5rem)]'
+                                      : 'translate-x-[calc(300%+0.75rem)]'
+                                  }`}
+                              />
+                              {edgeTypeModes.map(({ key, label, icon: Icon }) => {
+                                const active = edgeType === key;
+                                return (
+                                  <button
+                                    key={key}
+                                    onClick={() => setEdgeType(key)}
+                                    className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
+                                      ? 'text-white'
+                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                      }`}
+                                  >
+                                    <Icon className="h-4 w-4" />
+                                    <span>{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
+                              ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
+                              : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
+                              }`}
+                          >
+                            <Network className="h-4 w-4" />
+                            <span>Lanes</span>
+                          </button>
+
+                        </div>
+                      </Panel>
+
+                      <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
+                        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:350ms]">
+                          <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-300 light:text-brand-700">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>{graphStats.completion}% complete</span>
+                          </div>
+
+                          <div className="h-5 w-px bg-white/10 light:bg-slate-200" />
+
+                          <div className="flex items-center gap-5 text-[12px] font-semibold whitespace-nowrap text-slate-300 light:text-slate-600">
+                            <div className="flex items-center gap-1.5">
+                              <Network className="h-4 w-4 text-brand-400 light:text-brand-500" />
+                              <span>{graphStats.tasks} tasks</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <GitBranch className="h-4 w-4 text-sky-400 light:text-sky-500" />
+                              <span>{graphStats.dependencies} deps</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Zap className="h-4 w-4 text-amber-400 light:text-amber-500" />
+                              <span>{graphStats.available} open</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-4 w-4 text-violet-400 light:text-violet-500" />
+                              <span>{graphStats.loggedHours}h / {graphStats.estimatedHours}h</span>
+                            </div>
                           </div>
                         </div>
+                      </Panel>
 
-                        <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
-                          <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
-                            <span
-                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
-                                ? 'translate-x-0'
-                                : activeEdgeTypeOffset === 1
-                                  ? 'translate-x-[calc(100%+0.25rem)]'
-                                  : activeEdgeTypeOffset === 2
-                                    ? 'translate-x-[calc(200%+0.5rem)]'
-                                    : 'translate-x-[calc(300%+0.75rem)]'
-                                }`}
-                            />
-                            {edgeTypeModes.map(({ key, label, icon: Icon }) => {
-                              const active = edgeType === key;
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => setEdgeType(key)}
-                                  className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
-                                    ? 'text-white'
-                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                    }`}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  <span>{label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                      </div>
-                    </Panel>
-
-                    <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
-                      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:350ms]">
-                        <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-300 light:text-brand-700">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <span>{graphStats.completion}% complete</span>
-                        </div>
-
-                        <div className="h-5 w-px bg-white/10 light:bg-slate-200" />
-
-                        <div className="flex items-center gap-5 text-[12px] font-semibold whitespace-nowrap text-slate-300 light:text-slate-600">
-                          <div className="flex items-center gap-1.5">
-                            <Network className="h-4 w-4 text-brand-400 light:text-brand-500" />
-                            <span>{graphStats.tasks} tasks</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <GitBranch className="h-4 w-4 text-sky-400 light:text-sky-500" />
-                            <span>{graphStats.dependencies} deps</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Zap className="h-4 w-4 text-amber-400 light:text-amber-500" />
-                            <span>{graphStats.available} open</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="h-4 w-4 text-violet-400 light:text-violet-500" />
-                            <span>{graphStats.loggedHours}h / {graphStats.estimatedHours}h</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Panel>
-                  </ReactFlow>
+                      <TopologicalLanesHeader
+                        show={showTopologicalLanes}
+                        columnWidth={400}
+                        viewMode={viewMode}
+                        uniqueLayers={uniqueLayers}
+                      />
+                    </ReactFlow>
+                  </ReactFlowProvider>
                 )}
               </div>
             </section>

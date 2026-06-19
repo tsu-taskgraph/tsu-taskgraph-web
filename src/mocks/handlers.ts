@@ -915,6 +915,7 @@ export const handlers = [
             description: 'Пожалуйста, создайте задачи или запустите ИИ-мутацию.',
             status: 'AVAILABLE',
             category: 'OTHER',
+            layer: 0,
             positionX: 300,
             positionY: 200,
             estimatedHours: 1,
@@ -931,6 +932,53 @@ export const handlers = [
       });
     }
 
-    return HttpResponse.json(graph);
+    const nodeMap: Record<string, any> = {};
+    (graph.nodes as any[]).forEach((node: any) => {
+      nodeMap[node.id] = { ...node, layer: 0 };
+    });
+
+    const adj: Record<string, string[]> = {};
+    const inDegree: Record<string, number> = {};
+    (graph.nodes as any[]).forEach((node: any) => {
+      adj[node.id] = [];
+      inDegree[node.id] = 0;
+    });
+
+    (graph.edges as any[]).forEach((edge: any) => {
+      const u = edge.sourceTaskId as string;
+      const v = edge.targetTaskId as string;
+      if (adj[u] && adj[v] !== undefined) {
+        adj[u].push(v);
+        inDegree[v] = (inDegree[v] || 0) + 1;
+      }
+    });
+
+    const queue: { id: string; layer: number }[] = [];
+    (graph.nodes as any[]).forEach((node: any) => {
+      if (inDegree[node.id] === 0) {
+        queue.push({ id: node.id as string, layer: 0 });
+      }
+    });
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) continue;
+      const { id, layer } = current;
+      nodeMap[id].layer = Math.max(nodeMap[id].layer || 0, layer);
+
+      if (adj[id]) {
+        adj[id].forEach((neighbor) => {
+          inDegree[neighbor]--;
+          queue.push({ id: neighbor, layer: layer + 1 });
+        });
+      }
+    }
+
+    const resolvedGraph = {
+      ...graph,
+      nodes: (graph.nodes as any[]).map((node: any) => nodeMap[node.id] || node)
+    };
+
+    return HttpResponse.json(resolvedGraph);
   })
 ];
