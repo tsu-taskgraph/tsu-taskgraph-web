@@ -548,23 +548,27 @@ function TopologicalLanesHeader({
   show,
   columnWidth,
   viewMode,
-  uniqueLayers
+  uniqueLayers,
+  nodes
 }: {
   show: boolean;
   columnWidth: number;
   viewMode: ViewMode;
   uniqueLayers: number[];
+  nodes: WorkspaceNode[];
 }) {
   const transform = useStore((state) => state.transform);
   if (!show || !uniqueLayers || uniqueLayers.length === 0) return null;
 
   const [tx, , tzoom] = transform;
-  const centerOffset = viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159;
 
   return (
     <div className="absolute inset-x-0 top-0 pointer-events-none z-30 h-[200px] overflow-hidden">
       {uniqueLayers.map((layer) => {
-        const screenX = tx + (layer * columnWidth + centerOffset) * tzoom;
+        const headerNode = nodes.find((n) => n.id === `layer-header-${layer}`);
+        const canvasX = headerNode ? headerNode.position.x : (layer * columnWidth + (viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159));
+
+        const screenX = tx + canvasX * tzoom;
 
         return (
           <div
@@ -588,8 +592,11 @@ function TopologicalLanesHeader({
 
 function LayerHeaderNode() {
   return (
-    <div className="pointer-events-none select-none flex flex-col items-center justify-center -translate-x-1/2 w-[300px]">
-      <div className="h-[12000px] w-px border-l border-dashed border-slate-800/40 light:border-slate-300/60 mt-[-6000px]" />
+    <div className="pointer-events-none select-none flex flex-col items-center justify-center -translate-x-1/2 w-[300px] h-1 relative">
+      <div
+        className="w-px border-l border-dashed border-slate-800/40 light:border-slate-300/60 pointer-events-none absolute"
+        style={{ height: '12000px', top: '-6000px' }}
+      />
     </div>
   );
 }
@@ -608,7 +615,10 @@ function mapGraphToFlow(
   const taskNodes: WorkspaceNode[] = graph.nodes.map((task, index) => {
     const layer = task.layer ?? 0;
     const x = layer * columnWidth;
-    const y = typeof task.positionY === 'number' ? task.positionY : (index % 3) * 220;
+
+    const yMultiplier = viewMode === 'full' ? 1.6 : viewMode === 'dot' ? 0.6 : 1.0;
+    const baseRawY = typeof task.positionY === 'number' ? task.positionY : (index % 3) * 220;
+    const y = baseRawY * yMultiplier;
 
     return {
       id: task.id,
@@ -692,11 +702,59 @@ export default function ProjectWorkspacePage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
   const [edgesVisible, setEdgesVisible] = useState(true);
   const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
+  const [isAligned, setIsAligned] = useState(true);
 
   const nodeTypes = useMemo(() => ({
     taskNode: TaskNodeCard,
     layerHeader: LayerHeaderNode
   }), []);
+
+  const handleNodeDrag = useCallback((_event: any, node: any) => {
+    if (node.type !== 'taskNode') return;
+
+    setIsAligned(false);
+
+    setNodes((prevNodes) => {
+      const tasksByLayer = new Map<number, WorkspaceNode[]>();
+      prevNodes.forEach((n) => {
+        if (n.type === 'taskNode') {
+          const taskNode = n as TaskFlowNode;
+          const layer = taskNode.data.task.layer ?? 0;
+          if (!tasksByLayer.has(layer)) {
+            tasksByLayer.set(layer, []);
+          }
+          tasksByLayer.get(layer)!.push(n);
+        }
+      });
+
+      return prevNodes.map((n) => {
+        if (n.type === 'layerHeader') {
+          const layerNum = Number((n.data as any).label);
+          const nodesInLayer = tasksByLayer.get(layerNum) ?? [];
+          if (nodesInLayer.length > 0) {
+            const sumX = nodesInLayer.reduce((sum, taskNode) => sum + taskNode.position.x, 0);
+            const avgX = sumX / nodesInLayer.length;
+            const centerOffset = viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159;
+            return {
+              ...n,
+              position: {
+                x: avgX + centerOffset,
+                y: n.position.y
+              }
+            };
+          }
+        }
+        return n;
+      });
+    });
+  }, [setNodes, viewMode]);
+
+  const autoArrangeLayout = useCallback(() => {
+    if (!graph) return;
+    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
+    setNodes(flow.nodes);
+    setIsAligned(true);
+  }, [graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes, setNodes]);
 
   const graphStats = useMemo(() => {
     const allNodes = graph?.nodes ?? [];
@@ -766,6 +824,7 @@ export default function ProjectWorkspacePage() {
   useEffect(() => {
     if (graph) {
       setEdgesVisible(true);
+      setIsAligned(true);
     } else {
       setEdgesVisible(false);
     }
@@ -784,10 +843,11 @@ export default function ProjectWorkspacePage() {
 
       return flow.nodes.map((node) => {
         const currentNode = currentNodeById.get(node.id);
+        const useNewPosition = node.type === 'layerHeader';
 
         return {
           ...node,
-          position: currentNode?.position ?? node.position,
+          position: useNewPosition ? node.position : (currentNode?.position ?? node.position),
           selected: currentNode?.selected
         };
       });
@@ -957,6 +1017,8 @@ export default function ProjectWorkspacePage() {
                       nodeTypes={nodeTypes}
                       onNodesChange={onNodesChange}
                       onEdgesChange={onEdgesChange}
+                      onNodeDrag={handleNodeDrag}
+                      onNodeDragStop={handleNodeDrag}
                       fitView
                       fitViewOptions={{ padding: 0.2 }}
                       minZoom={0.2}
@@ -1062,13 +1124,25 @@ export default function ProjectWorkspacePage() {
 
                           <button
                             onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
                               ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
                               : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
                               }`}
                           >
                             <Network className="h-4 w-4" />
-                            <span>Lanes</span>
+                            <span>Layers</span>
+                          </button>
+
+                          <button
+                            onClick={autoArrangeLayout}
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${isAligned
+                              ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
+                              : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
+                              }`}
+                            title="Auto-arrange and align all task nodes by topological layers"
+                          >
+                            <LayoutGrid className="h-4 w-4" />
+                            <span>Align</span>
                           </button>
 
                         </div>
@@ -1109,6 +1183,7 @@ export default function ProjectWorkspacePage() {
                         columnWidth={400}
                         viewMode={viewMode}
                         uniqueLayers={uniqueLayers}
+                        nodes={nodes}
                       />
                     </ReactFlow>
                   </ReactFlowProvider>
