@@ -551,13 +551,13 @@
 
   0%,
   100% {
-    border-color: rgba(14, 165, 233, 0.45);
-    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 12px rgba(14, 165, 233, 0.15);
+    border-color: rgba(14, 165, 233, 0.3);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
   }
 
   50% {
-    border-color: rgba(14, 165, 233, 0.85);
-    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 24px rgba(14, 165, 233, 0.45);
+    border-color: rgba(14, 165, 233, 0.6);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 14px rgba(14, 165, 233, 0.2);
   }
 }
 
@@ -565,13 +565,13 @@
 
   0%,
   100% {
-    border-color: rgba(2, 132, 199, 0.4);
-    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 12px rgba(2, 132, 199, 0.15);
+    border-color: rgba(2, 132, 199, 0.35);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12);
   }
 
   50% {
-    border-color: rgba(2, 132, 199, 0.75);
-    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 24px rgba(2, 132, 199, 0.4);
+    border-color: rgba(2, 132, 199, 0.65);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 14px rgba(2, 132, 199, 0.16);
   }
 }
 
@@ -590,11 +590,11 @@
 }
 
 .animate-in-progress-node {
-  animation: pulse-in-progress 2.5s infinite ease-in-out !important;
+  animation: pulse-in-progress 4s infinite ease-in-out !important;
 }
 
 .light .animate-in-progress-node {
-  animation: pulse-in-progress-light 2.5s infinite ease-in-out !important;
+  animation: pulse-in-progress-light 4s infinite ease-in-out !important;
 }
 
 .animate-progress-flow {
@@ -714,4 +714,104 @@
 
 .light .animate-available-node {
   animation: pulse-available-light 4s infinite ease-in-out !important;
+}
+
+@keyframes pulse-completed {
+
+  0%,
+  100% {
+    border-color: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  50% {
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 10px rgba(16, 185, 129, 0.12);
+  }
+}
+
+@keyframes pulse-completed-light {
+
+  0%,
+  100% {
+    border-color: rgba(16, 185, 129, 0.18);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12);
+  }
+
+  50% {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 10px rgba(16, 185, 129, 0.1);
+  }
+}
+
+.animate-completed-node {
+  animation: pulse-completed 6s infinite ease-in-out !important;
+}
+
+.light .animate-completed-node {
+  animation: pulse-completed-light 6s infinite ease-in-out !important;
+}
+
+@keyframes pulse-locked {
+
+  0%,
+  100% {
+    border-color: rgba(148, 163, 184, 0.1);
+  }
+
+  50% {
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+}
+
+@keyframes pulse-locked-light {
+
+  0%,
+  100% {
+    border-color: rgba(148, 163, 184, 0.12);
+  }
+
+  50% {
+    border-color: rgba(148, 163, 184, 0.26);
+  }
+}
+
+.animate-locked-node {
+  animation: pulse-locked 8s infinite ease-in-out !important;
+}
+
+.light .animate-locked-node {
+  animation: pulse-locked-light 8s infinite ease-in-out !important;
+}
+
+@keyframes pulse-skipped {
+
+  0%,
+  100% {
+    border-color: rgba(139, 92, 246, 0.1);
+  }
+
+  50% {
+    border-color: rgba(139, 92, 246, 0.22);
+  }
+}
+
+@keyframes pulse-skipped-light {
+
+  0%,
+  100% {
+    border-color: rgba(139, 92, 246, 0.12);
+  }
+
+  50% {
+    border-color: rgba(139, 92, 246, 0.26);
+  }
+}
+
+.animate-skipped-node {
+  animation: pulse-skipped 8s infinite ease-in-out !important;
+}
+
+.light .animate-skipped-node {
+  animation: pulse-skipped-light 8s infinite ease-in-out !important;
 }

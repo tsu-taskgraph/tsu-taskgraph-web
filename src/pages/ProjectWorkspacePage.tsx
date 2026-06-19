@@ -313,6 +313,13 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
     : 'hover:-translate-y-1 hover:border-brand-500/45 light:hover:border-brand-500/50';
   const hiddenHandleClass = '!h-2 !w-2 !border-0 !bg-brand-400 !opacity-0 light:!bg-brand-500';
 
+  const statusAnimClass =
+    task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' :
+      task.status === 'AVAILABLE' ? 'animate-available-node' :
+        task.status === 'COMPLETED' ? 'animate-completed-node' :
+          task.status === 'LOCKED' ? 'animate-locked-node' :
+            task.status === 'SKIPPED' ? 'animate-skipped-node' : '';
+
   if (viewMode === 'dot') {
     return (
       <div
@@ -325,7 +332,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
           className={`relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selected
             ? 'scale-110 ring-2 ring-brand-500/40 ring-offset-2 ring-offset-slate-950 light:ring-offset-white'
             : 'hover:scale-110'
-            } ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : task.status === 'AVAILABLE' ? 'animate-available-node' : ''}`}
+            } ${statusAnimClass}`}
         >
           <div className={`absolute -inset-5 rounded-full ${skin.glowClass} opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100`} />
           <div className={`absolute inset-y-2 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
@@ -374,8 +381,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
     return (
       <div
         key="label"
-        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-view-change ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : task.status === 'AVAILABLE' ? 'animate-available-node' : ''
-          }`}
+        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-view-change ${statusAnimClass}`}
       >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
         <Handle type="source" position={Position.Right} className={hiddenHandleClass} />
@@ -430,8 +436,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   return (
     <div
       key="detail"
-      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-view-change ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : task.status === 'AVAILABLE' ? 'animate-available-node' : ''
-        }`}
+      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-view-change ${statusAnimClass}`}
     >
       <Handle
         type="target"
