@@ -1153,18 +1153,18 @@ export default function ProjectWorkspacePage() {
 
                           <button
                             onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
                               ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
                               : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
                               }`}
                           >
                             <Network className="h-4 w-4" />
-                            <span>Lanes</span>
+                            <span>Layers</span>
                           </button>
 
                           <button
                             onClick={autoArrangeLayout}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ${isAligned
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${isAligned
                               ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
                               : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
                               }`}
