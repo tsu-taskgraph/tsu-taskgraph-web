@@ -55,6 +55,7 @@ type ThemeMode = 'light' | 'dark';
 type TaskFlowNodeData = {
   task: TaskNode;
   viewMode: ViewMode;
+  index?: number;
 };
 
 type TaskFlowNode = Node<TaskFlowNodeData, 'taskNode'>;
@@ -289,6 +290,8 @@ function formatHours(hours: number | null | undefined) {
 function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   const task = data.task;
   const viewMode = data.viewMode;
+  const index = data.index ?? 0;
+  const delayMs = index * 60; // 60ms stagger per node
   const status = statusConfig[task.status] ?? statusConfig.AVAILABLE;
   const skin = statusSkin[task.status] ?? statusSkin.AVAILABLE;
   const StatusIcon = status.icon;
@@ -310,7 +313,13 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   if (viewMode === 'dot') {
     return (
-      <div className="group relative flex items-center justify-center pointer-events-auto">
+      <div
+        className="group relative flex items-center justify-center pointer-events-auto animate-zoom-in-fade"
+        style={{
+          animationDelay: `${delayMs}ms`,
+          animationFillMode: 'both'
+        }}
+      >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
 
         <div
@@ -367,7 +376,11 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   if (viewMode === 'label') {
     return (
       <div
-        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
+        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-zoom-in-fade`}
+        style={{
+          animationDelay: `${delayMs}ms`,
+          animationFillMode: 'both'
+        }}
       >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
         <Handle type="source" position={Position.Right} className={hiddenHandleClass} />
@@ -420,7 +433,11 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   return (
     <div
-      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
+      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-zoom-in-fade`}
+      style={{
+        animationDelay: `${delayMs}ms`,
+        animationFillMode: 'both'
+      }}
     >
       <Handle
         type="target"
@@ -538,7 +555,8 @@ function mapGraphToFlow(
   graph: ProjectGraphResponse,
   theme: ThemeMode,
   viewMode: ViewMode,
-  edgeType: EdgeTypeMode
+  edgeType: EdgeTypeMode,
+  edgesVisible: boolean
 ): { nodes: TaskFlowNode[]; edges: TaskFlowEdge[] } {
   const nodeStatus = new Map(graph.nodes.map((node) => [node.id, node.status]));
 
@@ -549,7 +567,7 @@ function mapGraphToFlow(
       x: typeof task.positionX === 'number' ? task.positionX : (task.layer ?? index) * 300,
       y: typeof task.positionY === 'number' ? task.positionY : (index % 3) * 220
     },
-    data: { task, viewMode },
+    data: { task, viewMode, index },
     draggable: true
   }));
 
@@ -576,10 +594,11 @@ function mapGraphToFlow(
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         strokeDasharray: visual.dashArray,
-        opacity: visual.opacity,
+        opacity: edgesVisible ? visual.opacity : 0,
         filter: visual.filter,
-        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s'
-      }
+        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s',
+        animation: edgesVisible ? 'edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' : 'none'
+      } as React.CSSProperties
     };
   });
 
@@ -599,6 +618,7 @@ export default function ProjectWorkspacePage() {
   const [edgeType, setEdgeType] = useState<EdgeTypeMode>('default');
   const [nodes, setNodes, onNodesChange] = useNodesState<TaskFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
+  const [edgesVisible, setEdgesVisible] = useState(false);
 
   const nodeTypes = useMemo(() => ({ taskNode: TaskNodeCard }), []);
 
@@ -668,13 +688,25 @@ export default function ProjectWorkspacePage() {
   }, []);
 
   useEffect(() => {
+    if (graph) {
+      setEdgesVisible(false);
+      const timer = setTimeout(() => {
+        setEdgesVisible(true);
+      }, 700);
+      return () => clearTimeout(timer);
+    } else {
+      setEdgesVisible(false);
+    }
+  }, [graph]);
+
+  useEffect(() => {
     if (!graph) {
       setNodes([]);
       setEdges([]);
       return;
     }
 
-    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType);
+    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible);
     setNodes((currentNodes) => {
       const currentNodeById = new Map(currentNodes.map((node) => [node.id, node]));
 
@@ -689,7 +721,7 @@ export default function ProjectWorkspacePage() {
       });
     });
     setEdges(flow.edges);
-  }, [edgeType, graph, setEdges, setNodes, theme, viewMode]);
+  }, [edgeType, graph, setEdges, setNodes, theme, viewMode, edgesVisible]);
 
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
@@ -722,7 +754,7 @@ export default function ProjectWorkspacePage() {
       <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 to-transparent pointer-events-none z-30 light:from-[#f1f5f9]" />
 
       <div className="sticky top-0 z-40 h-[88px] w-full pointer-events-none sm:h-24">
-        <header className={`w-full pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'}`}>
+        <header className={`w-full pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'} animate-slide-down-fade`}>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className={`relative z-50 flex h-14 items-center justify-between rounded-2xl border px-4 shadow-lg backdrop-blur-xl transition-all duration-500 sm:h-16 sm:px-6 ${isScrolled
               ? 'border-brand-500/20 bg-[#020617]/70 shadow-brand-500/5 light:bg-white/75 light:border-brand-500/20'
@@ -789,7 +821,7 @@ export default function ProjectWorkspacePage() {
 
       <main className="relative z-20 mx-auto flex w-full max-w-none flex-1 flex-col gap-4 px-2 pb-4 pt-0 sm:px-3 lg:px-4">
         {loading ? (
-          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/10 bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
+          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/10 bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-zoom-in-fade">
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-12 w-12">
                 <div className="absolute inset-0 rounded-full border-4 border-brand-500/20" />
@@ -799,7 +831,7 @@ export default function ProjectWorkspacePage() {
             </div>
           </div>
         ) : error ? (
-          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-red-500/20 bg-[#020617]/70 p-6 text-center backdrop-blur-xl shadow-lg shadow-black/10 light:bg-white/75 light:border-red-500/30 light:shadow-slate-200/10">
+          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-red-500/20 bg-[#020617]/70 p-6 text-center backdrop-blur-xl shadow-lg shadow-black/10 light:bg-white/75 light:border-red-500/30 light:shadow-slate-200/10 animate-zoom-in-fade">
             <div className="flex max-w-md flex-col items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400">
                 <AlertCircle className="h-6 w-6" />
@@ -819,12 +851,12 @@ export default function ProjectWorkspacePage() {
         ) : (
           <>
             <section className="contents">
-              <div className="fixed inset-0 z-10 overflow-hidden bg-transparent">
+              <div className="fixed inset-0 z-10 overflow-hidden bg-transparent animate-header-fade-in">
                 <div className="workspace-flow-surface absolute inset-0 pointer-events-none" />
                 <div className="workspace-flow-vignette absolute inset-0 pointer-events-none" />
 
                 {nodes.length === 0 ? (
-                  <div className="relative z-10 flex h-full min-h-dvh items-center justify-center p-8 text-center">
+                  <div className="relative z-10 flex h-full min-h-dvh items-center justify-center p-8 text-center animate-zoom-in-fade">
                     <div className="max-w-sm">
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
                         <ShieldAlert className="h-7 w-7" />
@@ -862,7 +894,7 @@ export default function ProjectWorkspacePage() {
                       pannable
                       nodeStrokeWidth={3}
                       bgColor="transparent"
-                      className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200"
+                      className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200 animate-slide-up-fade [animation-delay:150ms]"
                       nodeColor={(node) => {
                         const taskNode = node as TaskFlowNode;
                         const status = taskNode.data.task.status;
@@ -878,11 +910,11 @@ export default function ProjectWorkspacePage() {
                     <Controls
                       position="bottom-left"
                       orientation="horizontal"
-                      className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10"
+                      className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:150ms]"
                     />
 
                     <Panel position="bottom-center" className="!mb-6 hidden lg:block">
-                      <div className="flex items-stretch gap-3">
+                      <div className="flex items-stretch gap-3 animate-slide-up-fade [animation-delay:250ms]">
 
                         <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
                           <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
@@ -948,7 +980,7 @@ export default function ProjectWorkspacePage() {
                     </Panel>
 
                     <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
-                      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
+                      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:350ms]">
                         <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-300 light:text-brand-700">
                           <CheckCircle2 className="h-4 w-4" />
                           <span>{graphStats.completion}% complete</span>
