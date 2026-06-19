@@ -611,14 +611,36 @@ function mapGraphToFlow(
 ): { nodes: WorkspaceNode[]; edges: TaskFlowEdge[] } {
   const nodeStatus = new Map(graph.nodes.map((node) => [node.id, node.status]));
   const columnWidth = 400;
+  const rowHeight = viewMode === 'full' ? 380 : viewMode === 'label' ? 180 : 80;
+  const centerY = 220;
+
+  const nodesByLayer = new Map<number, typeof graph.nodes>();
+  graph.nodes.forEach((node) => {
+    const layer = node.layer ?? 0;
+    if (!nodesByLayer.has(layer)) {
+      nodesByLayer.set(layer, []);
+    }
+    nodesByLayer.get(layer)!.push(node);
+  });
+
+  const nodePositionInLayer = new Map<string, { index: number; count: number }>();
+  nodesByLayer.forEach((nodesInLayer) => {
+    const sortedNodes = [...nodesInLayer].sort((a, b) => (a.positionY ?? 0) - (b.positionY ?? 0));
+    sortedNodes.forEach((node, index) => {
+      nodePositionInLayer.set(node.id, {
+        index,
+        count: sortedNodes.length
+      });
+    });
+  });
 
   const taskNodes: WorkspaceNode[] = graph.nodes.map((task, index) => {
     const layer = task.layer ?? 0;
     const x = layer * columnWidth;
 
-    const yMultiplier = viewMode === 'full' ? 1.6 : viewMode === 'dot' ? 0.6 : 1.0;
-    const baseRawY = typeof task.positionY === 'number' ? task.positionY : (index % 3) * 220;
-    const y = baseRawY * yMultiplier;
+    const posInfo = nodePositionInLayer.get(task.id) ?? { index: 0, count: 1 };
+
+    const y = centerY + (posInfo.index - (posInfo.count - 1) / 2) * rowHeight;
 
     return {
       id: task.id,
@@ -1124,18 +1146,18 @@ export default function ProjectWorkspacePage() {
 
                           <button
                             onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
                               ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
                               : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
                               }`}
                           >
                             <Network className="h-4 w-4" />
-                            <span>Layers</span>
+                            <span>Lanes</span>
                           </button>
 
                           <button
                             onClick={autoArrangeLayout}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${isAligned
+                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ${isAligned
                               ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
                               : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
                               }`}
