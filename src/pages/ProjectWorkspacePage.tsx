@@ -749,7 +749,7 @@ export default function ProjectWorkspacePage() {
               <div className="flex min-w-0 items-center gap-3">
                 <Link
                   to="/"
-                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 text-slate-300 backdrop-blur-md transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 light:hover:text-brand-600"
+                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 text-slate-300 backdrop-blur-md transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 light:hover:text-brand-600"
                   aria-label="Back to dashboard"
                 >
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -757,8 +757,10 @@ export default function ProjectWorkspacePage() {
 
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h1 className="truncate text-base font-bold tracking-tight text-white light:text-slate-900 sm:text-lg">
-                      {project?.name ?? 'Project Workspace'}
+                    <h1 className="truncate text-base font-bold tracking-tight text-white light:text-slate-900 sm:text-lg max-w-[120px] sm:max-w-[200px] md:max-w-[300px] lg:max-w-[400px]" title={project?.name}>
+                      {project?.name
+                        ? (project.name.length > 80 ? `${project.name.slice(0, 80)}...` : project.name)
+                        : 'Project Workspace'}
                     </h1>
                     {project && (
                       <span className={`hidden shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline-flex ${projectStatusClass[project.status]}`}>
@@ -766,22 +768,24 @@ export default function ProjectWorkspacePage() {
                       </span>
                     )}
                   </div>
-                  <p className="hidden truncate text-xs text-slate-400 light:text-slate-600 sm:block">
-                    Interactive task graph · dependencies and execution flow
+                  <p className="hidden truncate text-xs text-slate-400 light:text-slate-600 sm:block max-w-[180px] sm:max-w-[280px] md:max-w-[380px] lg:max-w-[500px]">
+                    {project?.description
+                      ? (project.description.length > 120 ? `${project.description.slice(0, 120)}...` : project.description)
+                      : 'Interactive task graph · dependencies and execution flow'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-md light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 md:flex">
+                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-md light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 md:flex">
                     <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
                     <span>Enrichment: {graph.enrichmentStatus}</span>
                   </div>
                 )}
                 <button
                   onClick={toggleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                   aria-label="Toggle theme"
                   title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
                 >
@@ -794,7 +798,7 @@ export default function ProjectWorkspacePage() {
                 <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
-                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 text-xs font-semibold text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
+                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 text-xs font-semibold text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -828,7 +832,7 @@ export default function ProjectWorkspacePage() {
               </div>
               <button
                 onClick={() => loadWorkspace()}
-                className="rounded-xl border border-white/10 bg-[#020617]/70 backdrop-blur-md px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-slate-800/80 light:bg-white/[0.07]0 light:border-slate-200/80 light:text-red-600 light:hover:bg-slate-50"
+                className="rounded-xl border border-white/10 bg-[#020617]/70 backdrop-blur-md px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-slate-800/80 light:bg-slate-100/80 light:border-slate-200/80 light:text-red-600 light:hover:bg-slate-50"
               >
                 Try again
               </button>
