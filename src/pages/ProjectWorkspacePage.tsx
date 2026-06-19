@@ -900,6 +900,20 @@ export default function ProjectWorkspacePage() {
       <SafariTopBar />
       <SafariBottomBar />
 
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 p-2.5 rounded-xl border border-white/10 bg-slate-900/40 backdrop-blur-md text-slate-400 hover:text-white hover:border-brand-500/30 transition-all hover:scale-110 active:scale-95 cursor-pointer z-50 shadow-lg light:bg-white/60 light:border-slate-200/80 light:text-slate-600 light:hover:text-slate-900 light:hover:border-brand-500/40 light:shadow-slate-200/30 group"
+        aria-label="Toggle theme"
+        title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+      >
+        {theme === 'light' ? (
+          <Moon className="w-5 h-5 transition-transform duration-500 rotate-0 group-hover:-rotate-12 group-hover:scale-110" />
+        ) : (
+          <Sun className="w-5 h-5 transition-transform duration-500 rotate-0 group-hover:rotate-90 group-hover:scale-110" />
+        )}
+      </button>
+
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] h-[160%] w-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
           <div className="absolute top-[20%] left-[15%] h-[55vw] min-h-[650px] w-[55vw] min-w-[650px] animate-blob-one rounded-full bg-indigo-600/10 blur-[180px] light:bg-indigo-500/5" />
@@ -964,18 +978,6 @@ export default function ProjectWorkspacePage() {
                     <span>Enrichment: {graph.enrichmentStatus}</span>
                   </div>
                 )}
-                <button
-                  onClick={toggleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
-                  aria-label="Toggle theme"
-                  title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                >
-                  {theme === 'light' ? (
-                    <Moon className="h-4 w-4 transition-transform duration-500 hover:-rotate-12" />
-                  ) : (
-                    <Sun className="h-4 w-4 transition-transform duration-500 hover:rotate-90" />
-                  )}
-                </button>
                 <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
