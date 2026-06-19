@@ -74,7 +74,7 @@ const statusConfig: Record<TaskStatus, {
   LOCKED: {
     label: 'Locked',
     icon: Lock,
-    nodeClass: 'border-slate-700/70 bg-slate-900/85 light:bg-white/80 light:border-slate-200 opacity-75',
+    nodeClass: 'border-white/10 bg-[#020617]/70 shadow-lg shadow-black/10 light:bg-white/75 light:border-slate-200/60 light:shadow-slate-200/10 opacity-75',
     badgeClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200',
     dotClass: 'bg-slate-500',
     edge: '#64748b'
@@ -82,7 +82,7 @@ const statusConfig: Record<TaskStatus, {
   AVAILABLE: {
     label: 'Available',
     icon: Zap,
-    nodeClass: 'border-amber-500/35 bg-slate-900/90 shadow-amber-500/10 light:bg-white/90 light:border-amber-500/35 light:shadow-amber-500/10',
+    nodeClass: 'border-amber-500/35 bg-[#020617]/70 shadow-lg shadow-black/10 light:bg-white/75 light:border-amber-500/35 light:shadow-slate-200/10',
     badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/25 light:bg-amber-500/15 light:text-amber-700 light:border-amber-500/30',
     dotClass: 'bg-amber-400',
     edge: '#f59e0b'
@@ -90,7 +90,7 @@ const statusConfig: Record<TaskStatus, {
   IN_PROGRESS: {
     label: 'In progress',
     icon: Hourglass,
-    nodeClass: 'border-sky-500/35 bg-slate-900/90 shadow-sky-500/10 light:bg-white/90 light:border-sky-500/35 light:shadow-sky-500/10',
+    nodeClass: 'border-sky-500/35 bg-[#020617]/70 shadow-lg shadow-black/10 light:bg-white/75 light:border-sky-500/35 light:shadow-slate-200/10',
     badgeClass: 'bg-sky-500/10 text-sky-400 border-sky-500/25 light:bg-sky-500/15 light:text-sky-700 light:border-sky-500/30',
     dotClass: 'bg-sky-400',
     edge: '#38bdf8'
@@ -98,7 +98,7 @@ const statusConfig: Record<TaskStatus, {
   COMPLETED: {
     label: 'Completed',
     icon: CheckCircle2,
-    nodeClass: 'border-emerald-500/35 bg-slate-900/90 shadow-emerald-500/10 light:bg-white/90 light:border-emerald-500/35 light:shadow-emerald-500/10',
+    nodeClass: 'border-emerald-500/35 bg-[#020617]/70 shadow-lg shadow-black/10 light:bg-white/75 light:border-emerald-500/35 light:shadow-slate-200/10',
     badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30',
     dotClass: 'bg-emerald-400',
     edge: '#10b981'
@@ -106,7 +106,7 @@ const statusConfig: Record<TaskStatus, {
   SKIPPED: {
     label: 'Skipped',
     icon: CircleDashed,
-    nodeClass: 'border-violet-500/35 bg-slate-900/80 shadow-violet-500/10 light:bg-white/85 light:border-violet-500/35 light:shadow-violet-500/10 opacity-80',
+    nodeClass: 'border-violet-500/35 bg-[#020617]/70 shadow-lg shadow-black/10 light:bg-white/75 light:border-violet-500/35 light:shadow-slate-200/10 opacity-80',
     badgeClass: 'bg-violet-500/10 text-violet-400 border-violet-500/25 light:bg-violet-500/15 light:text-violet-700 light:border-violet-500/30',
     dotClass: 'bg-violet-400',
     edge: '#8b5cf6'
@@ -182,8 +182,8 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   const assignees = task.assignees ?? [];
   const category = task.category ?? 'OTHER';
   const selectedClass = selected
-    ? 'scale-[1.02] border-brand-400/70 shadow-brand-500/20 light:border-brand-500/70 light:shadow-brand-500/15'
-    : 'hover:-translate-y-0.5 hover:border-brand-500/35 light:hover:border-brand-500/40';
+    ? 'scale-[1.02] border-brand-400/70 light:border-brand-500/70 ring-2 ring-brand-500/50 ring-offset-2 ring-offset-transparent'
+    : 'hover:-translate-y-0.5 hover:border-brand-500/50 light:hover:border-brand-500/60';
 
   if (viewMode === 'dot') {
     return (
@@ -195,7 +195,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
         />
 
         <div
-          className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 shadow-xl shadow-black/20 backdrop-blur-xl transition-all duration-300 hover:scale-110 ${status.nodeClass} ${selected
+          className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-xl transition-all duration-300 hover:scale-110 ${status.nodeClass} ${selected
             ? 'ring-2 ring-brand-400/70 ring-offset-2 ring-offset-slate-950 light:ring-brand-500/70 light:ring-offset-white'
             : ''
             }`}
@@ -206,7 +206,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
           <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${status.dotClass}`} />
         </div>
 
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-72 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-slate-950/95 p-4 text-xs opacity-0 shadow-2xl shadow-black/30 backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200 light:bg-white/95 light:shadow-slate-200/30">
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-72 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 p-4 text-xs opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className={`rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${categoryConfig[category]}`}>
               {category}
@@ -240,7 +240,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   if (viewMode === 'label') {
     return (
       <div
-        className={`group relative flex w-64 items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 shadow-xl shadow-black/20 backdrop-blur-xl transition-all duration-300 ${status.nodeClass} ${selectedClass}`}
+        className={`group relative flex w-64 items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 backdrop-blur-xl transition-all duration-300 ${status.nodeClass} ${selectedClass}`}
       >
         <Handle
           type="target"
@@ -274,7 +274,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   return (
     <div
-      className={`group relative w-[270px] overflow-hidden rounded-2xl border backdrop-blur-xl shadow-xl shadow-black/20 transition-all duration-300 ${status.nodeClass} ${selectedClass}`}
+      className={`group relative w-[270px] overflow-hidden rounded-2xl border backdrop-blur-xl transition-all duration-300 ${status.nodeClass} ${selectedClass}`}
     >
       <Handle
         type="target"
@@ -315,7 +315,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
             {category}
           </span>
           {typeof task.estimatedHours === 'number' && (
-            <span className="rounded-md border border-white/5 bg-slate-800/60 px-2 py-0.5 text-[9px] font-semibold text-slate-300 light:border-slate-200 light:bg-slate-100 light:text-slate-600">
+            <span className="rounded-md border border-white/5 bg-slate-800/40 px-2 py-0.5 text-[9px] font-semibold text-slate-300 light:border-slate-200 light:bg-slate-100/50 light:text-slate-600">
               {task.estimatedHours}h est.
             </span>
           )}
@@ -326,7 +326,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
             <span>Progress</span>
             <span className="font-bold text-slate-100 light:text-slate-900">{progress}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/80 light:bg-slate-200">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/50 light:bg-slate-200/50">
             <div
               className="h-full rounded-full bg-gradient-to-r from-brand-500 to-orange-500 transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -349,7 +349,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
                 )}
               </div>
             )) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-slate-700 bg-slate-800/50 text-slate-500 light:border-slate-300 light:bg-slate-100/70">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-slate-700 bg-slate-800/30 text-slate-500 light:border-slate-300 light:bg-slate-100/50">
                 <UserRound className="h-3.5 w-3.5" />
               </div>
             )}
@@ -567,13 +567,13 @@ export default function ProjectWorkspacePage() {
         <header className={`w-full pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'}`}>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className={`relative z-50 flex h-14 items-center justify-between rounded-2xl border px-4 shadow-lg backdrop-blur-xl transition-all duration-500 sm:h-16 sm:px-6 ${isScrolled
-              ? 'border-brand-500/20 bg-[#020617]/70 shadow-brand-500/5 light:bg-white/70 light:border-brand-500/20'
+              ? 'border-brand-500/20 bg-[#020617]/70 shadow-brand-500/5 light:bg-white/75 light:border-brand-500/20'
               : 'border-white/10 bg-[#020617]/70 shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10'
               }`}>
               <div className="flex min-w-0 items-center gap-3">
                 <Link
                   to="/"
-                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/70 text-slate-300 transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200 light:bg-white light:text-slate-600 light:hover:text-brand-600"
+                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 text-slate-300 backdrop-blur-md transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/80 light:bg-white/70 light:text-slate-600 light:hover:text-brand-600"
                   aria-label="Back to dashboard"
                 >
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -598,14 +598,14 @@ export default function ProjectWorkspacePage() {
 
               <div className="flex items-center gap-2">
                 {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-xs font-medium text-slate-400 light:border-slate-200 light:bg-white/60 light:text-slate-600 md:flex">
+                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-md light:border-slate-200/80 light:bg-white/70 light:text-slate-600 md:flex">
                     <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
                     <span>Enrichment: {graph.enrichmentStatus}</span>
                   </div>
                 )}
                 <button
                   onClick={toggleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/50 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-white active:scale-95 light:border-slate-200 light:text-slate-600 light:hover:bg-slate-100 light:hover:text-slate-900"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 light:border-slate-200/80 light:bg-white/70 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                   aria-label="Toggle theme"
                   title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
                 >
@@ -618,7 +618,7 @@ export default function ProjectWorkspacePage() {
                 <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
-                  className="flex h-9 items-center gap-2 rounded-xl border border-slate-700/50 px-3 text-xs font-semibold text-slate-400 transition-all hover:bg-slate-800/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200 light:text-slate-600 light:hover:bg-slate-100 light:hover:text-slate-900"
+                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 text-xs font-semibold text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/80 light:bg-white/70 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -631,7 +631,7 @@ export default function ProjectWorkspacePage() {
 
       <main className="relative z-20 mx-auto flex w-full max-w-none flex-1 flex-col gap-4 px-2 pb-4 pt-0 sm:px-3 lg:px-4">
         {loading ? (
-          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/10 bg-slate-900/40 backdrop-blur-xl light:border-slate-200/80 light:bg-white/60">
+          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/10 bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-12 w-12">
                 <div className="absolute inset-0 rounded-full border-4 border-brand-500/20" />
@@ -641,7 +641,7 @@ export default function ProjectWorkspacePage() {
             </div>
           </div>
         ) : error ? (
-          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-red-500/20 bg-red-500/5 p-6 text-center backdrop-blur-xl light:bg-red-500/10">
+          <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-red-500/20 bg-[#020617]/70 p-6 text-center backdrop-blur-xl shadow-lg shadow-black/10 light:bg-white/75 light:border-red-500/30 light:shadow-slate-200/10">
             <div className="flex max-w-md flex-col items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400">
                 <AlertCircle className="h-6 w-6" />
@@ -652,7 +652,7 @@ export default function ProjectWorkspacePage() {
               </div>
               <button
                 onClick={() => loadWorkspace()}
-                className="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/20 light:text-red-700"
+                className="rounded-xl border border-white/10 bg-[#020617]/70 backdrop-blur-md px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-slate-800/80 light:bg-white/70 light:border-slate-200/80 light:text-red-600 light:hover:bg-slate-50"
               >
                 Try again
               </button>
@@ -667,7 +667,7 @@ export default function ProjectWorkspacePage() {
                 {nodes.length === 0 ? (
                   <div className="relative z-10 flex h-full min-h-dvh items-center justify-center p-8 text-center">
                     <div className="max-w-sm">
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-900/70 text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
                         <ShieldAlert className="h-7 w-7" />
                       </div>
                       <h2 className="mt-4 text-lg font-bold text-white light:text-slate-900">Graph is empty</h2>
@@ -703,7 +703,7 @@ export default function ProjectWorkspacePage() {
                       pannable
                       nodeStrokeWidth={3}
                       bgColor="transparent"
-                      className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-slate-900/80 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:!bg-white/90 light:shadow-slate-200/30 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200"
+                      className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200"
                       nodeColor={(node) => {
                         const taskNode = node as TaskFlowNode;
                         const status = taskNode.data.task.status;
@@ -719,13 +719,13 @@ export default function ProjectWorkspacePage() {
                     <Controls
                       position="bottom-left"
                       orientation="horizontal"
-                      className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-slate-900/80 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:!bg-white/90 light:shadow-slate-200/30"
+                      className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10"
                     />
 
                     <Panel position="bottom-center" className="!mb-6 hidden lg:block">
                       <div className="flex items-stretch gap-3">
 
-                        <div className="rounded-full border border-white/10 bg-slate-900/80 p-1.5 backdrop-blur-md light:border-slate-200/80 light:bg-white/95">
+                        <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
                           <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
                             <span
                               className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-brand-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
@@ -754,7 +754,7 @@ export default function ProjectWorkspacePage() {
                           </div>
                         </div>
 
-                        <div className="rounded-full border border-white/10 bg-slate-900/80 p-1.5 backdrop-blur-md light:border-slate-200/80 light:bg-white/95">
+                        <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
                           <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
                             <span
                               className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-brand-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
@@ -789,7 +789,7 @@ export default function ProjectWorkspacePage() {
                     </Panel>
 
                     <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
-                      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-slate-950/80 p-1.5 pr-6 backdrop-blur-xl light:border-slate-200/80 light:bg-white/95">
+                      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
                         <div className="flex items-center gap-2 rounded-full bg-brand-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-400 light:bg-orange-50 light:text-brand-600">
                           <CheckCircle2 className="h-4 w-4" />
                           <span>{graphStats.completion}% complete</span>
