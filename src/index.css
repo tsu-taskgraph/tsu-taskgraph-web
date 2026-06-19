@@ -494,5 +494,128 @@
         }
       }
     }
+
+    .react-flow__edge.edge-status-in_progress path.react-flow__edge-path {
+      stroke-dasharray: 8 8 !important;
+      animation: flow-active 0.8s linear infinite !important;
+    }
+
+    .react-flow__edge.edge-status-completed path.react-flow__edge-path {
+      stroke-dasharray: 12 12 !important;
+      animation: flow-completed 4s linear infinite !important;
+    }
+
+    .react-flow__edge.edge-status-available path.react-flow__edge-path {
+      stroke-dasharray: 5 10 !important;
+      animation: flow-available 6s linear infinite !important;
+    }
   }
+}
+
+@keyframes flow-active {
+  from {
+    stroke-dashoffset: 16;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flow-completed {
+  from {
+    stroke-dashoffset: 24;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flow-available {
+  from {
+    stroke-dashoffset: 30;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse-in-progress {
+
+  0%,
+  100% {
+    border-color: rgba(14, 165, 233, 0.45);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 12px rgba(14, 165, 233, 0.15);
+  }
+
+  50% {
+    border-color: rgba(14, 165, 233, 0.85);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 24px rgba(14, 165, 233, 0.45);
+  }
+}
+
+@keyframes pulse-in-progress-light {
+
+  0%,
+  100% {
+    border-color: rgba(2, 132, 199, 0.4);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 12px rgba(2, 132, 199, 0.15);
+  }
+
+  50% {
+    border-color: rgba(2, 132, 199, 0.75);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 24px rgba(2, 132, 199, 0.4);
+  }
+}
+
+@keyframes progress-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-in-progress-node {
+  animation: pulse-in-progress 2.5s infinite ease-in-out !important;
+}
+
+.light .animate-in-progress-node {
+  animation: pulse-in-progress-light 2.5s infinite ease-in-out !important;
+}
+
+.animate-progress-flow {
+  background-size: 200% 200%;
+  animation: progress-flow 2s linear infinite !important;
+}
+
+@keyframes hourglass-turn {
+
+  0%,
+  40% {
+    transform: rotate(0deg);
+  }
+
+  50%,
+  90% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-hourglass-turn {
+  display: inline-block;
+  transform-origin: center;
+  animation: hourglass-turn 4s cubic-bezier(0.77, 0, 0.175, 1) infinite !important;
 }

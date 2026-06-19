@@ -318,14 +318,11 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
           className={`relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selected
             ? 'scale-110 ring-2 ring-brand-500/40 ring-offset-2 ring-offset-slate-950 light:ring-offset-white'
             : 'hover:scale-110'
-            }`}
+            } ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''}`}
         >
           <div className={`absolute -inset-5 rounded-full ${skin.glowClass} opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100`} />
           <div className={`absolute inset-y-2 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
-          {task.status === 'IN_PROGRESS' && (
-            <span className={`absolute h-7 w-7 animate-ping rounded-full opacity-25 ${status.dotClass}`} />
-          )}
-          <StatusIcon className="relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700" />
+          <StatusIcon className={`relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700 ${task.status === 'IN_PROGRESS' ? 'animate-hourglass-turn' : ''}`} />
         </div>
 
         <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/82 p-4 text-xs opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/70 light:bg-white/90 light:shadow-[0_18px_45px_rgba(148,163,184,0.16)]">
@@ -368,7 +365,8 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   if (viewMode === 'label') {
     return (
       <div
-        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
+        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''
+          }`}
       >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
         <Handle type="source" position={Position.Right} className={hiddenHandleClass} />
@@ -380,7 +378,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
         <div className="relative p-3.5 pl-4">
           <div className="flex items-start gap-3">
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${skin.iconClass}`}>
-              <StatusIcon className="h-[18px] w-[18px]" />
+              <StatusIcon className={`h-[18px] w-[18px] ${task.status === 'IN_PROGRESS' ? 'animate-hourglass-turn' : ''}`} />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -421,7 +419,8 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   return (
     <div
-      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
+      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''
+        }`}
     >
       <Handle
         type="target"
@@ -442,7 +441,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 gap-3">
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${skin.iconClass}`}>
-              <StatusIcon className="h-5 w-5" />
+              <StatusIcon className={`h-5 w-5 ${task.status === 'IN_PROGRESS' ? 'animate-hourglass-turn' : ''}`} />
             </div>
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-1.5">
@@ -488,7 +487,8 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-white/[0.07] light:bg-slate-200/70">
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${skin.progressClass} transition-all duration-500`}
+              className={`h-full rounded-full bg-gradient-to-r ${skin.progressClass} transition-all duration-500 ${task.status === 'IN_PROGRESS' ? 'animate-progress-flow' : ''
+                }`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -566,6 +566,7 @@ function mapGraphToFlow(
       target: edge.targetTaskId,
       type: edgeType,
       animated: visual.animated,
+      className: `edge-status-${sourceStatus.toLowerCase()}`,
       markerEnd: {
         type: MarkerType.ArrowClosed,
         width: 18,
