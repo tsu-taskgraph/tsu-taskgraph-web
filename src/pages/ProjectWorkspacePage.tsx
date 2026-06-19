@@ -544,11 +544,11 @@ export default function ProjectWorkspacePage() {
       <SafariBottomBar />
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
-        <div className="absolute inset-[-30%] h-[160%] w-[160%] animate-[spin_220s_linear_infinite] opacity-[0.85] mix-blend-normal">
-          <div className="absolute top-[18%] left-[10%] h-[55vw] min-h-[650px] w-[55vw] min-w-[650px] animate-blob-one rounded-full bg-indigo-600/10 blur-[180px] light:bg-indigo-500/5" />
-          <div className="absolute top-[20%] right-[12%] h-[60vw] min-h-[700px] w-[60vw] min-w-[700px] animate-blob-two rounded-full bg-purple-600/8 blur-[200px] light:bg-purple-500/4" />
-          <div className="absolute bottom-[15%] left-[20%] h-[55vw] min-h-[650px] w-[55vw] min-w-[650px] animate-blob-three rounded-full bg-blue-600/8 blur-[180px] light:bg-blue-500/4" />
-          <div className="absolute bottom-[10%] right-[18%] h-[60vw] min-h-[700px] w-[60vw] min-w-[700px] animate-blob-four rounded-full bg-amber-500/5 blur-[190px] light:bg-amber-400/3" />
+        <div className="absolute inset-[-30%] h-[160%] w-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
+          <div className="absolute top-[20%] left-[15%] h-[55vw] min-h-[650px] w-[55vw] min-w-[650px] animate-blob-one rounded-full bg-indigo-600/10 blur-[180px] light:bg-indigo-500/5" />
+          <div className="absolute top-[15%] right-[15%] h-[65vw] min-h-[750px] w-[65vw] min-w-[750px] animate-blob-two rounded-full bg-purple-600/8 blur-[200px] light:bg-purple-500/4" />
+          <div className="absolute bottom-[20%] left-[20%] h-[55vw] min-h-[650px] w-[55vw] min-w-[650px] animate-blob-three rounded-full bg-blue-600/8 blur-[180px] light:bg-blue-500/4" />
+          <div className="absolute bottom-[15%] right-[15%] h-[60vw] min-h-[700px] w-[60vw] min-w-[700px] animate-blob-four rounded-full bg-amber-500/5 blur-[190px] light:bg-amber-400/3" />
         </div>
       </div>
 
@@ -661,8 +661,9 @@ export default function ProjectWorkspacePage() {
         ) : (
           <>
             <section className="contents">
-              <div className="fixed inset-0 z-10 overflow-hidden bg-slate-950 light:bg-[#f1f5f9]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.10),transparent_30%)] pointer-events-none" />
+              <div className="fixed inset-0 z-10 overflow-hidden bg-transparent">
+                <div className="workspace-flow-surface absolute inset-0 pointer-events-none" />
+                <div className="workspace-flow-vignette absolute inset-0 pointer-events-none" />
 
                 {nodes.length === 0 ? (
                   <div className="relative z-10 flex h-full min-h-dvh items-center justify-center p-8 text-center">
@@ -692,10 +693,10 @@ export default function ProjectWorkspacePage() {
                     className="taskgraph-flow bg-transparent [&_.react-flow__attribution]:!bg-slate-900/70 [&_.react-flow__attribution]:!text-slate-500 light:[&_.react-flow__attribution]:!bg-white/80 light:[&_.react-flow__attribution]:!text-slate-500"
                   >
                     <Background
-                      color={theme === 'light' ? '#cbd5e1' : '#223047'}
+                      color={theme === 'light' ? 'rgba(100,116,139,0.26)' : 'rgba(148,163,184,0.18)'}
                       gap={22}
                       size={0.9}
-                      className="opacity-35 light:opacity-25"
+                      className="opacity-35 light:opacity-30"
                     />
                     <MiniMap
                       position="bottom-left"
@@ -728,7 +729,7 @@ export default function ProjectWorkspacePage() {
                         <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
                           <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
                             <span
-                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-brand-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
+                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
                                 ? 'translate-x-0'
                                 : activeViewOffset === 1
                                   ? 'translate-x-[calc(100%+0.25rem)]'
@@ -757,7 +758,7 @@ export default function ProjectWorkspacePage() {
                         <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
                           <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
                             <span
-                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-brand-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
+                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
                                 ? 'translate-x-0'
                                 : activeEdgeTypeOffset === 1
                                   ? 'translate-x-[calc(100%+0.25rem)]'
@@ -790,7 +791,7 @@ export default function ProjectWorkspacePage() {
 
                     <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
                       <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
-                        <div className="flex items-center gap-2 rounded-full bg-brand-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-400 light:bg-orange-50 light:text-brand-600">
+                        <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-300 light:text-brand-700">
                           <CheckCircle2 className="h-4 w-4" />
                           <span>{graphStats.completion}% complete</span>
                         </div>

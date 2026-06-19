@@ -316,6 +316,30 @@
       radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
   }
 
+  .workspace-flow-surface {
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(79, 70, 229, 0.10) 0%, transparent 32%),
+      radial-gradient(circle at 82% 18%, rgba(147, 51, 234, 0.08) 0%, transparent 34%),
+      radial-gradient(circle at 24% 78%, rgba(37, 99, 235, 0.08) 0%, transparent 36%),
+      radial-gradient(circle at 78% 82%, rgba(245, 158, 11, 0.055) 0%, transparent 34%);
+  }
+
+  .light .workspace-flow-surface {
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(79, 70, 229, 0.055) 0%, transparent 34%),
+      radial-gradient(circle at 82% 18%, rgba(147, 51, 234, 0.045) 0%, transparent 36%),
+      radial-gradient(circle at 24% 78%, rgba(37, 99, 235, 0.045) 0%, transparent 38%),
+      radial-gradient(circle at 78% 82%, rgba(245, 158, 11, 0.040) 0%, transparent 36%);
+  }
+
+  .workspace-flow-vignette {
+    background: radial-gradient(circle at center, transparent 38%, rgba(2, 6, 23, 0.20) 78%, rgba(2, 6, 23, 0.42) 100%);
+  }
+
+  .light .workspace-flow-vignette {
+    background: radial-gradient(circle at center, transparent 42%, rgba(226, 232, 240, 0.12) 78%, rgba(203, 213, 225, 0.22) 100%);
+  }
+
   .modal-content-exit {
     animation: fadeOutContent 0.2s forwards;
   }
@@ -405,14 +429,15 @@
     .taskgraph-corner-minimap.react-flow__minimap {
       overflow: hidden !important;
       border: 1px solid rgba(255, 255, 255, 0.10) !important;
-      border-radius: 0.875rem !important;
-      box-shadow: none !important;
-      background: rgba(15, 23, 42, 0.90) !important;
-      backdrop-filter: blur(16px) !important;
+      border-radius: 1rem !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+      background: rgba(2, 6, 23, 0.70) !important;
+      backdrop-filter: blur(18px) !important;
 
       .light & {
-        border-color: rgba(226, 232, 240, 0.95) !important;
-        background: rgba(255, 255, 255, 0.95) !important;
+        border-color: rgba(226, 232, 240, 0.80) !important;
+        background: rgba(255, 255, 255, 0.75) !important;
+        box-shadow: 0 10px 30px rgba(148, 163, 184, 0.10) !important;
       }
     }
 
