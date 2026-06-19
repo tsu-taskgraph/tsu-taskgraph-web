@@ -123,6 +123,56 @@ const categoryConfig: Record<TaskCategory, string> = {
   OTHER: 'bg-slate-500/10 text-slate-300 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200'
 };
 
+const statusSkin: Record<TaskStatus, {
+  borderClass: string;
+  railClass: string;
+  glowClass: string;
+  iconClass: string;
+  progressClass: string;
+  mutedClass: string;
+}> = {
+  LOCKED: {
+    borderClass: 'border-white/10 light:border-slate-200/70',
+    railClass: 'from-slate-500 to-slate-400',
+    glowClass: 'bg-slate-500/10',
+    iconClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200',
+    progressClass: 'from-slate-500 to-slate-400',
+    mutedClass: 'opacity-70'
+  },
+  AVAILABLE: {
+    borderClass: 'border-amber-500/30 light:border-amber-500/35',
+    railClass: 'from-brand-400 to-orange-500',
+    glowClass: 'bg-brand-500/15',
+    iconClass: 'bg-brand-500/10 text-brand-300 border-brand-500/20 light:bg-brand-500/10 light:text-brand-700 light:border-brand-500/25',
+    progressClass: 'from-brand-500 to-orange-500',
+    mutedClass: ''
+  },
+  IN_PROGRESS: {
+    borderClass: 'border-sky-500/35 light:border-sky-500/35',
+    railClass: 'from-sky-400 to-blue-500',
+    glowClass: 'bg-sky-500/15',
+    iconClass: 'bg-sky-500/10 text-sky-300 border-sky-500/20 light:bg-sky-500/10 light:text-sky-700 light:border-sky-500/25',
+    progressClass: 'from-sky-500 to-blue-500',
+    mutedClass: ''
+  },
+  COMPLETED: {
+    borderClass: 'border-emerald-500/35 light:border-emerald-500/35',
+    railClass: 'from-emerald-400 to-teal-500',
+    glowClass: 'bg-emerald-500/15',
+    iconClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20 light:bg-emerald-500/10 light:text-emerald-700 light:border-emerald-500/25',
+    progressClass: 'from-emerald-500 to-teal-500',
+    mutedClass: ''
+  },
+  SKIPPED: {
+    borderClass: 'border-violet-500/30 light:border-violet-500/35',
+    railClass: 'from-violet-400 to-fuchsia-500',
+    glowClass: 'bg-violet-500/15',
+    iconClass: 'bg-violet-500/10 text-violet-300 border-violet-500/20 light:bg-violet-500/10 light:text-violet-700 light:border-violet-500/25',
+    progressClass: 'from-violet-500 to-fuchsia-500',
+    mutedClass: 'opacity-80'
+  }
+};
+
 const projectStatusClass: Record<ProjectResponse['status'], string> = {
   ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30',
   COMPLETED: 'bg-blue-500/10 text-blue-400 border-blue-500/20 light:bg-blue-500/15 light:text-blue-700 light:border-blue-500/30',
@@ -143,20 +193,79 @@ const edgeTypeModes = [
   { key: 'step' as const, label: 'Step', icon: CornerDownRight }
 ];
 
-function getEdgeTone(theme: ThemeMode, sourceStatus?: TaskStatus, targetStatus?: TaskStatus) {
-  if (sourceStatus === 'COMPLETED') {
-    return theme === 'light' ? '#10b981' : '#34d399';
+function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus, targetStatus?: TaskStatus) {
+  const palette = {
+    brand: theme === 'light' ? '#d97706' : '#f59e0b',
+    sky: theme === 'light' ? '#0284c7' : '#38bdf8',
+    emerald: theme === 'light' ? '#059669' : '#34d399',
+    violet: theme === 'light' ? '#7c3aed' : '#a78bfa',
+    slate: theme === 'light' ? 'rgba(100, 116, 139, 0.58)' : 'rgba(148, 163, 184, 0.46)',
+    neutral: theme === 'light' ? 'rgba(100, 116, 139, 0.48)' : 'rgba(148, 163, 184, 0.38)'
+  };
+
+  if (sourceStatus === 'LOCKED' || targetStatus === 'LOCKED') {
+    return {
+      color: palette.slate,
+      strokeWidth: 1.55,
+      dashArray: '7 7',
+      animated: false,
+      opacity: 0.78,
+      filter: 'none'
+    };
+  }
+
+  if (sourceStatus === 'SKIPPED' || targetStatus === 'SKIPPED') {
+    return {
+      color: palette.violet,
+      strokeWidth: 1.8,
+      dashArray: '8 6',
+      animated: false,
+      opacity: 0.82,
+      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(124, 58, 237, 0.14))' : 'drop-shadow(0 2px 7px rgba(167, 139, 250, 0.18))'
+    };
   }
 
   if (sourceStatus === 'IN_PROGRESS') {
-    return theme === 'light' ? '#f59e0b' : '#fbbf24';
+    return {
+      color: palette.sky,
+      strokeWidth: 2.6,
+      dashArray: undefined,
+      animated: true,
+      opacity: 0.95,
+      filter: theme === 'light' ? 'drop-shadow(0 2px 7px rgba(2, 132, 199, 0.16))' : 'drop-shadow(0 2px 8px rgba(56, 189, 248, 0.22))'
+    };
   }
 
-  if (targetStatus === 'LOCKED') {
-    return theme === 'light' ? 'rgba(148, 163, 184, 0.65)' : 'rgba(71, 85, 105, 0.7)';
+  if (sourceStatus === 'COMPLETED') {
+    return {
+      color: palette.emerald,
+      strokeWidth: 2.15,
+      dashArray: undefined,
+      animated: false,
+      opacity: 0.92,
+      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(5, 150, 105, 0.12))' : 'drop-shadow(0 2px 7px rgba(52, 211, 153, 0.18))'
+    };
   }
 
-  return theme === 'light' ? 'rgba(100, 116, 139, 0.55)' : 'rgba(148, 163, 184, 0.5)';
+  if (sourceStatus === 'AVAILABLE') {
+    return {
+      color: palette.brand,
+      strokeWidth: 2,
+      dashArray: undefined,
+      animated: false,
+      opacity: 0.9,
+      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(217, 119, 6, 0.14))' : 'drop-shadow(0 2px 7px rgba(245, 158, 11, 0.20))'
+    };
+  }
+
+  return {
+    color: palette.neutral,
+    strokeWidth: 1.8,
+    dashArray: undefined,
+    animated: false,
+    opacity: 0.72,
+    filter: 'none'
+  };
 }
 
 function getInitials(displayName: string) {
@@ -173,66 +282,84 @@ function getTaskProgress(task: TaskNode) {
   return 0;
 }
 
+function formatHours(hours: number | null | undefined) {
+  return `${hours ?? 0}h`;
+}
+
 function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   const task = data.task;
   const viewMode = data.viewMode;
   const status = statusConfig[task.status] ?? statusConfig.AVAILABLE;
+  const skin = statusSkin[task.status] ?? statusSkin.AVAILABLE;
   const StatusIcon = status.icon;
-  const progress = getTaskProgress(task);
+  const progress = Math.min(100, Math.max(0, getTaskProgress(task)));
   const assignees = task.assignees ?? [];
+  const visibleAssignees = assignees.slice(0, 3);
   const category = task.category ?? 'OTHER';
+  const description = task.description?.trim();
+  const estimatedHours = task.estimatedHours ?? 0;
+  const loggedHours = task.loggedHours ?? 0;
+  const timePercent = estimatedHours > 0 ? Math.min(100, Math.round((loggedHours / estimatedHours) * 100)) : 0;
+  const layerLabel = typeof task.layer === 'number' ? `Layer ${task.layer}` : 'Auto layer';
+  const compactLayerLabel = typeof task.layer === 'number' ? `L${task.layer}` : 'Auto';
+  const surfaceClass = `border bg-[#020617]/80 shadow-[0_16px_45px_rgba(0,0,0,0.18)] backdrop-blur-xl light:bg-white/80 light:shadow-[0_16px_40px_rgba(148,163,184,0.16)] ${skin.borderClass} ${skin.mutedClass}`;
   const selectedClass = selected
-    ? 'scale-[1.02] border-brand-400/70 light:border-brand-500/70 ring-2 ring-brand-500/50 ring-offset-2 ring-offset-transparent'
-    : 'hover:-translate-y-0.5 hover:border-brand-500/50 light:hover:border-brand-500/60';
+    ? 'scale-[1.02] border-brand-400/75 ring-2 ring-brand-500/35 ring-offset-2 ring-offset-slate-950 light:border-brand-500/75 light:ring-brand-500/25 light:ring-offset-white/50'
+    : 'hover:-translate-y-1 hover:border-brand-500/45 light:hover:border-brand-500/50';
+  const hiddenHandleClass = '!h-2 !w-2 !border-0 !bg-brand-400 !opacity-0 light:!bg-brand-500';
 
   if (viewMode === 'dot') {
     return (
       <div className="group relative flex items-center justify-center pointer-events-auto">
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!h-2 !w-2 !border-0 !bg-slate-500 !opacity-0"
-        />
+        <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
 
         <div
-          className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-xl transition-all duration-300 hover:scale-110 ${status.nodeClass} ${selected
-            ? 'ring-2 ring-brand-400/70 ring-offset-2 ring-offset-slate-950 light:ring-brand-500/70 light:ring-offset-white'
-            : ''
+          className={`relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selected
+            ? 'scale-110 ring-2 ring-brand-500/40 ring-offset-2 ring-offset-slate-950 light:ring-offset-white'
+            : 'hover:scale-110'
             }`}
         >
+          <div className={`absolute -inset-5 rounded-full ${skin.glowClass} opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100`} />
+          <div className={`absolute inset-y-2 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
           {task.status === 'IN_PROGRESS' && (
-            <span className={`absolute inline-flex h-3.5 w-3.5 animate-ping rounded-full opacity-60 ${status.dotClass}`} />
+            <span className={`absolute h-7 w-7 animate-ping rounded-full opacity-25 ${status.dotClass}`} />
           )}
-          <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${status.dotClass}`} />
+          <StatusIcon className="relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700" />
         </div>
 
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-72 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 p-4 text-xs opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className={`rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${categoryConfig[category]}`}>
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/82 p-4 text-xs opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/70 light:bg-white/90 light:shadow-[0_18px_45px_rgba(148,163,184,0.16)]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className={`rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
               {category}
             </span>
-            <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${status.badgeClass}`}>
+            <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${status.badgeClass}`}>
               <StatusIcon className="h-3 w-3" />
               {status.label}
             </span>
           </div>
           <h4 className="line-clamp-2 text-sm font-bold leading-snug text-white light:text-slate-900">{task.title}</h4>
-          {task.description && (
+          {description && (
             <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-400 light:text-slate-600">
-              {task.description}
+              {description}
             </p>
           )}
-          <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[10px] font-semibold text-slate-400 light:border-slate-200/70 light:text-slate-500">
-            <span>{progress}% complete</span>
-            <span>{task.loggedHours ?? 0}h / {task.estimatedHours ?? 0}h</span>
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/5 pt-3 light:border-slate-200/70">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Progress</div>
+              <div className="mt-0.5 font-bold text-slate-200 light:text-slate-800">{progress}%</div>
+            </div>
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Time</div>
+              <div className="mt-0.5 font-bold text-slate-200 light:text-slate-800">{formatHours(loggedHours)} / {formatHours(estimatedHours)}</div>
+            </div>
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Layer</div>
+              <div className="mt-0.5 font-bold text-slate-200 light:text-slate-800">{compactLayerLabel}</div>
+            </div>
           </div>
         </div>
 
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!h-2 !w-2 !border-0 !bg-slate-500 !opacity-0"
-        />
+        <Handle type="source" position={Position.Right} className={hiddenHandleClass} />
       </div>
     );
   }
@@ -240,129 +367,166 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   if (viewMode === 'label') {
     return (
       <div
-        className={`group relative flex w-64 items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 backdrop-blur-xl transition-all duration-300 ${status.nodeClass} ${selectedClass}`}
+        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
       >
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!h-2 !w-2 !border-0 !bg-slate-500 !opacity-0"
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!h-2 !w-2 !border-0 !bg-slate-500 !opacity-0"
-        />
+        <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
+        <Handle type="source" position={Position.Right} className={hiddenHandleClass} />
 
-        <span className={`h-2.5 w-2.5 shrink-0 rounded-full shadow-lg ${status.dotClass}`} />
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-xs font-bold leading-none tracking-tight text-slate-100 light:text-slate-900">
-            {task.title}
-          </h3>
-          <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
-            <span className={`max-w-[92px] truncate rounded-md border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide ${categoryConfig[category]}`}>
-              {category}
-            </span>
-            <span className="truncate text-[9px] font-semibold text-slate-500 light:text-slate-500">
-              {progress}%
-            </span>
+        <div className={`absolute inset-y-3 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
+        <div className={`absolute -right-12 -top-12 h-28 w-28 rounded-full ${skin.glowClass} blur-3xl transition-opacity duration-300 group-hover:opacity-100`} />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent light:via-slate-300/80" />
+
+        <div className="relative p-3.5 pl-4">
+          <div className="flex items-start gap-3">
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${skin.iconClass}`}>
+              <StatusIcon className="h-[18px] w-[18px]" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <h3 className="line-clamp-2 text-[13px] font-bold leading-snug tracking-tight text-slate-100 light:text-slate-900">
+                  {task.title}
+                </h3>
+                <span className="shrink-0 rounded-lg bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-300 light:bg-slate-100/70 light:text-slate-700">
+                  {progress}%
+                </span>
+              </div>
+
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className={`max-w-[112px] truncate rounded-lg border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
+                  {category}
+                </span>
+                <span className="rounded-lg border border-white/5 bg-white/5 px-2 py-0.5 text-[9px] font-semibold text-slate-400 light:border-slate-200/70 light:bg-slate-50/70 light:text-slate-600">
+                  {compactLayerLabel}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-white/5 px-2 py-0.5 text-[9px] font-semibold text-slate-400 light:border-slate-200/70 light:bg-slate-50/70 light:text-slate-600">
+                  <Clock className="h-3 w-3" />
+                  {formatHours(loggedHours)} / {formatHours(estimatedHours)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.07] light:bg-slate-200/70">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r ${skin.progressClass} transition-all duration-500`}
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
-        <StatusIcon className="h-4 w-4 shrink-0 text-slate-400 light:text-slate-500" />
       </div>
     );
   }
 
   return (
     <div
-      className={`group relative w-[270px] overflow-hidden rounded-2xl border backdrop-blur-xl transition-all duration-300 ${status.nodeClass} ${selectedClass}`}
+      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass}`}
     >
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-3 !w-3 !border-2 !border-slate-950 !bg-brand-400 light:!border-white light:!bg-brand-500"
+        className="!h-3 !w-3 !border-2 !border-slate-950 !bg-brand-400 !opacity-80 light:!border-white light:!bg-brand-500"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-3 !w-3 !border-2 !border-slate-950 !bg-brand-400 light:!border-white light:!bg-brand-500"
+        className="!h-3 !w-3 !border-2 !border-slate-950 !bg-brand-400 !opacity-80 light:!border-white light:!bg-brand-500"
       />
 
+      <div className={`absolute inset-y-5 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
+      <div className={`absolute -right-16 -top-16 h-36 w-36 rounded-full ${skin.glowClass} blur-3xl transition-opacity duration-300 group-hover:opacity-100`} />
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent light:via-slate-300/80" />
-      <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-brand-500/10 blur-2xl transition-opacity group-hover:opacity-100" />
 
-      <div className="relative flex flex-col gap-4 p-4">
+      <div className="relative flex flex-col gap-4 p-4 pl-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full shadow-lg ${status.dotClass}`} />
-            <h3 className="line-clamp-2 text-sm font-bold leading-snug tracking-tight text-slate-100 light:text-slate-900">
-              {task.title}
-            </h3>
+          <div className="flex min-w-0 gap-3">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${skin.iconClass}`}>
+              <StatusIcon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                <span className={`rounded-lg border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
+                  {category}
+                </span>
+                <span className={`rounded-lg border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${status.badgeClass}`}>
+                  {status.label}
+                </span>
+              </div>
+              <h3 className="line-clamp-2 text-[15px] font-extrabold leading-snug tracking-tight text-slate-100 light:text-slate-900">
+                {task.title}
+              </h3>
+            </div>
           </div>
-          <span className={`shrink-0 rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${status.badgeClass}`}>
-            <StatusIcon className="mr-1 inline h-3 w-3" />
-            {status.label}
-          </span>
         </div>
 
-        {task.description && (
-          <p className="line-clamp-2 text-[11px] leading-relaxed text-slate-400 light:text-slate-600">
-            {task.description}
+        {description && (
+          <p className="line-clamp-2 text-[12px] leading-relaxed text-slate-400 light:text-slate-600">
+            {description}
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${categoryConfig[category]}`}>
-            {category}
-          </span>
-          {typeof task.estimatedHours === 'number' && (
-            <span className="rounded-md border border-white/5 bg-slate-800/40 px-2 py-0.5 text-[9px] font-semibold text-slate-300 light:border-slate-200 light:bg-slate-100/50 light:text-slate-600">
-              {task.estimatedHours}h est.
-            </span>
-          )}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-2.5 light:border-slate-200/70 light:bg-slate-50/70">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Estimate</div>
+            <div className="mt-1 text-xs font-bold text-slate-200 light:text-slate-800">{formatHours(estimatedHours)}</div>
+          </div>
+          <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-2.5 light:border-slate-200/70 light:bg-slate-50/70">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Logged</div>
+            <div className="mt-1 text-xs font-bold text-slate-200 light:text-slate-800">{formatHours(loggedHours)}</div>
+          </div>
+          <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-2.5 light:border-slate-200/70 light:bg-slate-50/70">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Layer</div>
+            <div className="mt-1 truncate text-xs font-bold text-slate-200 light:text-slate-800">{layerLabel}</div>
+          </div>
         </div>
 
         <div>
-          <div className="mb-1.5 flex items-center justify-between text-[10px] font-medium text-slate-400 light:text-slate-500">
-            <span>Progress</span>
+          <div className="mb-1.5 flex items-center justify-between text-[10px] font-semibold text-slate-400 light:text-slate-500">
+            <span>Task progress</span>
             <span className="font-bold text-slate-100 light:text-slate-900">{progress}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/50 light:bg-slate-200/50">
+          <div className="h-2 overflow-hidden rounded-full bg-white/[0.07] light:bg-slate-200/70">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-brand-500 to-orange-500 transition-all duration-500"
+              className={`h-full rounded-full bg-gradient-to-r ${skin.progressClass} transition-all duration-500`}
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/5 pt-3 light:border-slate-200/70">
-          <div className="flex -space-x-2 overflow-hidden">
-            {assignees.length > 0 ? assignees.slice(0, 3).map((assignee) => (
-              <div
-                key={assignee.userId}
-                title={assignee.displayName}
-                className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-slate-950 bg-slate-800 text-[10px] font-bold text-slate-200 light:border-white light:bg-slate-100 light:text-slate-700"
-              >
-                {assignee.avatarUrl ? (
-                  <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-full w-full object-cover" />
-                ) : (
-                  getInitials(assignee.displayName)
-                )}
-              </div>
-            )) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-slate-700 bg-slate-800/30 text-slate-500 light:border-slate-300 light:bg-slate-100/50">
-                <UserRound className="h-3.5 w-3.5" />
-              </div>
-            )}
-            {assignees.length > 3 && (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-950 bg-brand-500/15 text-[9px] font-bold text-brand-300 light:border-white light:text-brand-700">
-                +{assignees.length - 3}
-              </div>
-            )}
+        <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-3 light:border-slate-200/70">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex -space-x-2 overflow-hidden">
+              {visibleAssignees.length > 0 ? visibleAssignees.map((assignee) => (
+                <div
+                  key={assignee.userId}
+                  title={assignee.displayName}
+                  className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-slate-950 bg-slate-800 text-[10px] font-bold text-slate-200 light:border-white light:bg-slate-100 light:text-slate-700"
+                >
+                  {assignee.avatarUrl ? (
+                    <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-full w-full object-cover" />
+                  ) : (
+                    getInitials(assignee.displayName)
+                  )}
+                </div>
+              )) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-slate-700 bg-slate-800/30 text-slate-500 light:border-slate-300 light:bg-slate-100/50">
+                  <UserRound className="h-3.5 w-3.5" />
+                </div>
+              )}
+              {assignees.length > 3 && (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-950 bg-brand-500/15 text-[9px] font-bold text-brand-300 light:border-white light:text-brand-700">
+                  +{assignees.length - 3}
+                </div>
+              )}
+            </div>
+            <span className="truncate text-[10px] font-semibold text-slate-500 light:text-slate-500">
+              {assignees.length > 0 ? `${assignees.length} assigned` : 'Unassigned'}
+            </span>
           </div>
 
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 light:text-slate-500">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-white/5 bg-white/[0.04] px-2 py-1 text-[10px] font-bold text-slate-400 light:border-slate-200/70 light:bg-slate-50/70 light:text-slate-600">
             <Clock className="h-3.5 w-3.5" />
-            <span>{task.loggedHours ?? 0}h logged</span>
+            <span>{timePercent}% time</span>
           </div>
         </div>
       </div>
@@ -392,35 +556,29 @@ function mapGraphToFlow(
   const edges: TaskFlowEdge[] = graph.edges.map((edge) => {
     const targetStatus = nodeStatus.get(edge.targetTaskId) ?? 'AVAILABLE';
     const sourceStatus = nodeStatus.get(edge.sourceTaskId) ?? 'AVAILABLE';
-    const color = getEdgeTone(theme, sourceStatus, targetStatus);
-    const strokeWidth =
-      sourceStatus === 'IN_PROGRESS'
-        ? 2.5
-        : sourceStatus === 'COMPLETED'
-          ? 2.1
-          : targetStatus === 'LOCKED'
-            ? 1.5
-            : 1.8;
-    const dashArray = targetStatus === 'LOCKED' ? '6 6' : undefined;
+    const visual = getEdgeVisual(theme, sourceStatus, targetStatus);
 
     return {
       id: edge.id,
       source: edge.sourceTaskId,
       target: edge.targetTaskId,
       type: edgeType,
-      animated: sourceStatus === 'IN_PROGRESS',
+      animated: visual.animated,
       markerEnd: {
         type: MarkerType.ArrowClosed,
         width: 18,
         height: 18,
-        color
+        color: visual.color
       },
       style: {
-        stroke: color,
-        strokeWidth,
+        stroke: visual.color,
+        strokeWidth: visual.strokeWidth,
         strokeLinecap: 'round',
-        strokeDasharray: dashArray,
-        transition: 'stroke 0.3s, stroke-width 0.3s'
+        strokeLinejoin: 'round',
+        strokeDasharray: visual.dashArray,
+        opacity: visual.opacity,
+        filter: visual.filter,
+        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s'
       }
     };
   });
@@ -573,7 +731,7 @@ export default function ProjectWorkspacePage() {
               <div className="flex min-w-0 items-center gap-3">
                 <Link
                   to="/"
-                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 text-slate-300 backdrop-blur-md transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/80 light:bg-white/70 light:text-slate-600 light:hover:text-brand-600"
+                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 text-slate-300 backdrop-blur-md transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 light:hover:text-brand-600"
                   aria-label="Back to dashboard"
                 >
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -598,14 +756,14 @@ export default function ProjectWorkspacePage() {
 
               <div className="flex items-center gap-2">
                 {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-md light:border-slate-200/80 light:bg-white/70 light:text-slate-600 md:flex">
+                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-md light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 md:flex">
                     <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
                     <span>Enrichment: {graph.enrichmentStatus}</span>
                   </div>
                 )}
                 <button
                   onClick={toggleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 light:border-slate-200/80 light:bg-white/70 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                   aria-label="Toggle theme"
                   title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
                 >
@@ -618,7 +776,7 @@ export default function ProjectWorkspacePage() {
                 <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
-                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 text-xs font-semibold text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/80 light:bg-white/70 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
+                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 text-xs font-semibold text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/80 light:bg-white/[0.07]0 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -652,7 +810,7 @@ export default function ProjectWorkspacePage() {
               </div>
               <button
                 onClick={() => loadWorkspace()}
-                className="rounded-xl border border-white/10 bg-[#020617]/70 backdrop-blur-md px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-slate-800/80 light:bg-white/70 light:border-slate-200/80 light:text-red-600 light:hover:bg-slate-50"
+                className="rounded-xl border border-white/10 bg-[#020617]/70 backdrop-blur-md px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-slate-800/80 light:bg-white/[0.07]0 light:border-slate-200/80 light:text-red-600 light:hover:bg-slate-50"
               >
                 Try again
               </button>
