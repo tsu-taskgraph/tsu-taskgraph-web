@@ -722,106 +722,96 @@ export default function ProjectWorkspacePage() {
                       className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-slate-900/80 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:!bg-white/90 light:shadow-slate-200/30"
                     />
 
-                    <Panel position="bottom-center" className="!mb-4 hidden md:block">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:bg-white/90 light:shadow-slate-200/30">
-                            <div
-                              className="relative grid grid-cols-3 items-stretch gap-1"
-                              role="tablist"
-                              aria-label="Workspace view mode"
-                            >
-                              <span
-                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-out ${activeViewOffset === 0
-                                  ? 'translate-x-0'
-                                  : activeViewOffset === 1
-                                    ? 'translate-x-[calc(100%+0.25rem)]'
-                                    : 'translate-x-[calc(200%+0.5rem)]'
-                                  }`}
-                              />
+                    <Panel position="bottom-center" className="!mb-6 hidden lg:block">
+                      <div className="flex items-stretch gap-3">
 
-                              {viewModes.map(({ key, label, icon: Icon }) => {
-                                const active = viewMode === key;
-
-                                return (
-                                  <button
-                                    key={key}
-                                    onClick={() => setViewMode(key)}
-                                    role="tab"
-                                    aria-selected={active}
-                                    className={`relative z-10 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[11px] font-bold transition-all duration-300 ease-out ${active
-                                      ? 'text-white'
-                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                      }`}
-                                  >
-                                    <Icon className="h-4 w-4" />
-                                    <span>{label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md light:border-slate-200 light:bg-white/90 light:shadow-slate-200/30">
-                            <div
-                              className="relative grid grid-cols-4 items-stretch gap-1"
-                              role="tablist"
-                              aria-label="Edge style"
-                            >
-                              <span
-                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-out ${activeEdgeTypeOffset === 0
-                                  ? 'translate-x-0'
-                                  : activeEdgeTypeOffset === 1
-                                    ? 'translate-x-[calc(100%+0.25rem)]'
-                                    : activeEdgeTypeOffset === 2
-                                      ? 'translate-x-[calc(200%+0.5rem)]'
-                                      : 'translate-x-[calc(300%+0.75rem)]'
-                                  }`}
-                              />
-
-                              {edgeTypeModes.map(({ key, label, icon: Icon }) => {
-                                const active = edgeType === key;
-
-                                return (
-                                  <button
-                                    key={key}
-                                    onClick={() => setEdgeType(key)}
-                                    role="tab"
-                                    aria-selected={active}
-                                    className={`relative z-10 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold transition-all duration-300 ease-out ${active
-                                      ? 'text-white'
-                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                      }`}
-                                  >
-                                    <Icon className="h-4 w-4" />
-                                    <span>{label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                        <div className="rounded-full border border-white/10 bg-slate-900/80 p-1.5 backdrop-blur-md light:border-slate-200/80 light:bg-white/95">
+                          <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
+                            <span
+                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-brand-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
+                                ? 'translate-x-0'
+                                : activeViewOffset === 1
+                                  ? 'translate-x-[calc(100%+0.25rem)]'
+                                  : 'translate-x-[calc(200%+0.5rem)]'
+                                }`}
+                            />
+                            {viewModes.map(({ key, label, icon: Icon }) => {
+                              const active = viewMode === key;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => setViewMode(key)}
+                                  className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
+                                    ? 'text-white'
+                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                    }`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  <span>{label}</span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 shadow-2xl shadow-black/25 backdrop-blur-xl light:border-slate-200 light:bg-white/85 light:shadow-slate-200/30">
-                          <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-1.5 text-xs font-bold text-brand-300 light:text-brand-700">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span>{graphStats.completion}% complete</span>
+                        <div className="rounded-full border border-white/10 bg-slate-900/80 p-1.5 backdrop-blur-md light:border-slate-200/80 light:bg-white/95">
+                          <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
+                            <span
+                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-brand-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
+                                ? 'translate-x-0'
+                                : activeEdgeTypeOffset === 1
+                                  ? 'translate-x-[calc(100%+0.25rem)]'
+                                  : activeEdgeTypeOffset === 2
+                                    ? 'translate-x-[calc(200%+0.5rem)]'
+                                    : 'translate-x-[calc(300%+0.75rem)]'
+                                }`}
+                            />
+                            {edgeTypeModes.map(({ key, label, icon: Icon }) => {
+                              const active = edgeType === key;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => setEdgeType(key)}
+                                  className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
+                                    ? 'text-white'
+                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                    }`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  <span>{label}</span>
+                                </button>
+                              );
+                            })}
                           </div>
-                          <div className="hidden h-6 w-px bg-white/10 light:bg-slate-200 md:block" />
-                          <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 light:text-slate-600">
-                            <Network className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
+                        </div>
+
+                      </div>
+                    </Panel>
+
+                    <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
+                      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-slate-950/80 p-1.5 pr-6 backdrop-blur-xl light:border-slate-200/80 light:bg-white/95">
+                        <div className="flex items-center gap-2 rounded-full bg-brand-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-400 light:bg-orange-50 light:text-brand-600">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>{graphStats.completion}% complete</span>
+                        </div>
+
+                        <div className="h-5 w-px bg-white/10 light:bg-slate-200" />
+
+                        <div className="flex items-center gap-5 text-[12px] font-semibold whitespace-nowrap text-slate-300 light:text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <Network className="h-4 w-4 text-brand-400 light:text-brand-500" />
                             <span>{graphStats.tasks} tasks</span>
                           </div>
-                          <div className="hidden items-center gap-2 text-xs font-semibold text-slate-300 light:text-slate-600 md:flex">
-                            <GitBranch className="h-3.5 w-3.5 text-sky-400 light:text-sky-600" />
+                          <div className="flex items-center gap-1.5">
+                            <GitBranch className="h-4 w-4 text-sky-400 light:text-sky-500" />
                             <span>{graphStats.dependencies} deps</span>
                           </div>
-                          <div className="hidden items-center gap-2 text-xs font-semibold text-slate-300 light:text-slate-600 lg:flex">
-                            <Zap className="h-3.5 w-3.5 text-amber-400 light:text-amber-600" />
+                          <div className="flex items-center gap-1.5">
+                            <Zap className="h-4 w-4 text-amber-400 light:text-amber-500" />
                             <span>{graphStats.available} open</span>
                           </div>
-                          <div className="hidden items-center gap-2 text-xs font-semibold text-slate-300 light:text-slate-600 xl:flex">
-                            <Clock className="h-3.5 w-3.5 text-violet-400 light:text-violet-600" />
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-violet-400 light:text-violet-500" />
                             <span>{graphStats.loggedHours}h / {graphStats.estimatedHours}h</span>
                           </div>
                         </div>
