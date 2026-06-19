@@ -311,7 +311,10 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   if (viewMode === 'dot') {
     return (
-      <div className="group relative flex items-center justify-center pointer-events-auto">
+      <div
+        key="dot"
+        className="group relative flex items-center justify-center pointer-events-auto animate-view-change"
+      >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
 
         <div
@@ -365,7 +368,8 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   if (viewMode === 'label') {
     return (
       <div
-        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''
+        key="label"
+        className={`group relative w-[292px] overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-view-change ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''
           }`}
       >
         <Handle type="target" position={Position.Left} className={hiddenHandleClass} />
@@ -419,7 +423,8 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
 
   return (
     <div
-      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''
+      key="detail"
+      className={`group relative w-[318px] overflow-hidden rounded-3xl transition-all duration-300 ${surfaceClass} ${selectedClass} animate-view-change ${task.status === 'IN_PROGRESS' ? 'animate-in-progress-node' : ''
         }`}
     >
       <Handle
@@ -581,7 +586,7 @@ function mapGraphToFlow(
         strokeDasharray: visual.dashArray,
         opacity: edgesVisible ? visual.opacity : 0,
         filter: visual.filter,
-        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s',
+        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s, d 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         animation: edgesVisible ? 'edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' : 'none'
       } as React.CSSProperties
     };

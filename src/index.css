@@ -495,6 +495,10 @@
       }
     }
 
+    .react-flow__edge-path {
+      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
     .react-flow__edge.edge-status-in_progress path.react-flow__edge-path {
       stroke-dasharray: 8 8 !important;
       animation: flow-active 0.8s linear infinite !important;
@@ -618,4 +622,20 @@
   display: inline-block;
   transform-origin: center;
   animation: hourglass-turn 4s cubic-bezier(0.77, 0, 0.175, 1) infinite !important;
+}
+
+@keyframes view-change-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-view-change {
+  animation: view-change-fade 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
