@@ -548,11 +548,6 @@ export default function ProjectWorkspacePage() {
                       maskColor={theme === 'light' ? 'rgba(241, 245, 249, 0.68)' : 'rgba(2, 6, 23, 0.68)'}
                     />
                     <Controls position="bottom-left" className="!mb-4 !ml-4" />
-                    <Panel position="top-left" className="!ml-4 !mt-[104px] hidden sm:block">
-                      <div className="rounded-2xl border border-white/10 bg-slate-950/75 px-3 py-2 text-xs font-medium text-slate-300 shadow-lg backdrop-blur-xl light:border-slate-200 light:bg-white/80 light:text-slate-600">
-                        Drag nodes to inspect layout · click a card for details
-                      </div>
-                    </Panel>
 
                     <Panel position="bottom-center" className="!mb-4 hidden sm:block lg:!mr-[400px]">
                       <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 shadow-2xl shadow-black/25 backdrop-blur-xl light:border-slate-200 light:bg-white/85 light:shadow-slate-200/30">
