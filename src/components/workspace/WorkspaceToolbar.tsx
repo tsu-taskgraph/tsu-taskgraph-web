@@ -71,7 +71,7 @@ export function WorkspaceToolbar({
     <>
       <Panel position="bottom-center" className="!mb-6 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:!w-auto sm:!max-w-[calc(100vw-2rem)]">
         <div className="max-h-[42dvh] max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms] 2xl:rounded-full flex flex-col">
-          <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-fade-mask lg:scroll-fade-none px-3">
+          <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-fade-mask min-[2200px]:scroll-fade-none px-3">
 
             <button
               type="button"
@@ -178,26 +178,26 @@ export function WorkspaceToolbar({
 
           </div>
 
-          <div className="mt-1.5 flex w-full items-center gap-4 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-t border-white/10 pt-1.5 text-[11px] font-semibold whitespace-nowrap text-slate-300 light:border-slate-200/70 light:text-slate-600 min-[2200px]:!hidden scroll-fade-mask sm:scroll-fade-none px-3 sm:px-0 sm:justify-between sm:overflow-x-visible sm:max-w-none sm:gap-2">
-            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-2 font-bold text-brand-300 light:text-brand-700">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>{graphStats.completion}%</span>
+          <div className="mt-1.5 flex w-full items-center gap-2 overflow-x-auto overscroll-x-contain border-t border-white/10 px-3 pt-1.5 pb-0.5 text-[11px] font-semibold whitespace-nowrap text-slate-300 [scrollbar-width:none] light:border-slate-200/70 light:text-slate-600 min-[2200px]:!hidden scroll-fade-mask [&::-webkit-scrollbar]:hidden sm:gap-3 lg:grid lg:grid-cols-5 lg:gap-0 lg:overflow-hidden lg:px-0 lg:scroll-fade-none">
+            <div className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-2 font-bold text-brand-300 light:text-brand-700 lg:mx-auto lg:min-w-0 lg:shrink">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span className="lg:truncate">{graphStats.completion}%</span>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
-              <Network className="h-4 w-4 text-brand-400 light:text-brand-500" />
-              <span>{graphStats.tasks} tasks</span>
+            <div className="flex shrink-0 items-center justify-center gap-1.5 px-2 py-1.5 lg:min-w-0 lg:shrink lg:px-1.5">
+              <Network className="h-4 w-4 shrink-0 text-brand-400 light:text-brand-500" />
+              <span className="lg:truncate">{graphStats.tasks} tasks</span>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
-              <GitBranch className="h-4 w-4 text-sky-400 light:text-sky-500" />
-              <span>{graphStats.dependencies} deps</span>
+            <div className="flex shrink-0 items-center justify-center gap-1.5 px-2 py-1.5 lg:min-w-0 lg:shrink lg:px-1.5">
+              <GitBranch className="h-4 w-4 shrink-0 text-sky-400 light:text-sky-500" />
+              <span className="lg:truncate">{graphStats.dependencies} deps</span>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
-              <Zap className="h-4 w-4 text-amber-400 light:text-amber-500" />
-              <span>{graphStats.available} open</span>
+            <div className="flex shrink-0 items-center justify-center gap-1.5 px-2 py-1.5 lg:min-w-0 lg:shrink lg:px-1.5">
+              <Zap className="h-4 w-4 shrink-0 text-amber-400 light:text-amber-500" />
+              <span className="lg:truncate">{graphStats.available} open</span>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
-              <Clock className="h-4 w-4 text-violet-400 light:text-violet-500" />
-              <span>{graphStats.loggedHours}h / {graphStats.estimatedHours}h</span>
+            <div className="flex shrink-0 items-center justify-center gap-1.5 px-2 py-1.5 lg:min-w-0 lg:shrink lg:px-1.5">
+              <Clock className="h-4 w-4 shrink-0 text-violet-400 light:text-violet-500" />
+              <span className="lg:truncate">{graphStats.loggedHours}h / {graphStats.estimatedHours}h</span>
             </div>
           </div>
         </div>

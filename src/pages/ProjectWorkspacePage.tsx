@@ -23,7 +23,6 @@ import {
   ShieldAlert,
   Sparkles,
   Sun,
-  X,
 } from 'lucide-react';
 import { projectsApi, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
@@ -713,14 +712,7 @@ export default function ProjectWorkspacePage() {
                                     : 'Fill in the details and create a node on the graph.'}
                                 </p>
                               </div>
-                              <button
-                                type="button"
-                                onClick={closeTaskCreator}
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/40 text-slate-400 transition hover:bg-slate-800/80 hover:text-white light:border-slate-200/70 light:bg-white/60 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
-                                aria-label="Close task creator"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+
                             </div>
 
                             <form className="space-y-3" onSubmit={createTask}>
