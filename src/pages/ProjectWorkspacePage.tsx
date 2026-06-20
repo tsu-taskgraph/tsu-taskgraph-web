@@ -1101,7 +1101,7 @@ export default function ProjectWorkspacePage() {
 
                       <Panel position="bottom-center" className="!mb-6 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:!w-auto sm:!max-w-[calc(100vw-2rem)]">
                         <div className="max-h-[42dvh] max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms] 2xl:rounded-full flex flex-col">
-                          <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:pb-0 scroll-fade-mask px-3">
+                          <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-fade-mask lg:scroll-fade-none px-3">
 
                             <div className="relative grid h-full shrink-0 grid-cols-3 items-stretch gap-1" role="tablist">
                               <span
@@ -1193,15 +1193,9 @@ export default function ProjectWorkspacePage() {
                               <span className="hidden 2xl:inline">Align</span>
                             </button>
 
-                            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:hidden" />
-                            <div className="flex sm:hidden shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-1.5 text-[12px] font-bold text-brand-300 light:text-brand-700">
-                              <CheckCircle2 className="h-4 w-4 shrink-0" />
-                              <span>{graphStats.completion}%</span>
-                            </div>
-
                           </div>
 
-                          <div className="mt-1.5 hidden sm:flex w-full items-center justify-between border-t border-white/10 pt-1.5 text-[11px] font-semibold whitespace-nowrap text-slate-300 light:border-slate-200/70 light:text-slate-600 min-[2200px]:!hidden">
+                          <div className="mt-1.5 flex w-full items-center gap-4 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-t border-white/10 pt-1.5 text-[11px] font-semibold whitespace-nowrap text-slate-300 light:border-slate-200/70 light:text-slate-600 min-[2200px]:!hidden scroll-fade-mask sm:scroll-fade-none px-3 sm:px-0 sm:justify-between sm:overflow-x-visible sm:max-w-none sm:gap-2">
                             <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-2 font-bold text-brand-300 light:text-brand-700">
                               <CheckCircle2 className="h-4 w-4" />
                               <span>{graphStats.completion}%</span>

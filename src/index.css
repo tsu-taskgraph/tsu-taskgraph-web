@@ -902,7 +902,12 @@
   border-radius: 24px !important;
 }
 
-.scroll-fade-mask {
+@utility scroll-fade-mask {
   mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+}
+
+@utility scroll-fade-none {
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
 }
