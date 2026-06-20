@@ -9,10 +9,11 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  type Connection,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AlertCircle, ShieldAlert, Plus } from 'lucide-react';
+import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
 import { projectsApi, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useTheme } from '../context/ThemeContext';
@@ -56,6 +57,7 @@ export default function ProjectWorkspacePage() {
   const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+  const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success' } | null>(null);
 
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
@@ -149,6 +151,49 @@ export default function ProjectWorkspacePage() {
     event.preventDefault();
     openTaskCreator(event.clientX, event.clientY);
   }, [openTaskCreator]);
+
+  const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
+    const id = Date.now();
+    setEdgeToast({ id, message, variant });
+    window.setTimeout(() => {
+      setEdgeToast((current) => current?.id === id ? null : current);
+    }, 4500);
+  }, []);
+
+  const handleConnect = useCallback(async (connection: Connection) => {
+    if (!projectId || !connection.source || !connection.target) return;
+
+    if (connection.source === connection.target) {
+      showEdgeToast('Cannot connect a task to itself.');
+      return;
+    }
+
+    const duplicateEdge = graph?.edges.some((edge) =>
+      edge.sourceTaskId === connection.source && edge.targetTaskId === connection.target
+    );
+
+    if (duplicateEdge) {
+      showEdgeToast('This dependency already exists.');
+      return;
+    }
+
+    try {
+      const createdEdge = await projectsApi.createEdge(projectId, {
+        sourceTaskId: connection.source,
+        targetTaskId: connection.target
+      });
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        edges: [...currentGraph.edges, createdEdge]
+      } : currentGraph);
+      showEdgeToast('Dependency created.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(statusCode === 400 ? parsed.message || 'Cannot create dependency: cycle detected.' : parsed.message);
+    }
+  }, [graph?.edges, projectId, showEdgeToast]);
 
   const handleTaskCreated = useCallback((createdTask: TaskNode) => {
     if (!taskDraftPosition) return;
@@ -388,6 +433,7 @@ export default function ProjectWorkspacePage() {
                       nodeTypes={nodeTypes}
                       onNodesChange={onNodesChange}
                       onEdgesChange={onEdgesChange}
+                      onConnect={handleConnect}
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}
@@ -454,6 +500,33 @@ export default function ProjectWorkspacePage() {
                           onTaskCreated={handleTaskCreated}
                           animationKey={taskCreatorAnimationKey}
                         />
+                      )}
+
+                      {edgeToast && (
+                        <div className="fixed right-4 top-28 z-[80] max-w-[min(380px,calc(100vw-2rem))] animate-slide-down-fade rounded-2xl border border-white/10 bg-[#020617]/85 p-3 pr-10 text-sm text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25">
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${edgeToast.variant === 'success'
+                              ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 light:text-emerald-700'
+                              : 'border-red-500/25 bg-red-500/10 text-red-300 light:text-red-700'
+                              }`}>
+                              {edgeToast.variant === 'success' ? <GitBranch className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
+                                {edgeToast.variant === 'success' ? 'Dependency added' : 'Dependency error'}
+                              </div>
+                              <p className="mt-0.5 leading-relaxed text-slate-200 light:text-slate-700">{edgeToast.message}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEdgeToast(null)}
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
+                            aria-label="Close notification"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
                       )}
 
                       <TopologicalLanesHeader

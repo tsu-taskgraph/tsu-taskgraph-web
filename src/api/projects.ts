@@ -104,6 +104,11 @@ export interface CreateTaskRequest {
   positionY: number;
 }
 
+export interface CreateEdgeRequest {
+  sourceTaskId: string;
+  targetTaskId: string;
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -131,6 +136,15 @@ export const projectsApi = {
 
   async createTask(projectId: string, data: CreateTaskRequest): Promise<TaskNode> {
     const response = await apiClient.post<TaskNode>(`/api/v1/projects/${projectId}/tasks`, data);
+    return response.data;
+  },
+
+  async createEdge(projectId: string, data: CreateEdgeRequest): Promise<EdgeResponse> {
+    const response = await apiClient.post<EdgeResponse>(`/api/v1/projects/${projectId}/edges`, data, {
+      headers: {
+        'X-Enable-Smart-Recovery': 'false'
+      }
+    });
     return response.data;
   }
 };
