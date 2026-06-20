@@ -54,6 +54,7 @@ interface WorkspaceToolbarProps {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  isTaskSidebarOpen?: boolean;
 }
 
 export function WorkspaceToolbar({
@@ -70,7 +71,8 @@ export function WorkspaceToolbar({
   undo,
   redo,
   canUndo,
-  canRedo
+  canRedo,
+  isTaskSidebarOpen = false
 }: WorkspaceToolbarProps) {
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
@@ -178,11 +180,10 @@ export function WorkspaceToolbar({
             <button
               onClick={undo}
               disabled={!canUndo}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${
-                canUndo
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${canUndo
                   ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
                   : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
-              }`}
+                }`}
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
             >
@@ -192,11 +193,10 @@ export function WorkspaceToolbar({
             <button
               onClick={redo}
               disabled={!canRedo}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${
-                canRedo
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${canRedo
                   ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
                   : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
-              }`}
+                }`}
               title="Redo (Ctrl+Y)"
               aria-label="Redo"
             >
@@ -234,7 +234,8 @@ export function WorkspaceToolbar({
         <button
           type="button"
           onClick={onCreateTask}
-          className="group relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer animate-slide-up-fade [animation-delay:300ms]"
+          disabled={isTaskSidebarOpen}
+          className={`group relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer ${isTaskSidebarOpen ? 'task-create-button-exit pointer-events-none' : 'task-create-button-enter'}`}
           title="Create a new task in the center of the viewport"
           aria-label="Create a new task"
         >

@@ -359,6 +359,140 @@
     animation: toast-exit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 
+  .task-sidebar-enter {
+    animation: task-sidebar-enter 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .task-sidebar-exit {
+    animation: task-sidebar-exit 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  .task-create-button-enter {
+    animation: task-create-button-enter 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .task-create-button-exit {
+    animation: task-create-button-exit 0.16s cubic-bezier(0.4, 0, 1, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  .task-sidebar-content-enter {
+    animation: task-sidebar-content-enter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .task-sidebar-progress-reveal {
+    overflow: hidden;
+    transform-origin: left center;
+    animation: task-sidebar-progress-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes task-sidebar-progress-reveal {
+    from {
+      opacity: 0.35;
+      transform: scaleX(0);
+    }
+
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  .workspace-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 158, 11, 0.42) rgba(15, 23, 42, 0.25);
+  }
+
+  .workspace-sidebar-scroll::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .workspace-sidebar-scroll::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.25);
+    border-radius: 999px;
+  }
+
+  .workspace-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(251, 191, 36, 0.55), rgba(217, 119, 6, 0.38));
+    border: 2px solid rgba(2, 6, 23, 0.72);
+    border-radius: 999px;
+  }
+
+  .light .workspace-sidebar-scroll {
+    scrollbar-color: rgba(217, 119, 6, 0.38) rgba(226, 232, 240, 0.55);
+  }
+
+  .light .workspace-sidebar-scroll::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.55);
+  }
+
+  .light .workspace-sidebar-scroll::-webkit-scrollbar-thumb {
+    border-color: rgba(255, 255, 255, 0.82);
+  }
+
+  @keyframes task-sidebar-enter {
+    from {
+      opacity: 0;
+      transform: translate3d(18px, 0, 0) scale(0.985);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes task-sidebar-exit {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: translate3d(18px, 0, 0) scale(0.985);
+    }
+  }
+
+  @keyframes task-create-button-enter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.92);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes task-create-button-exit {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.92);
+    }
+  }
+
+  @keyframes task-sidebar-content-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .connection-hint-enter {
     animation: connection-hint-enter 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
   }

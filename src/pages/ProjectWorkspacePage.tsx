@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -64,6 +64,10 @@ export default function ProjectWorkspacePage() {
   const [isClosing, setIsClosing] = useState(false);
   const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isTaskSidebarClosing, setIsTaskSidebarClosing] = useState(false);
+  const taskSidebarCloseTimerRef = useRef<number | null>(null);
+  const suppressTaskSidebarSelectionRef = useRef(false);
+  const lastTaskNodeClickAtRef = useRef(0);
   const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null);
 
   const {
@@ -216,15 +220,74 @@ export default function ProjectWorkspacePage() {
     openTaskCreator(event.clientX, event.clientY);
   }, [openTaskCreator]);
 
+  const cancelTaskDetailsSidebarClose = useCallback(() => {
+    if (taskSidebarCloseTimerRef.current !== null) {
+      window.clearTimeout(taskSidebarCloseTimerRef.current);
+      taskSidebarCloseTimerRef.current = null;
+    }
+    suppressTaskSidebarSelectionRef.current = false;
+    setIsTaskSidebarClosing(false);
+  }, []);
+
+  const closeTaskDetailsSidebar = useCallback(() => {
+    if (!selectedTaskId || taskSidebarCloseTimerRef.current !== null) return;
+
+    suppressTaskSidebarSelectionRef.current = true;
+    setIsTaskSidebarClosing(true);
+    setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => (
+      node.type === 'taskNode' && node.id === selectedTaskId
+        ? { ...node, selected: false }
+        : node
+    )));
+
+    taskSidebarCloseTimerRef.current = window.setTimeout(() => {
+      setSelectedTaskId(null);
+      setIsTaskSidebarClosing(false);
+      taskSidebarCloseTimerRef.current = null;
+      suppressTaskSidebarSelectionRef.current = false;
+    }, 140);
+  }, [selectedTaskId, setNodes]);
+
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: WorkspaceNode) => {
     if (node.type === 'taskNode') {
+      lastTaskNodeClickAtRef.current = Date.now();
+      cancelTaskDetailsSidebarClose();
       setSelectedTaskId(node.id);
     }
-  }, []);
+  }, [cancelTaskDetailsSidebarClose]);
 
   const handlePaneClick = useCallback(() => {
     closeTaskCreator();
-  }, [closeTaskCreator]);
+    closeTaskDetailsSidebar();
+  }, [closeTaskCreator, closeTaskDetailsSidebar]);
+
+  const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: WorkspaceNode[] }) => {
+    const selectedTaskNode = selectedNodes.find((node) => node.type === 'taskNode');
+
+    if (suppressTaskSidebarSelectionRef.current) {
+      return;
+    }
+
+    if (selectedTaskNode) {
+      cancelTaskDetailsSidebarClose();
+      setSelectedTaskId(selectedTaskNode.id);
+      return;
+    }
+
+    if (Date.now() - lastTaskNodeClickAtRef.current < 120) {
+      return;
+    }
+
+    closeTaskDetailsSidebar();
+  }, [cancelTaskDetailsSidebarClose, closeTaskDetailsSidebar]);
+
+  useEffect(() => {
+    return () => {
+      if (taskSidebarCloseTimerRef.current !== null) {
+        window.clearTimeout(taskSidebarCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -526,6 +589,7 @@ export default function ProjectWorkspacePage() {
                           : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
                       }
                       onNodeClick={handleNodeClick}
+                      onSelectionChange={handleSelectionChange}
                       onNodeDragStart={handleNodeDragStart}
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
@@ -586,6 +650,7 @@ export default function ProjectWorkspacePage() {
                         redo={() => redo(setNodes, setEdges, setGraph)}
                         canUndo={canUndo}
                         canRedo={canRedo}
+                        isTaskSidebarOpen={Boolean(selectedTask)}
                       />
                       {taskDraftPosition && projectId && (
                         <TaskCreator
@@ -602,9 +667,10 @@ export default function ProjectWorkspacePage() {
                       {selectedTask && (
                         <TaskDetailsSidebar
                           task={selectedTask}
-                          onClose={() => setSelectedTaskId(null)}
+                          onClose={closeTaskDetailsSidebar}
                           onStatusChange={handleTaskStatusChange}
                           updating={statusUpdatingTaskId === selectedTask.id}
+                          isClosing={isTaskSidebarClosing}
                         />
                       )}
 

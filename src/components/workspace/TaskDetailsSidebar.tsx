@@ -27,6 +27,7 @@ interface TaskDetailsSidebarProps {
     onClose: () => void;
     onStatusChange: (status: StatusAction, data?: { loggedHours?: number | null; comment?: string | null }) => Promise<void>;
     updating: boolean;
+    isClosing?: boolean;
 }
 
 const statusMeta: Record<TaskStatus, {
@@ -88,7 +89,7 @@ function formatHours(value: number | null | undefined) {
     return `${value ?? 0}h`;
 }
 
-export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating }: TaskDetailsSidebarProps) {
+export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, isClosing = false }: TaskDetailsSidebarProps) {
     const [loggedHours, setLoggedHours] = useState(() => String(task.loggedHours ?? 0));
     const [comment, setComment] = useState('');
     const status = statusMeta[task.status];
@@ -126,7 +127,7 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating }: 
     };
 
     return (
-        <aside className="fixed right-3 top-[104px] z-[65] flex max-h-[calc(100dvh-128px)] w-[min(390px,calc(100vw-1.5rem))] animate-slide-left-fade flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/82 text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25 sm:right-4 lg:right-6">
+        <aside className={`fixed bottom-[154px] right-3 top-[104px] z-[55] flex w-[min(390px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/82 text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25 sm:right-4 lg:bottom-[96px] lg:right-6 min-[2200px]:bottom-[150px] ${isClosing ? 'task-sidebar-exit' : 'task-sidebar-enter'}`}>
             <div className="flex items-start justify-between gap-4 border-b border-white/10 p-4 light:border-slate-200/70">
                 <div className="min-w-0">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -154,14 +155,20 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating }: 
                 </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 [scrollbar-width:thin]">
+            <div key={task.id} className="workspace-sidebar-scroll min-h-0 flex-1 overflow-y-auto p-4 task-sidebar-content-enter">
                 <section className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-400 light:text-slate-500">
                         <span>Progress</span>
                         <span className="font-bold text-slate-100 light:text-slate-900">{progress}%</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-white/[0.07] light:bg-slate-200/70">
-                        <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-orange-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                        <div
+                            key={`${task.id}-${task.status}-${progress}`}
+                            className="h-full rounded-full task-sidebar-progress-reveal"
+                            style={{ width: `${progress}%` }}
+                        >
+                            <div className={`h-full w-full rounded-full bg-gradient-to-r from-brand-500 via-orange-400 to-brand-500 ${task.status === 'IN_PROGRESS' ? 'animate-progress-flow' : ''}`} />
+                        </div>
                     </div>
                 </section>
 
