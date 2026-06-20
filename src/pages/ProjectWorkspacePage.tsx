@@ -57,7 +57,7 @@ export default function ProjectWorkspacePage() {
   const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
-  const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success' } | null>(null);
+  const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
 
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
@@ -152,13 +152,25 @@ export default function ProjectWorkspacePage() {
     openTaskCreator(event.clientX, event.clientY);
   }, [openTaskCreator]);
 
+  const closeEdgeToast = useCallback((id?: number) => {
+    setEdgeToast((current) => {
+      if (!current || (id && current.id !== id)) return current;
+      return { ...current, closing: true };
+    });
+
+    window.setTimeout(() => {
+      setEdgeToast((current) => {
+        if (!current || (id && current.id !== id)) return current;
+        return null;
+      });
+    }, 220);
+  }, []);
+
   const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
     const id = Date.now();
-    setEdgeToast({ id, message, variant });
-    window.setTimeout(() => {
-      setEdgeToast((current) => current?.id === id ? null : current);
-    }, 4500);
-  }, []);
+    setEdgeToast({ id, message, variant, closing: false });
+    window.setTimeout(() => closeEdgeToast(id), 4300);
+  }, [closeEdgeToast]);
 
   const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
     if (sourceTaskId === targetTaskId) return true;
@@ -552,7 +564,7 @@ export default function ProjectWorkspacePage() {
                       )}
 
                       {edgeToast && (
-                        <div className="fixed right-4 top-28 z-[80] max-w-[min(380px,calc(100vw-2rem))] animate-slide-down-fade rounded-2xl border border-white/10 bg-[#020617]/85 p-3 pr-10 text-sm text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25">
+                        <div className={`fixed right-4 top-28 z-[80] max-w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#020617]/85 p-3 pr-10 text-sm text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25 ${edgeToast.closing ? 'toast-exit' : 'animate-slide-down-fade'}`}>
                           <div className="flex items-start gap-3">
                             <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${edgeToast.variant === 'success'
                               ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 light:text-emerald-700'
@@ -569,7 +581,7 @@ export default function ProjectWorkspacePage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => setEdgeToast(null)}
+                            onClick={() => closeEdgeToast(edgeToast.id)}
                             className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
                             aria-label="Close notification"
                           >
