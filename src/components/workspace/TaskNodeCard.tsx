@@ -163,8 +163,9 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
   const compactLayerLabel = typeof task.layer === 'number' ? `L${task.layer}` : 'Auto';
   const surfaceClass = `border bg-slate-900/40 shadow-lg shadow-black/10 backdrop-blur-2xl light:bg-white/60 light:shadow-slate-200/10 ${skin.borderClass} ${skin.mutedClass}`;
   const selectedClass = selected
-    ? 'scale-[1.02] border-brand-400/75 ring-2 ring-brand-500/35 ring-offset-2 ring-offset-slate-950 light:border-brand-500/75 light:ring-brand-500/25 light:ring-offset-white/50'
+    ? 'scale-[1.02]'
     : 'hover:-translate-y-1 hover:border-brand-500/45 light:hover:border-brand-500/50';
+  const selectedHaloClass = 'pointer-events-none absolute -inset-1.5 z-20 rounded-[inherit] border-2 border-brand-300/80 shadow-[0_0_0_4px_rgba(245,158,11,0.18),0_0_24px_rgba(245,158,11,0.26)] light:border-brand-500/80 light:shadow-[0_0_0_4px_rgba(217,119,6,0.14),0_0_22px_rgba(217,119,6,0.18)]';
   const hiddenHandleClass = '!h-3 !w-3 !border-2 !border-slate-950 !bg-brand-500 !opacity-0 pointer-events-none group-hover:!opacity-70 group-hover:pointer-events-auto transition-all duration-250 ease-out light:!border-white light:!bg-brand-500 hover:!opacity-100 hover:!shadow-[0_0_8px_#f59e0b] light:hover:!shadow-[0_0_8px_#f59e0b]';
 
   const statusAnimClass =
@@ -190,10 +191,11 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
 
         <div
           className={`relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl transition-all duration-300 ${surfaceClass} ${selected
-            ? 'scale-110 ring-2 ring-brand-500/40 ring-offset-2 ring-offset-slate-950 light:ring-offset-white'
+            ? 'scale-110'
             : 'hover:scale-110'
             } ${statusAnimClass}`}
         >
+          {selected && <div className="pointer-events-none absolute -inset-0.5 z-20 rounded-[inherit] border-2 border-brand-300/85 shadow-[0_0_0_4px_rgba(245,158,11,0.18),0_0_22px_rgba(245,158,11,0.28)] light:border-brand-500/85 light:shadow-[0_0_0_4px_rgba(217,119,6,0.14),0_0_20px_rgba(217,119,6,0.18)]" />}
           <div className={`absolute -inset-5 rounded-full ${skin.glowClass} opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100`} />
           <div className={`absolute inset-y-2 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
           <StatusIcon className={`relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700 ${iconAnimClass}`} />
@@ -243,6 +245,7 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
         key="label"
         className={`group relative w-[292px] rounded-2xl transition-all duration-300 ${selectedClass} animate-view-change ${statusAnimClass}`}
       >
+        {selected && <div className={selectedHaloClass} />}
 
         <div className={`w-full overflow-hidden rounded-2xl relative ${surfaceClass}`}>
           <div className={`absolute inset-y-3 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
@@ -300,6 +303,7 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
       key="detail"
       className={`group relative w-[318px] rounded-3xl transition-all duration-300 ${selectedClass} animate-view-change ${statusAnimClass}`}
     >
+      {selected && <div className={selectedHaloClass} />}
 
       <div className={`w-full overflow-hidden rounded-3xl relative ${surfaceClass}`}>
         <div className={`absolute inset-y-5 left-0 w-1 rounded-r-full bg-gradient-to-b ${skin.railClass}`} />
