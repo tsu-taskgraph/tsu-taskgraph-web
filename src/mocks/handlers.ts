@@ -1047,6 +1047,80 @@ export const handlers = [
     return HttpResponse.json(createdTask, { status: 201 });
   }),
 
+  http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as {
+      status?: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
+      loggedHours?: number | null;
+      comment?: string | null;
+    };
+
+    if (!body.status || !['IN_PROGRESS', 'COMPLETED', 'SKIPPED'].includes(body.status)) {
+      return HttpResponse.json({ message: 'Invalid task status.' }, { status: 400 });
+    }
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    if (targetTask.status === 'LOCKED') {
+      return HttpResponse.json({ message: 'Cannot update status of a locked task.' }, { status: 409 });
+    }
+
+    const now = new Date().toISOString();
+    const updatedTask = {
+      ...targetTask,
+      status: body.status,
+      completionPercent: body.status === 'COMPLETED' ? 100 : body.status === 'IN_PROGRESS' ? 50 : targetTask.completionPercent ?? 0,
+      loggedHours: typeof body.loggedHours === 'number' ? body.loggedHours : targetTask.loggedHours ?? 0,
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+
+    const completedIds = new Set(
+      targetGraph.nodes
+        .filter((node) => node.status === 'COMPLETED' || node.status === 'SKIPPED')
+        .map((node) => node.id as string)
+    );
+    const unlockedTasks: Record<string, unknown>[] = [];
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => {
+      if (node.status !== 'LOCKED') return node;
+
+      const incomingEdges = targetGraph.edges.filter((edge) => edge.targetTaskId === node.id);
+      const dependenciesCompleted = incomingEdges.length > 0 && incomingEdges.every((edge) => completedIds.has(edge.sourceTaskId as string));
+
+      if (!dependenciesCompleted) return node;
+
+      const unlockedTask = {
+        ...node,
+        status: 'AVAILABLE',
+        updatedAt: now
+      };
+      unlockedTasks.push(unlockedTask);
+      return unlockedTask;
+    });
+
+    return HttpResponse.json({
+      updatedTask,
+      unlockedTasks,
+      graph: targetGraph
+    });
+  }),
+
   http.post('*/api/v1/projects/:projectId/edges', async ({ params, request }) => {
     const projectId = params.projectId as string;
     const graph = projectGraphs[projectId];

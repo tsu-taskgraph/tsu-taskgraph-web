@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import {
   ReactFlow,
   Background,
@@ -12,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { type ProjectGraphResponse, type TaskNode } from '../api/projects';
+import { projectsApi, type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { useTheme } from '../context/ThemeContext';
 import { SafariTopBar } from '../components/SafariTopBar';
 import { SafariBottomBar } from '../components/SafariBottomBar';
@@ -32,6 +33,8 @@ import { TopologicalLanesHeader } from '../components/workspace/TopologicalLanes
 import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
 import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
 import { TaskCreator } from '../components/workspace/TaskCreator';
+import { TaskDetailsSidebar } from '../components/workspace/TaskDetailsSidebar';
+import { mapServerErrorToEnglish } from '../api/errors';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from '../hooks/useWorkspaceCopyPaste';
 import { useWorkspaceConnections } from '../hooks/useWorkspaceConnections';
@@ -60,6 +63,8 @@ export default function ProjectWorkspacePage() {
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null);
 
   const {
     takeSnapshot,
@@ -211,6 +216,16 @@ export default function ProjectWorkspacePage() {
     openTaskCreator(event.clientX, event.clientY);
   }, [openTaskCreator]);
 
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: WorkspaceNode) => {
+    if (node.type === 'taskNode') {
+      setSelectedTaskId(node.id);
+    }
+  }, []);
+
+  const handlePaneClick = useCallback(() => {
+    closeTaskCreator();
+  }, [closeTaskCreator]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableShortcutTarget(event.target)) return;
@@ -295,7 +310,66 @@ export default function ProjectWorkspacePage() {
     };
   }, [graph]);
 
+  const selectedTask = useMemo(() => {
+    if (!selectedTaskId) return null;
+    return graph?.nodes.find((task) => task.id === selectedTaskId) ?? null;
+  }, [graph?.nodes, selectedTaskId]);
 
+  const handleTaskStatusChange = useCallback(async (
+    status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
+    data?: { loggedHours?: number | null; comment?: string | null }
+  ) => {
+    if (!selectedTask) return;
+
+    takeSnapshot();
+    setStatusUpdatingTaskId(selectedTask.id);
+
+    try {
+      const response = await projectsApi.updateTaskStatus(selectedTask.id, {
+        status,
+        loggedHours: data?.loggedHours ?? null,
+        comment: data?.comment ?? null
+      });
+
+      const updatedTasks = [response.updatedTask, ...(response.unlockedTasks ?? [])];
+      const updatedTaskById = new Map(updatedTasks.map((task) => [task.id, task]));
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map((task) => updatedTaskById.get(task.id) ?? task)
+      } : currentGraph);
+
+      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+        if (node.type !== 'taskNode') return node;
+        const updatedTask = updatedTaskById.get(node.id);
+        if (!updatedTask) return node;
+
+        const taskNode = node as TaskFlowNode;
+        const updatedNode: TaskFlowNode = {
+          ...taskNode,
+          data: {
+            ...taskNode.data,
+            task: updatedTask
+          }
+        };
+
+        return updatedNode;
+      }));
+
+      showEdgeToast(
+        response.unlockedTasks?.length
+          ? `Task updated. ${response.unlockedTasks.length} task${response.unlockedTasks.length === 1 ? '' : 's'} unlocked.`
+          : 'Task status updated.',
+        'success'
+      );
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    } finally {
+      setStatusUpdatingTaskId(null);
+    }
+  }, [selectedTask, setNodes, showEdgeToast, takeSnapshot, setGraph]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -451,12 +525,13 @@ export default function ProjectWorkspacePage() {
                           ? { stroke: '#22c55e', strokeWidth: 2.6 }
                           : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
                       }
+                      onNodeClick={handleNodeClick}
                       onNodeDragStart={handleNodeDragStart}
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}
                       onPaneContextMenu={handlePaneContextMenu}
-                      onPaneClick={closeTaskCreator}
+                      onPaneClick={handlePaneClick}
                       fitView
                       fitViewOptions={{ padding: 0.2 }}
                       minZoom={0.2}
@@ -521,6 +596,15 @@ export default function ProjectWorkspacePage() {
                           onClose={closeTaskCreator}
                           onTaskCreated={handleTaskCreated}
                           animationKey={taskCreatorAnimationKey}
+                        />
+                      )}
+
+                      {selectedTask && (
+                        <TaskDetailsSidebar
+                          task={selectedTask}
+                          onClose={() => setSelectedTaskId(null)}
+                          onStatusChange={handleTaskStatusChange}
+                          updating={statusUpdatingTaskId === selectedTask.id}
                         />
                       )}
 

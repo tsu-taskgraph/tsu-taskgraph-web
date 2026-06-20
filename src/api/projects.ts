@@ -151,9 +151,9 @@ export const projectsApi = {
   async updateTaskStatus(
     taskId: string,
     data: {
-      status: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'IN_PROGRESS' | 'SKIPPED';
+      status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
       loggedHours: number | null;
-      comment?: string;
+      comment?: string | null;
     }
   ): Promise<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }> {
     const response = await apiClient.patch<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }>(
