@@ -359,6 +359,42 @@
     animation: toast-exit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 
+  .connection-hint-enter {
+    animation: connection-hint-enter 0.09s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .connection-hint-exit {
+    animation: connection-hint-exit 0.1s cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+
+  @keyframes connection-hint-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.94);
+      filter: blur(2px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes connection-hint-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(4px) scale(0.96);
+      filter: blur(1px);
+    }
+  }
+
   @keyframes toast-exit {
     from {
       opacity: 1;

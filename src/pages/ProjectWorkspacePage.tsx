@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -58,6 +58,14 @@ export default function ProjectWorkspacePage() {
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
+  const [connectionHint, setConnectionHint] = useState<{
+    x: number;
+    y: number;
+    message: string;
+    variant: 'info' | 'success' | 'error';
+    closing: boolean;
+  } | null>(null);
+  const connectionSourceRef = useRef<string | null>(null);
 
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
@@ -197,15 +205,98 @@ export default function ProjectWorkspacePage() {
     return false;
   }, [graph]);
 
+  const getConnectionBlockReason = useCallback((sourceTaskId: string, targetTaskId: string) => {
+    if (sourceTaskId === targetTaskId) {
+      return 'Cannot connect a task to itself.';
+    }
+
+    const duplicateEdge = graph?.edges.some((edge) =>
+      edge.sourceTaskId === sourceTaskId && edge.targetTaskId === targetTaskId
+    );
+
+    if (duplicateEdge) {
+      return 'This dependency already exists.';
+    }
+
+    const targetTask = graph?.nodes.find((node) => node.id === targetTaskId);
+    if (targetTask?.status === 'COMPLETED') {
+      return 'Cannot create dependency to a completed task.';
+    }
+
+    if (wouldCreateCycle(sourceTaskId, targetTaskId)) {
+      return 'Cannot create dependency: cycle detected.';
+    }
+
+    return null;
+  }, [graph?.edges, graph?.nodes, wouldCreateCycle]);
+
   const isValidConnection = useCallback((connection: Connection | TaskFlowEdge) => {
     if (!connection.source || !connection.target) return false;
 
-    const duplicateEdge = graph?.edges.some((edge) =>
-      edge.sourceTaskId === connection.source && edge.targetTaskId === connection.target
-    );
+    const blockReason = getConnectionBlockReason(connection.source, connection.target);
+    setConnectionHint((current) => {
+      if (!current) return current;
+      const nextMessage = blockReason ?? 'Release to create dependency.';
+      const nextVariant = blockReason ? 'error' : 'success';
+      if (current.message === nextMessage && current.variant === nextVariant) return current;
+      return {
+        ...current,
+        message: nextMessage,
+        variant: nextVariant,
+        closing: false
+      };
+    });
 
-    return !duplicateEdge && !wouldCreateCycle(connection.source, connection.target);
-  }, [graph?.edges, wouldCreateCycle]);
+    return !blockReason;
+  }, [getConnectionBlockReason]);
+
+  const getConnectionClientPoint = useCallback((event: MouseEvent | TouchEvent) => {
+    if ('touches' in event && event.touches.length > 0) {
+      return { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }
+
+    if ('changedTouches' in event && event.changedTouches.length > 0) {
+      return { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
+    }
+
+    return { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
+  }, []);
+
+  const handleConnectStart = useCallback((event: MouseEvent | TouchEvent, params: { nodeId?: string | null }) => {
+    connectionSourceRef.current = params.nodeId ?? null;
+    const point = getConnectionClientPoint(event);
+    setConnectionHint({
+      x: point.x,
+      y: point.y,
+      message: 'Drag to a target task.',
+      variant: 'info',
+      closing: false
+    });
+  }, [getConnectionClientPoint]);
+
+  const handleConnectEnd = useCallback(() => {
+    const linger = connectionHint?.variant === 'error';
+    connectionSourceRef.current = null;
+
+    window.setTimeout(() => {
+      setConnectionHint((current) => current ? { ...current, closing: true } : current);
+      window.setTimeout(() => setConnectionHint(null), 100);
+    }, linger ? 450 : 0);
+  }, [connectionHint?.variant]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!connectionSourceRef.current) return;
+      setConnectionHint((current) => current ? {
+        ...current,
+        x: event.clientX,
+        y: event.clientY
+      } : current);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => window.removeEventListener('pointermove', handlePointerMove);
+  }, []);
 
   const isCycleApiError = useCallback((err: unknown, statusCode?: number) => {
     if (statusCode !== 400) return false;
@@ -218,22 +309,10 @@ export default function ProjectWorkspacePage() {
   const handleConnect = useCallback(async (connection: Connection) => {
     if (!projectId || !connection.source || !connection.target) return;
 
-    if (connection.source === connection.target) {
-      showEdgeToast('Cannot connect a task to itself.');
-      return;
-    }
+    const blockReason = getConnectionBlockReason(connection.source, connection.target);
 
-    const duplicateEdge = graph?.edges.some((edge) =>
-      edge.sourceTaskId === connection.source && edge.targetTaskId === connection.target
-    );
-
-    if (duplicateEdge) {
-      showEdgeToast('This dependency already exists.');
-      return;
-    }
-
-    if (wouldCreateCycle(connection.source, connection.target)) {
-      showEdgeToast('Cannot create dependency: cycle detected.');
+    if (blockReason) {
+      showEdgeToast(blockReason);
       return;
     }
 
@@ -253,7 +332,7 @@ export default function ProjectWorkspacePage() {
       const parsed = mapServerErrorToEnglish(err, statusCode);
       showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
     }
-  }, [graph?.edges, isCycleApiError, projectId, showEdgeToast, wouldCreateCycle]);
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast]);
 
   const handleTaskCreated = useCallback((createdTask: TaskNode) => {
     if (!taskDraftPosition) return;
@@ -494,7 +573,15 @@ export default function ProjectWorkspacePage() {
                       onNodesChange={onNodesChange}
                       onEdgesChange={onEdgesChange}
                       onConnect={handleConnect}
+                      onConnectStart={handleConnectStart}
+                      onConnectEnd={handleConnectEnd}
                       isValidConnection={isValidConnection}
+                      connectionLineStyle={connectionHint?.variant === 'error'
+                        ? { stroke: '#ef4444', strokeWidth: 2.6, strokeDasharray: '6 6' }
+                        : connectionHint?.variant === 'success'
+                          ? { stroke: '#22c55e', strokeWidth: 2.6 }
+                          : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
+                      }
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}
@@ -561,6 +648,26 @@ export default function ProjectWorkspacePage() {
                           onTaskCreated={handleTaskCreated}
                           animationKey={taskCreatorAnimationKey}
                         />
+                      )}
+
+                      {connectionHint && (
+                        <div
+                          className={`pointer-events-none fixed z-[85] max-w-[260px] rounded-2xl border px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-2xl transition-colors duration-200 ${connectionHint.closing ? 'connection-hint-exit' : 'connection-hint-enter'} ${connectionHint.variant === 'error'
+                            ? 'border-red-500/25 bg-red-500/15 text-red-100 shadow-red-950/15 light:bg-red-50/95 light:text-red-700 light:shadow-red-200/30'
+                            : connectionHint.variant === 'success'
+                              ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-100 shadow-emerald-950/15 light:bg-emerald-50/95 light:text-emerald-700 light:shadow-emerald-200/30'
+                              : 'border-brand-500/25 bg-[#020617]/80 text-brand-100 shadow-black/20 light:bg-white/90 light:text-brand-700 light:shadow-slate-300/25'
+                            }`}
+                          style={{
+                            left: Math.min(connectionHint.x + 14, window.innerWidth - 280),
+                            top: Math.min(connectionHint.y + 14, window.innerHeight - 90)
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {connectionHint.variant === 'error' ? <AlertCircle className="h-4 w-4 shrink-0" /> : <GitBranch className="h-4 w-4 shrink-0" />}
+                            <span>{connectionHint.message}</span>
+                          </div>
+                        </div>
                       )}
 
                       {edgeToast && (

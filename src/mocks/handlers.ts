@@ -1078,6 +1078,11 @@ export const handlers = [
       return HttpResponse.json({ message: 'Cannot create dependency: task not found.' }, { status: 404 });
     }
 
+    const targetTask = graph.nodes.find((node) => node.id === targetTaskId);
+    if (targetTask?.status === 'COMPLETED') {
+      return HttpResponse.json({ message: 'Cannot create dependency to a completed task.' }, { status: 400 });
+    }
+
     const duplicate = graph.edges.some((edge) =>
       edge.sourceTaskId === sourceTaskId && edge.targetTaskId === targetTaskId
     );
