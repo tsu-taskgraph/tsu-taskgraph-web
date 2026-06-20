@@ -106,5 +106,15 @@ export const projectsApi = {
   async createProject(data: CreateProjectRequest): Promise<CreateProjectResponse> {
     const response = await apiClient.post<CreateProjectResponse>('/api/v1/projects', data);
     return response.data;
+  },
+
+  async getProject(projectId: string): Promise<ProjectResponse> {
+    const response = await apiClient.get<ProjectResponse>(`/api/v1/projects/${projectId}`);
+    return response.data;
+  },
+
+  async getProjectGraph(projectId: string): Promise<ProjectGraphResponse> {
+    const response = await apiClient.get<ProjectGraphResponse>(`/api/v1/projects/${projectId}/graph`);
+    return response.data;
   }
 };
