@@ -160,6 +160,49 @@ export default function ProjectWorkspacePage() {
     }, 4500);
   }, []);
 
+  const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
+    if (sourceTaskId === targetTaskId) return true;
+    if (!graph) return false;
+
+    const adjacency = new Map<string, string[]>();
+    graph.nodes.forEach((node) => adjacency.set(node.id, []));
+    graph.edges.forEach((edge) => {
+      adjacency.get(edge.sourceTaskId)?.push(edge.targetTaskId);
+    });
+
+    const stack = [targetTaskId];
+    const visited = new Set<string>();
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (!current || visited.has(current)) continue;
+      if (current === sourceTaskId) return true;
+
+      visited.add(current);
+      stack.push(...(adjacency.get(current) ?? []));
+    }
+
+    return false;
+  }, [graph]);
+
+  const isValidConnection = useCallback((connection: Connection | TaskFlowEdge) => {
+    if (!connection.source || !connection.target) return false;
+
+    const duplicateEdge = graph?.edges.some((edge) =>
+      edge.sourceTaskId === connection.source && edge.targetTaskId === connection.target
+    );
+
+    return !duplicateEdge && !wouldCreateCycle(connection.source, connection.target);
+  }, [graph?.edges, wouldCreateCycle]);
+
+  const isCycleApiError = useCallback((err: unknown, statusCode?: number) => {
+    if (statusCode !== 400) return false;
+    const data = axios.isAxiosError(err) ? err.response?.data : err;
+    const serialized = typeof data === 'string' ? data : JSON.stringify(data ?? '');
+    const lower = serialized.toLowerCase();
+    return lower.includes('cycle') || lower.includes('цик');
+  }, []);
+
   const handleConnect = useCallback(async (connection: Connection) => {
     if (!projectId || !connection.source || !connection.target) return;
 
@@ -177,6 +220,11 @@ export default function ProjectWorkspacePage() {
       return;
     }
 
+    if (wouldCreateCycle(connection.source, connection.target)) {
+      showEdgeToast('Cannot create dependency: cycle detected.');
+      return;
+    }
+
     try {
       const createdEdge = await projectsApi.createEdge(projectId, {
         sourceTaskId: connection.source,
@@ -191,9 +239,9 @@ export default function ProjectWorkspacePage() {
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(statusCode === 400 ? parsed.message || 'Cannot create dependency: cycle detected.' : parsed.message);
+      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
     }
-  }, [graph?.edges, projectId, showEdgeToast]);
+  }, [graph?.edges, isCycleApiError, projectId, showEdgeToast, wouldCreateCycle]);
 
   const handleTaskCreated = useCallback((createdTask: TaskNode) => {
     if (!taskDraftPosition) return;
@@ -434,6 +482,7 @@ export default function ProjectWorkspacePage() {
                       onNodesChange={onNodesChange}
                       onEdgesChange={onEdgesChange}
                       onConnect={handleConnect}
+                      isValidConnection={isValidConnection}
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}

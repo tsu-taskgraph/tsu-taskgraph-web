@@ -185,7 +185,7 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
     return (
       <div
         key="dot"
-        className="group relative flex items-center justify-center pointer-events-auto animate-view-change"
+        className="group relative flex items-center justify-center rounded-2xl pointer-events-auto animate-view-change"
       >
 
         <div
@@ -241,7 +241,7 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
     return (
       <div
         key="label"
-        className={`group relative w-[292px] transition-all duration-300 ${selectedClass} animate-view-change ${statusAnimClass}`}
+        className={`group relative w-[292px] rounded-2xl transition-all duration-300 ${selectedClass} animate-view-change ${statusAnimClass}`}
       >
 
         <div className={`w-full overflow-hidden rounded-2xl relative ${surfaceClass}`}>
@@ -298,7 +298,7 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
   return (
     <div
       key="detail"
-      className={`group relative w-[318px] transition-all duration-300 ${selectedClass} animate-view-change ${statusAnimClass}`}
+      className={`group relative w-[318px] rounded-3xl transition-all duration-300 ${selectedClass} animate-view-change ${statusAnimClass}`}
     >
 
       <div className={`w-full overflow-hidden rounded-3xl relative ${surfaceClass}`}>
