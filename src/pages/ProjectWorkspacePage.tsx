@@ -134,10 +134,71 @@ export default function ProjectWorkspacePage() {
 
   const autoArrangeLayout = useCallback(() => {
     if (!graph) return;
+
     const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
-    setNodes(flow.nodes);
-    setIsAligned(true);
-  }, [graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes, setNodes]);
+    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
+      node.type === 'taskNode' && Boolean(node.selected)
+    );
+    const selectedTaskIds = new Set(selectedTaskNodes.map((node) => node.id));
+
+    if (selectedTaskIds.size === 0) {
+      setNodes(flow.nodes);
+      setIsAligned(true);
+      return;
+    }
+
+    const allTaskNodesSelected = selectedTaskIds.size === graph.nodes.length;
+
+    if (allTaskNodesSelected) {
+      setNodes(flow.nodes.map((node) => (
+        node.type === 'taskNode' ? { ...node, selected: true } : node
+      )));
+      setIsAligned(true);
+      return;
+    }
+
+    const selectedGraph: ProjectGraphResponse = {
+      ...graph,
+      nodes: graph.nodes.filter((node) => selectedTaskIds.has(node.id)),
+      edges: graph.edges.filter((edge) =>
+        selectedTaskIds.has(edge.sourceTaskId) && selectedTaskIds.has(edge.targetTaskId)
+      )
+    };
+    const selectedFlow = mapGraphToFlow(selectedGraph, theme, viewMode, edgeType, edgesVisible, false);
+    const alignedSelectedTaskNodes = selectedFlow.nodes.filter((node): node is TaskFlowNode => node.type === 'taskNode');
+    const alignedSelectedNodeById = new Map(alignedSelectedTaskNodes.map((node) => [node.id, node]));
+
+    const currentMinX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
+    const currentMinY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
+    const alignedMinX = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.x));
+    const alignedMinY = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.y));
+    const offset = {
+      x: currentMinX - alignedMinX,
+      y: currentMinY - alignedMinY
+    };
+
+    setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+      if (node.type !== 'taskNode' || !selectedTaskIds.has(node.id)) {
+        return node;
+      }
+
+      const alignedNode = alignedSelectedNodeById.get(node.id);
+      if (!alignedNode) return node;
+
+      const updatedNode: TaskFlowNode = {
+        ...node,
+        position: {
+          x: alignedNode.position.x + offset.x,
+          y: alignedNode.position.y + offset.y
+        },
+        data: alignedNode.data,
+        selected: true
+      };
+
+      return updatedNode;
+    }));
+    setIsAligned(false);
+  }, [edgeType, edgesVisible, graph, nodes, setNodes, showTopologicalLanes, theme, viewMode]);
 
   const openTaskCreator = useCallback((screenX?: number, screenY?: number, mode: TaskCreatorMode = 'context') => {
     const fallbackScreen = {
