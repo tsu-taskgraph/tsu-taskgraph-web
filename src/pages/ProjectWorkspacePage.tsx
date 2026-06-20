@@ -592,7 +592,7 @@ function TopologicalLanesHeader({
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="rounded-full border border-white/10 bg-[#020617]/70 px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
+            <div className="rounded-full border border-white/10 bg-[#020617]/70 px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10 whitespace-nowrap">
               Layer {layer}
             </div>
           </div>
@@ -1079,7 +1079,7 @@ export default function ProjectWorkspacePage() {
                         pannable
                         nodeStrokeWidth={3}
                         bgColor="transparent"
-                        className="taskgraph-corner-minimap hidden md:block !mb-[64px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200 animate-slide-up-fade [animation-delay:150ms]"
+                        className="taskgraph-corner-minimap !hidden lg:!block !mb-[66px] !ml-4 !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 [&_.react-flow__minimap-mask]:!stroke-white/10 light:[&_.react-flow__minimap-mask]:!stroke-slate-200 animate-slide-up-fade [animation-delay:150ms]"
                         nodeColor={(node) => {
                           if (node.type === 'layerHeader') return 'transparent';
                           const taskNode = node as TaskFlowNode;
@@ -1096,99 +1096,137 @@ export default function ProjectWorkspacePage() {
                       <Controls
                         position="bottom-left"
                         orientation="horizontal"
-                        className="taskgraph-corner-controls !mb-4 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:150ms]"
+                        className="taskgraph-corner-controls !hidden lg:!flex !mb-6 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:150ms]"
                       />
 
-                      <Panel position="bottom-center" className="!mb-6 hidden lg:block">
-                        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms]">
+                      <Panel position="bottom-center" className="!mb-6 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:!w-auto sm:!max-w-[calc(100vw-2rem)]">
+                        <div className="max-h-[42dvh] max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms] 2xl:rounded-full flex flex-col">
+                          <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:pb-0 scroll-fade-mask px-3">
 
-                          <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
-                            <span
-                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
-                                ? 'translate-x-0'
-                                : activeViewOffset === 1
-                                  ? 'translate-x-[calc(100%+0.25rem)]'
-                                  : 'translate-x-[calc(200%+0.5rem)]'
+                            <div className="relative grid h-full shrink-0 grid-cols-3 items-stretch gap-1" role="tablist">
+                              <span
+                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
+                                  ? 'translate-x-0'
+                                  : activeViewOffset === 1
+                                    ? 'translate-x-[calc(100%+0.25rem)]'
+                                    : 'translate-x-[calc(200%+0.5rem)]'
+                                  }`}
+                              />
+                              {viewModes.map(({ key, label, icon: Icon }) => {
+                                const active = viewMode === key;
+                                return (
+                                  <button
+                                    key={key}
+                                    onClick={() => setViewMode(key)}
+                                    className={`relative z-10 flex min-w-10 items-center justify-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer 2xl:px-4 ${active
+                                      ? 'text-white'
+                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                      }`}
+                                    title={label}
+                                    aria-label={label}
+                                  >
+                                    <Icon className="h-4 w-4 shrink-0" />
+                                    <span className="hidden 2xl:inline">{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:mx-1" />
+
+                            <div className="relative grid h-full shrink-0 grid-cols-4 items-stretch gap-1" role="tablist">
+                              <span
+                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
+                                  ? 'translate-x-0'
+                                  : activeEdgeTypeOffset === 1
+                                    ? 'translate-x-[calc(100%+0.25rem)]'
+                                    : activeEdgeTypeOffset === 2
+                                      ? 'translate-x-[calc(200%+0.5rem)]'
+                                      : 'translate-x-[calc(300%+0.75rem)]'
+                                  }`}
+                              />
+                              {edgeTypeModes.map(({ key, label, icon: Icon }) => {
+                                const active = edgeType === key;
+                                return (
+                                  <button
+                                    key={key}
+                                    onClick={() => setEdgeType(key)}
+                                    className={`relative z-10 flex min-w-10 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer 2xl:px-4 ${active
+                                      ? 'text-white'
+                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                      }`}
+                                    title={label}
+                                    aria-label={label}
+                                  >
+                                    <Icon className="h-4 w-4 shrink-0" />
+                                    <span className="hidden 2xl:inline">{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:mx-1" />
+
+                            <button
+                              onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
+                              className={`flex min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-[12px] font-semibold transition-all cursor-pointer 2xl:px-4 ${showTopologicalLanes
+                                ? 'border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-300 shadow-md shadow-brand-500/5 light:border-brand-500/30 light:bg-gradient-to-r light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700'
+                                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
                                 }`}
-                            />
-                            {viewModes.map(({ key, label, icon: Icon }) => {
-                              const active = viewMode === key;
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => setViewMode(key)}
-                                  className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
-                                    ? 'text-white'
-                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                    }`}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  <span>{label}</span>
-                                </button>
-                              );
-                            })}
+                              title="Toggle topological layers"
+                              aria-label="Toggle topological layers"
+                            >
+                              <Network className="h-4 w-4 shrink-0" />
+                              <span className="hidden 2xl:inline">Layers</span>
+                            </button>
+
+                            <button
+                              onClick={autoArrangeLayout}
+                              className={`flex min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-[12px] font-semibold transition-all cursor-pointer 2xl:px-4 ${isAligned
+                                ? 'border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-300 shadow-md shadow-brand-500/5 light:border-brand-500/30 light:bg-gradient-to-r light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700'
+                                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                                }`}
+                              title="Auto-arrange and align all task nodes by topological layers"
+                              aria-label="Auto-arrange and align all task nodes by topological layers"
+                            >
+                              <LayoutGrid className="h-4 w-4 shrink-0" />
+                              <span className="hidden 2xl:inline">Align</span>
+                            </button>
+
+                            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:hidden" />
+                            <div className="flex sm:hidden shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-1.5 text-[12px] font-bold text-brand-300 light:text-brand-700">
+                              <CheckCircle2 className="h-4 w-4 shrink-0" />
+                              <span>{graphStats.completion}%</span>
+                            </div>
+
                           </div>
 
-                          <div className="h-6 w-px bg-white/10 light:bg-slate-200 mx-1" />
-
-                          <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
-                            <span
-                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
-                                ? 'translate-x-0'
-                                : activeEdgeTypeOffset === 1
-                                  ? 'translate-x-[calc(100%+0.25rem)]'
-                                  : activeEdgeTypeOffset === 2
-                                    ? 'translate-x-[calc(200%+0.5rem)]'
-                                    : 'translate-x-[calc(300%+0.75rem)]'
-                                }`}
-                            />
-                            {edgeTypeModes.map(({ key, label, icon: Icon }) => {
-                              const active = edgeType === key;
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => setEdgeType(key)}
-                                  className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
-                                    ? 'text-white'
-                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                    }`}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  <span>{label}</span>
-                                </button>
-                              );
-                            })}
+                          <div className="mt-1.5 hidden sm:flex w-full items-center justify-between border-t border-white/10 pt-1.5 text-[11px] font-semibold whitespace-nowrap text-slate-300 light:border-slate-200/70 light:text-slate-600 min-[2200px]:!hidden">
+                            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-3 py-2 font-bold text-brand-300 light:text-brand-700">
+                              <CheckCircle2 className="h-4 w-4" />
+                              <span>{graphStats.completion}%</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
+                              <Network className="h-4 w-4 text-brand-400 light:text-brand-500" />
+                              <span>{graphStats.tasks} tasks</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
+                              <GitBranch className="h-4 w-4 text-sky-400 light:text-sky-500" />
+                              <span>{graphStats.dependencies} deps</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
+                              <Zap className="h-4 w-4 text-amber-400 light:text-amber-500" />
+                              <span>{graphStats.available} open</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5 px-2 py-1.5">
+                              <Clock className="h-4 w-4 text-violet-400 light:text-violet-500" />
+                              <span>{graphStats.loggedHours}h / {graphStats.estimatedHours}h</span>
+                            </div>
                           </div>
-
-                          <div className="h-6 w-px bg-white/10 light:bg-slate-200 mx-1" />
-
-                          <button
-                            onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
-                            className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${showTopologicalLanes
-                              ? 'border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-300 shadow-md shadow-brand-500/5 light:border-brand-500/30 light:bg-gradient-to-r light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700'
-                              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
-                              }`}
-                          >
-                            <Network className="h-4 w-4" />
-                            <span>Layers</span>
-                          </button>
-
-                          <button
-                            onClick={autoArrangeLayout}
-                            className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${isAligned
-                              ? 'border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-300 shadow-md shadow-brand-500/5 light:border-brand-500/30 light:bg-gradient-to-r light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700'
-                              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
-                              }`}
-                            title="Auto-arrange and align all task nodes by topological layers"
-                          >
-                            <LayoutGrid className="h-4 w-4" />
-                            <span>Align</span>
-                          </button>
-
                         </div>
                       </Panel>
 
-                      <Panel position="bottom-right" className="!mb-6 !mr-6 hidden lg:block">
+                      <Panel position="bottom-right" className="!mb-6 !mr-6 hidden min-[2200px]:block">
                         <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:350ms]">
                           <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-300 light:text-brand-700">
                             <CheckCircle2 className="h-4 w-4" />

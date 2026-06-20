@@ -895,3 +895,14 @@
   transform-origin: center;
   animation: spin-slow 15s linear infinite !important;
 }
+
+.react-flow__node-taskNode {
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-radius: 24px !important;
+}
+
+.scroll-fade-mask {
+  mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+}
