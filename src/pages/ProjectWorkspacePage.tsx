@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { projectsApi, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
+import { projectsApi, type EdgeResponse, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useTheme } from '../context/ThemeContext';
 import { SafariTopBar } from '../components/SafariTopBar';
@@ -35,6 +35,23 @@ import { TopologicalLanesHeader } from '../components/workspace/TopologicalLanes
 import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
 import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
 import { TaskCreator } from '../components/workspace/TaskCreator';
+
+type CopiedTaskNode = {
+  task: TaskNode;
+  position: { x: number; y: number };
+};
+
+type CopiedWorkspaceSelection = {
+  nodes: CopiedTaskNode[];
+  edges: Array<{ sourceTaskId: string; targetTaskId: string }>;
+  origin: { x: number; y: number };
+};
+
+const isEditableShortcutTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+};
 
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -66,6 +83,9 @@ export default function ProjectWorkspacePage() {
     closing: boolean;
   } | null>(null);
   const connectionSourceRef = useRef<string | null>(null);
+  const copiedSelectionRef = useRef<CopiedWorkspaceSelection | null>(null);
+  const lastPastePositionRef = useRef<{ x: number; y: number } | null>(null);
+  const pasteCountRef = useRef(0);
 
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
@@ -179,6 +199,159 @@ export default function ProjectWorkspacePage() {
     setEdgeToast({ id, message, variant, closing: false });
     window.setTimeout(() => closeEdgeToast(id), 4300);
   }, [closeEdgeToast]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!flowInstance) return;
+      lastPastePositionRef.current = flowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY
+      });
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => window.removeEventListener('pointermove', handlePointerMove);
+  }, [flowInstance]);
+
+  const copySelectedTasks = useCallback(() => {
+    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
+      node.type === 'taskNode' && Boolean(node.selected)
+    );
+
+    if (selectedTaskNodes.length === 0) {
+      showEdgeToast('Select one or more tasks to copy.');
+      return;
+    }
+
+    const selectedIds = new Set(selectedTaskNodes.map((node) => node.id));
+    const selectedEdges = (graph?.edges ?? [])
+      .filter((edge) => selectedIds.has(edge.sourceTaskId) && selectedIds.has(edge.targetTaskId))
+      .map((edge) => ({ sourceTaskId: edge.sourceTaskId, targetTaskId: edge.targetTaskId }));
+
+    const minX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
+    const minY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
+
+    copiedSelectionRef.current = {
+      nodes: selectedTaskNodes.map((node) => ({
+        task: node.data.task,
+        position: node.position
+      })),
+      edges: selectedEdges,
+      origin: { x: minX, y: minY }
+    };
+    pasteCountRef.current = 0;
+    showEdgeToast(`Copied ${selectedTaskNodes.length} task${selectedTaskNodes.length === 1 ? '' : 's'}.`, 'success');
+  }, [graph?.edges, nodes, showEdgeToast]);
+
+  const pasteCopiedTasks = useCallback(async () => {
+    if (!projectId) return;
+
+    const copiedSelection = copiedSelectionRef.current;
+    if (!copiedSelection || copiedSelection.nodes.length === 0) {
+      showEdgeToast('Clipboard is empty. Copy tasks first.');
+      return;
+    }
+
+    pasteCountRef.current += 1;
+    const fallbackPosition = flowInstance?.screenToFlowPosition({
+      x: Math.round(window.innerWidth / 2),
+      y: Math.round(window.innerHeight / 2)
+    }) ?? {
+      x: copiedSelection.origin.x + 56 * pasteCountRef.current,
+      y: copiedSelection.origin.y + 56 * pasteCountRef.current
+    };
+    const pasteOrigin = lastPastePositionRef.current ?? fallbackPosition;
+    const offset = {
+      x: pasteOrigin.x - copiedSelection.origin.x,
+      y: pasteOrigin.y - copiedSelection.origin.y
+    };
+
+    try {
+      const createdTasks = await Promise.all(copiedSelection.nodes.map(({ task, position }) =>
+        projectsApi.createTask(projectId, {
+          title: `Copy of ${task.title}`,
+          description: task.description,
+          category: task.category,
+          estimatedHours: task.estimatedHours,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+          positionX: Math.round(position.x + offset.x),
+          positionY: Math.round(position.y + offset.y)
+        })
+      ));
+
+      const taskIdMap = new Map<string, string>();
+      copiedSelection.nodes.forEach(({ task }, index) => {
+        taskIdMap.set(task.id, createdTasks[index].id);
+      });
+
+      const createdEdges: EdgeResponse[] = [];
+      for (const edge of copiedSelection.edges) {
+        const sourceTaskId = taskIdMap.get(edge.sourceTaskId);
+        const targetTaskId = taskIdMap.get(edge.targetTaskId);
+        if (!sourceTaskId || !targetTaskId) continue;
+
+        try {
+          const createdEdge = await projectsApi.createEdge(projectId, { sourceTaskId, targetTaskId });
+          createdEdges.push(createdEdge);
+        } catch { }
+      }
+
+      const createdTaskNodes: TaskFlowNode[] = createdTasks.map((task, index) => ({
+        id: task.id,
+        type: 'taskNode',
+        position: {
+          x: task.positionX,
+          y: task.positionY
+        },
+        data: { task, viewMode, index: (graph?.nodes.length ?? nodes.length) + index },
+        draggable: true,
+        selected: true
+      }));
+
+      setNodes((currentNodes) => [
+        ...currentNodes.map((node) => ({ ...node, selected: false })),
+        ...createdTaskNodes
+      ]);
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: [...currentGraph.nodes, ...createdTasks],
+        edges: [...currentGraph.edges, ...createdEdges]
+      } : currentGraph);
+      setProject((currentProject) => currentProject ? {
+        ...currentProject,
+        totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + createdTasks.reduce((sum, task) => sum + (task.estimatedHours ?? 0), 0),
+        updatedAt: createdTasks[createdTasks.length - 1]?.updatedAt ?? currentProject.updatedAt
+      } : currentProject);
+      setIsAligned(false);
+      showEdgeToast(`Pasted ${createdTasks.length} task${createdTasks.length === 1 ? '' : 's'}.`, 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    }
+  }, [flowInstance, graph?.nodes.length, nodes.length, projectId, setNodes, showEdgeToast, viewMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableShortcutTarget(event.target)) return;
+      const isModifierPressed = event.metaKey || event.ctrlKey;
+      if (!isModifierPressed) return;
+
+      const key = event.key.toLowerCase();
+      if (key === 'c') {
+        event.preventDefault();
+        copySelectedTasks();
+      }
+      if (key === 'v') {
+        event.preventDefault();
+        void pasteCopiedTasks();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [copySelectedTasks, pasteCopiedTasks]);
 
   const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
     if (sourceTaskId === targetTaskId) return true;
@@ -681,7 +854,7 @@ export default function ProjectWorkspacePage() {
                             </div>
                             <div>
                               <div className="text-xs font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
-                                {edgeToast.variant === 'success' ? 'Dependency added' : 'Dependency error'}
+                                {edgeToast.variant === 'success' ? 'Workspace updated' : 'Workspace error'}
                               </div>
                               <p className="mt-0.5 leading-relaxed text-slate-200 light:text-slate-700">{edgeToast.message}</p>
                             </div>
