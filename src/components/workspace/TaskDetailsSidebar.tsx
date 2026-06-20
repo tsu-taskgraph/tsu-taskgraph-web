@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     AlertCircle,
     CalendarDays,
@@ -8,8 +8,8 @@ import {
     ExternalLink,
     Hourglass,
     Lock,
-    Play,
-    SkipForward,
+    Pencil,
+    Save,
     Tag,
     UserRound,
     X,
@@ -20,12 +20,17 @@ import type { TaskNode } from '../../api/projects';
 type TaskStatus = TaskNode['status'];
 type TaskCategory = NonNullable<TaskNode['category']>;
 
-type StatusAction = Extract<TaskStatus, 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED'>;
-
 interface TaskDetailsSidebarProps {
     task: TaskNode;
     onClose: () => void;
-    onStatusChange: (status: StatusAction, data?: { loggedHours?: number | null; comment?: string | null }) => Promise<void>;
+    onTaskUpdate: (data: {
+        title?: string;
+        description?: string | null;
+        category?: TaskNode['category'];
+        estimatedHours?: number | null;
+        startDate?: string | null;
+        dueDate?: string | null;
+    }) => Promise<void>;
     updating: boolean;
     isClosing?: boolean;
 }
@@ -68,6 +73,8 @@ const statusMeta: Record<TaskStatus, {
     }
 };
 
+const taskCategories: TaskCategory[] = ['BACKEND', 'FRONTEND', 'DEVOPS', 'TESTING', 'DOCUMENTATION', 'DESIGN', 'OTHER'];
+
 const categoryClass: Record<TaskCategory, string> = {
     BACKEND: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 light:bg-indigo-500/10 light:text-indigo-700 light:border-indigo-500/20',
     FRONTEND: 'bg-pink-500/10 text-pink-300 border-pink-500/20 light:bg-pink-500/10 light:text-pink-700 light:border-pink-500/20',
@@ -89,9 +96,14 @@ function formatHours(value: number | null | undefined) {
     return `${value ?? 0}h`;
 }
 
-export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, isClosing = false }: TaskDetailsSidebarProps) {
-    const [loggedHours, setLoggedHours] = useState(() => String(task.loggedHours ?? 0));
-    const [comment, setComment] = useState('');
+export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, updating, isClosing = false }: TaskDetailsSidebarProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [draftTitle, setDraftTitle] = useState(task.title);
+    const [draftDescription, setDraftDescription] = useState(task.description ?? '');
+    const [draftCategory, setDraftCategory] = useState<TaskCategory>(task.category ?? 'OTHER');
+    const [draftEstimate, setDraftEstimate] = useState(String(task.estimatedHours ?? 0));
+    const [draftStartDate, setDraftStartDate] = useState(task.startDate ?? '');
+    const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '');
     const status = statusMeta[task.status];
     const StatusIcon = status.icon;
     const category = task.category ?? 'OTHER';
@@ -108,22 +120,37 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, is
                 ? 50
                 : 0;
 
-    const actionDisabledReason = useMemo(() => {
-        if (task.status === 'LOCKED') return 'Locked tasks cannot be changed until dependencies are completed.';
-        if (task.status === 'COMPLETED') return 'Completed tasks are already closed.';
-        return null;
-    }, [task.status]);
+    useEffect(() => {
+        setDraftTitle(task.title);
+        setDraftDescription(task.description ?? '');
+        setDraftCategory(task.category ?? 'OTHER');
+        setDraftEstimate(String(task.estimatedHours ?? 0));
+        setDraftStartDate(task.startDate ?? '');
+        setDraftDueDate(task.dueDate ?? '');
+        setIsEditing(false);
+    }, [task.id, task.title, task.description, task.category, task.estimatedHours, task.startDate, task.dueDate]);
 
-    const normalizedLoggedHours = () => {
-        const parsed = Number(loggedHours.replace(',', '.'));
-        return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    const startEditing = () => setIsEditing(true);
+    const cancelEditing = () => {
+        setDraftTitle(task.title);
+        setDraftDescription(task.description ?? '');
+        setDraftCategory(task.category ?? 'OTHER');
+        setDraftEstimate(String(task.estimatedHours ?? 0));
+        setDraftStartDate(task.startDate ?? '');
+        setDraftDueDate(task.dueDate ?? '');
+        setIsEditing(false);
     };
 
-    const handleAction = (nextStatus: StatusAction) => {
-        void onStatusChange(nextStatus, {
-            loggedHours: nextStatus === 'COMPLETED' ? normalizedLoggedHours() : null,
-            comment: comment.trim() || null
-        });
+    const saveEditing = () => {
+        const estimatedHours = draftEstimate.trim() ? Number(draftEstimate.replace(',', '.')) : null;
+        void onTaskUpdate({
+            title: draftTitle.trim() || task.title,
+            description: draftDescription.trim() || null,
+            category: draftCategory,
+            estimatedHours: Number.isFinite(estimatedHours) && estimatedHours !== null && estimatedHours >= 0 ? estimatedHours : null,
+            startDate: draftStartDate || null,
+            dueDate: draftDueDate || null
+        }).then(() => setIsEditing(false));
     };
 
     return (
@@ -135,14 +162,42 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, is
                             <StatusIcon className="h-3.5 w-3.5" />
                             {status.label}
                         </span>
-                        <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${categoryClass[category]}`}>
-                            <Tag className="h-3.5 w-3.5" />
-                            {category}
-                        </span>
+                        {isEditing ? (
+                            <select
+                                value={draftCategory}
+                                onChange={(event) => setDraftCategory(event.target.value as TaskCategory)}
+                                className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                            >
+                                {taskCategories.map((item) => <option key={item} value={item}>{item}</option>)}
+                            </select>
+                        ) : (
+                            <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${categoryClass[category]}`}>
+                                <Tag className="h-3.5 w-3.5" />
+                                {category}
+                            </span>
+                        )}
                     </div>
-                    <h2 className="line-clamp-3 text-lg font-extrabold leading-tight tracking-tight text-white light:text-slate-950">
-                        {task.title}
-                    </h2>
+                    {isEditing ? (
+                        <input
+                            value={draftTitle}
+                            onChange={(event) => setDraftTitle(event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm font-bold text-slate-100 outline-none transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                        />
+                    ) : (
+                        <div className="group/title flex items-start gap-2">
+                            <h2 className="line-clamp-3 text-lg font-extrabold leading-tight tracking-tight text-white light:text-slate-950">
+                                {task.title}
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={startEditing}
+                                className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 opacity-0 transition hover:bg-white/5 hover:text-brand-300 group-hover/title:opacity-100 light:hover:bg-slate-950/5 light:hover:text-brand-700"
+                                aria-label="Edit task title"
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                    )}
                     <p className="mt-2 text-xs leading-relaxed text-slate-400 light:text-slate-600">{status.description}</p>
                 </div>
                 <button
@@ -156,6 +211,35 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, is
             </div>
 
             <div key={task.id} className="workspace-sidebar-scroll min-h-0 flex-1 overflow-y-auto p-4 task-sidebar-content-enter">
+                {isEditing && (
+                    <section className="mb-3 rounded-2xl border border-brand-500/20 bg-brand-500/10 p-3 light:bg-brand-500/10">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-xs font-extrabold uppercase tracking-wide text-brand-300 light:text-brand-700">Edit task</h3>
+                                <p className="mt-1 text-[11px] text-slate-400 light:text-slate-600">Update task details and save changes.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={cancelEditing}
+                                    disabled={updating}
+                                    className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-200 disabled:opacity-50 light:text-slate-600 light:hover:bg-slate-950/5 light:hover:text-slate-900"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={saveEditing}
+                                    disabled={updating}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition hover:shadow-brand-500/30 disabled:opacity-70"
+                                >
+                                    <Save className="h-3.5 w-3.5" /> Save
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
                 <section className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-400 light:text-slate-500">
                         <span>Progress</span>
@@ -177,7 +261,18 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, is
                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                             <Clock className="h-3.5 w-3.5" /> Estimate
                         </div>
-                        <div className="mt-1 text-sm font-bold text-slate-100 light:text-slate-900">{formatHours(task.estimatedHours)}</div>
+                        {isEditing ? (
+                            <input
+                                value={draftEstimate}
+                                onChange={(event) => setDraftEstimate(event.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
+                                className="mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-sm font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                            />
+                        ) : (
+                            <div className="group/estimate mt-1 flex items-center justify-between gap-2 text-sm font-bold text-slate-100 light:text-slate-900">
+                                <span>{formatHours(task.estimatedHours)}</span>
+                                <button type="button" onClick={startEditing} className="text-slate-500 opacity-0 transition hover:text-brand-300 group-hover/estimate:opacity-100 light:hover:text-brand-700" aria-label="Edit estimate"><Pencil className="h-3.5 w-3.5" /></button>
+                            </div>
+                        )}
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
@@ -189,21 +284,61 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, is
                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                             <CalendarDays className="h-3.5 w-3.5" /> Start
                         </div>
-                        <div className="mt-1 text-sm font-bold text-slate-100 light:text-slate-900">{formatDate(task.startDate)}</div>
+                        {isEditing ? (
+                            <input
+                                type="date"
+                                value={draftStartDate}
+                                onChange={(event) => setDraftStartDate(event.target.value)}
+                                className="mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-sm font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                            />
+                        ) : (
+                            <div className="group/start mt-1 flex items-center justify-between gap-2 text-sm font-bold text-slate-100 light:text-slate-900">
+                                <span>{formatDate(task.startDate)}</span>
+                                <button type="button" onClick={startEditing} className="text-slate-500 opacity-0 transition hover:text-brand-300 group-hover/start:opacity-100 light:hover:text-brand-700" aria-label="Edit start date"><Pencil className="h-3.5 w-3.5" /></button>
+                            </div>
+                        )}
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                             <CalendarDays className="h-3.5 w-3.5" /> Due
                         </div>
-                        <div className="mt-1 text-sm font-bold text-slate-100 light:text-slate-900">{formatDate(task.dueDate)}</div>
+                        {isEditing ? (
+                            <input
+                                type="date"
+                                value={draftDueDate}
+                                onChange={(event) => setDraftDueDate(event.target.value)}
+                                className="mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-sm font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                            />
+                        ) : (
+                            <div className="group/due mt-1 flex items-center justify-between gap-2 text-sm font-bold text-slate-100 light:text-slate-900">
+                                <span>{formatDate(task.dueDate)}</span>
+                                <button type="button" onClick={startEditing} className="text-slate-500 opacity-0 transition hover:text-brand-300 group-hover/due:opacity-100 light:hover:text-brand-700" aria-label="Edit due date"><Pencil className="h-3.5 w-3.5" /></button>
+                            </div>
+                        )}
                     </div>
                 </section>
 
                 <section className="mt-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Description</h3>
-                    <p className="mt-2 whitespace-pre-wrap rounded-2xl border border-white/10 bg-slate-950/35 p-3 text-sm leading-relaxed text-slate-300 light:border-slate-200/70 light:bg-white/55 light:text-slate-700">
-                        {task.description?.trim() || 'No description provided.'}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Description</h3>
+                        {!isEditing && (
+                            <button type="button" onClick={startEditing} className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-brand-300 light:hover:bg-slate-950/5 light:hover:text-brand-700" aria-label="Edit description">
+                                <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                        )}
+                    </div>
+                    {isEditing ? (
+                        <textarea
+                            value={draftDescription}
+                            onChange={(event) => setDraftDescription(event.target.value)}
+                            rows={4}
+                            className="mt-2 w-full resize-none rounded-2xl border border-slate-800 bg-slate-950 p-3 text-sm leading-relaxed text-slate-100 outline-none transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                        />
+                    ) : (
+                        <p className="mt-2 whitespace-pre-wrap rounded-2xl border border-white/10 bg-slate-950/35 p-3 text-sm leading-relaxed text-slate-300 light:border-slate-200/70 light:bg-white/55 light:text-slate-700">
+                            {task.description?.trim() || 'No description provided.'}
+                        </p>
+                    )}
                 </section>
 
                 <section className="mt-4">
@@ -272,68 +407,6 @@ export function TaskDetailsSidebar({ task, onClose, onStatusChange, updating, is
                     </section>
                 )}
 
-                <section className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Change status</h3>
-                    {actionDisabledReason && (
-                        <div className="mt-2 flex gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-2 text-xs text-amber-200 light:text-amber-700">
-                            <AlertCircle className="h-4 w-4 shrink-0" />
-                            <span>{actionDisabledReason}</span>
-                        </div>
-                    )}
-
-                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                        <button
-                            type="button"
-                            onClick={() => handleAction('IN_PROGRESS')}
-                            disabled={updating || Boolean(actionDisabledReason) || task.status === 'IN_PROGRESS'}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs font-bold text-sky-300 transition hover:bg-sky-500/15 disabled:cursor-not-allowed disabled:opacity-50 light:text-sky-700"
-                        >
-                            <Play className="h-4 w-4" /> Start
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleAction('COMPLETED')}
-                            disabled={updating || Boolean(actionDisabledReason)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700"
-                        >
-                            <CheckCircle2 className="h-4 w-4" /> Complete
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleAction('SKIPPED')}
-                            disabled={updating || Boolean(actionDisabledReason) || task.status === 'SKIPPED'}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/25 bg-violet-500/10 px-3 py-2 text-xs font-bold text-violet-300 transition hover:bg-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50 light:text-violet-700"
-                        >
-                            <SkipForward className="h-4 w-4" /> Skip
-                        </button>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Logged hours</label>
-                            <input
-                                value={loggedHours}
-                                onChange={(event) => setLoggedHours(event.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm font-medium text-slate-100 outline-none transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
-                                disabled={updating || task.status === 'LOCKED'}
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Comment</label>
-                            <input
-                                value={comment}
-                                onChange={(event) => setComment(event.target.value)}
-                                placeholder="Optional"
-                                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm font-medium text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900 light:placeholder:text-slate-400"
-                                disabled={updating || task.status === 'LOCKED'}
-                            />
-                        </div>
-                    </div>
-
-                    {updating && (
-                        <p className="mt-2 text-xs font-medium text-slate-400 light:text-slate-500">Updating task status...</p>
-                    )}
-                </section>
             </div>
         </aside>
     );

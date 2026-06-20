@@ -34,6 +34,7 @@ import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
 import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
 import { TaskCreator } from '../components/workspace/TaskCreator';
 import { TaskDetailsSidebar } from '../components/workspace/TaskDetailsSidebar';
+import { TaskStatusMenu } from '../components/workspace/TaskStatusMenu';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from '../hooks/useWorkspaceCopyPaste';
@@ -69,6 +70,7 @@ export default function ProjectWorkspacePage() {
   const suppressTaskSidebarSelectionRef = useRef(false);
   const lastTaskNodeClickAtRef = useRef(0);
   const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null);
+  const [statusMenu, setStatusMenu] = useState<{ taskId: string; screen: { x: number; y: number } } | null>(null);
 
   const {
     takeSnapshot,
@@ -256,9 +258,26 @@ export default function ProjectWorkspacePage() {
     }
   }, [cancelTaskDetailsSidebarClose]);
 
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: WorkspaceNode) => {
+    if (node.type !== 'taskNode') return;
+    event.preventDefault();
+    event.stopPropagation();
+    lastTaskNodeClickAtRef.current = Date.now();
+    cancelTaskDetailsSidebarClose();
+    setSelectedTaskId(node.id);
+    setStatusMenu({
+      taskId: node.id,
+      screen: {
+        x: event.clientX,
+        y: event.clientY
+      }
+    });
+  }, [cancelTaskDetailsSidebarClose]);
+
   const handlePaneClick = useCallback(() => {
     closeTaskCreator();
     closeTaskDetailsSidebar();
+    setStatusMenu(null);
   }, [closeTaskCreator, closeTaskDetailsSidebar]);
 
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: WorkspaceNode[] }) => {
@@ -378,6 +397,51 @@ export default function ProjectWorkspacePage() {
     return graph?.nodes.find((task) => task.id === selectedTaskId) ?? null;
   }, [graph?.nodes, selectedTaskId]);
 
+  const statusMenuTask = useMemo(() => {
+    if (!statusMenu?.taskId) return null;
+    return graph?.nodes.find((task) => task.id === statusMenu.taskId) ?? null;
+  }, [graph?.nodes, statusMenu?.taskId]);
+
+  const handleTaskUpdate = useCallback(async (data: {
+    title?: string;
+    description?: string | null;
+    category?: TaskNode['category'];
+    estimatedHours?: number | null;
+    startDate?: string | null;
+    dueDate?: string | null;
+  }) => {
+    if (!selectedTask) return;
+
+    takeSnapshot();
+    setStatusUpdatingTaskId(selectedTask.id);
+
+    try {
+      const updatedTask = await projectsApi.updateTask(selectedTask.id, data);
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map((task) => task.id === updatedTask.id ? updatedTask : task)
+      } : currentGraph);
+      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+        if (node.type !== 'taskNode' || node.id !== updatedTask.id) return node;
+        const taskNode = node as TaskFlowNode;
+        return {
+          ...taskNode,
+          data: {
+            ...taskNode.data,
+            task: updatedTask
+          }
+        };
+      }));
+      showEdgeToast('Task details updated.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    } finally {
+      setStatusUpdatingTaskId(null);
+    }
+  }, [selectedTask, setNodes, setGraph, showEdgeToast, takeSnapshot]);
+
   const handleTaskStatusChange = useCallback(async (
     status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
     data?: { loggedHours?: number | null; comment?: string | null }
@@ -425,6 +489,7 @@ export default function ProjectWorkspacePage() {
           : 'Task status updated.',
         'success'
       );
+      setStatusMenu(null);
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
@@ -589,6 +654,7 @@ export default function ProjectWorkspacePage() {
                           : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
                       }
                       onNodeClick={handleNodeClick}
+                      onNodeContextMenu={handleNodeContextMenu}
                       onSelectionChange={handleSelectionChange}
                       onNodeDragStart={handleNodeDragStart}
                       onNodeDrag={handleNodeDrag}
@@ -668,9 +734,19 @@ export default function ProjectWorkspacePage() {
                         <TaskDetailsSidebar
                           task={selectedTask}
                           onClose={closeTaskDetailsSidebar}
-                          onStatusChange={handleTaskStatusChange}
+                          onTaskUpdate={handleTaskUpdate}
                           updating={statusUpdatingTaskId === selectedTask.id}
                           isClosing={isTaskSidebarClosing}
+                        />
+                      )}
+
+                      {statusMenu && statusMenuTask && (
+                        <TaskStatusMenu
+                          task={statusMenuTask}
+                          screen={statusMenu.screen}
+                          onClose={() => setStatusMenu(null)}
+                          onStatusChange={handleTaskStatusChange}
+                          updating={statusUpdatingTaskId === statusMenuTask.id}
                         />
                       )}
 

@@ -109,6 +109,18 @@ export interface CreateEdgeRequest {
   targetTaskId: string;
 }
 
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string | null;
+  category?: TaskNode['category'];
+  estimatedHours?: number | null;
+  completionPercent?: number | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  positionX?: number;
+  positionY?: number;
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -145,6 +157,11 @@ export const projectsApi = {
         'X-Enable-Smart-Recovery': 'false'
       }
     });
+    return response.data;
+  },
+
+  async updateTask(taskId: string, data: UpdateTaskRequest): Promise<TaskNode> {
+    const response = await apiClient.patch<TaskNode>(`/api/v1/tasks/${taskId}`, data);
     return response.data;
   },
 

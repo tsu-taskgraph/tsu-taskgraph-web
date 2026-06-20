@@ -1047,6 +1047,55 @@ export const handlers = [
     return HttpResponse.json(createdTask, { status: 201 });
   }),
 
+  http.patch('*/api/v1/tasks/:taskId', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as {
+      title?: string;
+      description?: string | null;
+      category?: MockTaskCategory;
+      estimatedHours?: number | null;
+      completionPercent?: number | null;
+      startDate?: string | null;
+      dueDate?: string | null;
+      positionX?: number;
+      positionY?: number;
+    };
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const now = new Date().toISOString();
+    const updatedTask = {
+      ...targetTask,
+      ...(body.title !== undefined ? { title: body.title } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.category !== undefined ? { category: body.category } : {}),
+      ...(body.estimatedHours !== undefined ? { estimatedHours: body.estimatedHours } : {}),
+      ...(body.completionPercent !== undefined ? { completionPercent: body.completionPercent } : {}),
+      ...(body.startDate !== undefined ? { startDate: body.startDate } : {}),
+      ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
+      ...(body.positionX !== undefined ? { positionX: body.positionX } : {}),
+      ...(body.positionY !== undefined ? { positionY: body.positionY } : {}),
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+    return HttpResponse.json(updatedTask);
+  }),
+
   http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {
     const taskId = params.taskId as string;
     const body = await request.json() as {
