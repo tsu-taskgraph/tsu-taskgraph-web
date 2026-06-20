@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import {
   ReactFlow,
   Background,
@@ -13,8 +12,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { projectsApi, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
-import { mapServerErrorToEnglish } from '../api/errors';
+import { type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { useTheme } from '../context/ThemeContext';
 import { SafariTopBar } from '../components/SafariTopBar';
 import { SafariBottomBar } from '../components/SafariBottomBar';
@@ -37,6 +35,8 @@ import { TaskCreator } from '../components/workspace/TaskCreator';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from '../hooks/useWorkspaceCopyPaste';
 import { useWorkspaceConnections } from '../hooks/useWorkspaceConnections';
+import { useWorkspaceLoader } from '../hooks/useWorkspaceLoader';
+import { useWorkspaceLayout } from '../hooks/useWorkspaceLayout';
 
 const isEditableShortcutTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -47,11 +47,6 @@ const isEditableShortcutTarget = (target: EventTarget | null) => {
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { theme, toggleTheme } = useTheme();
-  const [project, setProject] = useState<ProjectResponse | null>(null);
-  const [graph, setGraph] = useState<ProjectGraphResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('label');
   const [edgeType, setEdgeType] = useState<EdgeTypeMode>('default');
@@ -59,7 +54,6 @@ export default function ProjectWorkspacePage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
   const [edgesVisible, setEdgesVisible] = useState(true);
   const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
-  const [isAligned, setIsAligned] = useState(true);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<WorkspaceNode, TaskFlowEdge> | null>(null);
   const [taskDraftPosition, setTaskDraftPosition] = useState<TaskDraftPosition | null>(null);
   const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
@@ -97,6 +91,35 @@ export default function ProjectWorkspacePage() {
   }, [closeEdgeToast]);
 
   const {
+    project,
+    setProject,
+    graph,
+    setGraph,
+    loading,
+    refreshing,
+    error,
+    loadWorkspace
+  } = useWorkspaceLoader({ projectId });
+
+  const {
+    isAligned,
+    setIsAligned,
+    handleNodeDragStart,
+    handleNodeDrag,
+    autoArrangeLayout
+  } = useWorkspaceLayout({
+    graph,
+    nodes,
+    setNodes,
+    theme,
+    viewMode,
+    edgeType,
+    edgesVisible,
+    showTopologicalLanes,
+    takeSnapshot,
+  });
+
+  const {
     connectionHint,
     handleConnect,
     handleConnectStart,
@@ -130,123 +153,22 @@ export default function ProjectWorkspacePage() {
     updateCurrentState(nodes, edges, graph);
   }, [nodes, edges, graph, updateCurrentState]);
 
+  useEffect(() => {
+    if (refreshing) {
+      setIsAligned(false);
+    }
+  }, [refreshing, setIsAligned]);
+
+  useEffect(() => {
+    setIsAligned(false);
+  }, [viewMode, setIsAligned]);
+
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
     layerHeader: LayerHeaderNode
   }), [theme]);
 
-  const handleNodeDragStart = useCallback(() => {
-    takeSnapshot();
-  }, [takeSnapshot]);
 
-  const handleNodeDrag = useCallback((_event: any, node: any) => {
-    if (node.type !== 'taskNode') return;
-
-    setIsAligned(false);
-
-    setNodes((prevNodes) => {
-      const tasksByLayer = new Map<number, WorkspaceNode[]>();
-      prevNodes.forEach((n) => {
-        if (n.type === 'taskNode') {
-          const taskNode = n as TaskFlowNode;
-          const layer = taskNode.data.task.layer ?? 0;
-          if (!tasksByLayer.has(layer)) {
-            tasksByLayer.set(layer, []);
-          }
-          tasksByLayer.get(layer)!.push(n);
-        }
-      });
-
-      return prevNodes.map((n) => {
-        if (n.type === 'layerHeader') {
-          const layerNum = Number((n.data as any).label);
-          const nodesInLayer = tasksByLayer.get(layerNum) ?? [];
-          if (nodesInLayer.length > 0) {
-            const sumX = nodesInLayer.reduce((sum, taskNode) => sum + taskNode.position.x, 0);
-            const avgX = sumX / nodesInLayer.length;
-            const centerOffset = viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159;
-            return {
-              ...n,
-              position: {
-                x: avgX + centerOffset,
-                y: n.position.y
-              }
-            };
-          }
-        }
-        return n;
-      });
-    });
-  }, [setNodes, viewMode]);
-
-  const autoArrangeLayout = useCallback(() => {
-    if (!graph) return;
-    takeSnapshot();
-
-    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
-    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
-      node.type === 'taskNode' && Boolean(node.selected)
-    );
-    const selectedTaskIds = new Set(selectedTaskNodes.map((node) => node.id));
-
-    if (selectedTaskIds.size === 0) {
-      setNodes(flow.nodes);
-      setIsAligned(true);
-      return;
-    }
-
-    const allTaskNodesSelected = selectedTaskIds.size === graph.nodes.length;
-
-    if (allTaskNodesSelected) {
-      setNodes(flow.nodes.map((node) => (
-        node.type === 'taskNode' ? { ...node, selected: true } : node
-      )));
-      setIsAligned(true);
-      return;
-    }
-
-    const selectedGraph: ProjectGraphResponse = {
-      ...graph,
-      nodes: graph.nodes.filter((node) => selectedTaskIds.has(node.id)),
-      edges: graph.edges.filter((edge) =>
-        selectedTaskIds.has(edge.sourceTaskId) && selectedTaskIds.has(edge.targetTaskId)
-      )
-    };
-    const selectedFlow = mapGraphToFlow(selectedGraph, theme, viewMode, edgeType, edgesVisible, false);
-    const alignedSelectedTaskNodes = selectedFlow.nodes.filter((node): node is TaskFlowNode => node.type === 'taskNode');
-    const alignedSelectedNodeById = new Map(alignedSelectedTaskNodes.map((node) => [node.id, node]));
-
-    const currentMinX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
-    const currentMinY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
-    const alignedMinX = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.x));
-    const alignedMinY = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.y));
-    const offset = {
-      x: currentMinX - alignedMinX,
-      y: currentMinY - alignedMinY
-    };
-
-    setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-      if (node.type !== 'taskNode' || !selectedTaskIds.has(node.id)) {
-        return node;
-      }
-
-      const alignedNode = alignedSelectedNodeById.get(node.id);
-      if (!alignedNode) return node;
-
-      const updatedNode: TaskFlowNode = {
-        ...node,
-        position: {
-          x: alignedNode.position.x + offset.x,
-          y: alignedNode.position.y + offset.y
-        },
-        data: alignedNode.data,
-        selected: true
-      };
-
-      return updatedNode;
-    }));
-    setIsAligned(false);
-  }, [edgeType, edgesVisible, graph, nodes, setNodes, showTopologicalLanes, theme, viewMode, takeSnapshot]);
 
   const openTaskCreator = useCallback((screenX?: number, screenY?: number, mode: TaskCreatorMode = 'context') => {
     const fallbackScreen = {
@@ -373,47 +295,7 @@ export default function ProjectWorkspacePage() {
     };
   }, [graph]);
 
-  const loadWorkspace = useCallback(async (showRefresh = false) => {
-    if (!projectId) {
-      setError('Project id is missing.');
-      setLoading(false);
-      return;
-    }
 
-    if (showRefresh) {
-      setRefreshing(true);
-      setIsAligned(false);
-    } else {
-      setLoading(true);
-    }
-
-    setError(null);
-    try {
-      const [projectResponse, graphResponse] = await Promise.all([
-        projectsApi.getProject(projectId),
-        projectsApi.getProjectGraph(projectId)
-      ]);
-      setProject(projectResponse);
-      setGraph(graphResponse);
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      setError(parsed.message);
-      setProject(null);
-      setGraph(null);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      loadWorkspace();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [loadWorkspace]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -429,9 +311,7 @@ export default function ProjectWorkspacePage() {
     }
   }, [graph]);
 
-  useEffect(() => {
-    setIsAligned(false);
-  }, [viewMode]);
+
 
   useEffect(() => {
     if (!graph) {
