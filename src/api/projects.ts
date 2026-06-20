@@ -146,5 +146,20 @@ export const projectsApi = {
       }
     });
     return response.data;
+  },
+
+  async updateTaskStatus(
+    taskId: string,
+    data: {
+      status: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'IN_PROGRESS' | 'SKIPPED';
+      loggedHours: number | null;
+      comment?: string;
+    }
+  ): Promise<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }> {
+    const response = await apiClient.patch<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }>(
+      `/api/v1/tasks/${taskId}/status`,
+      data
+    );
+    return response.data;
   }
 };

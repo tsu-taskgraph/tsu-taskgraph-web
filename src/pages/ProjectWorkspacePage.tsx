@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -9,12 +9,11 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  type Connection,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { projectsApi, type EdgeResponse, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
+import { projectsApi, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useTheme } from '../context/ThemeContext';
 import { SafariTopBar } from '../components/SafariTopBar';
@@ -36,17 +35,8 @@ import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
 import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
 import { TaskCreator } from '../components/workspace/TaskCreator';
 import { useUndoRedo } from '../hooks/useUndoRedo';
-
-type CopiedTaskNode = {
-  task: TaskNode;
-  position: { x: number; y: number };
-};
-
-type CopiedWorkspaceSelection = {
-  nodes: CopiedTaskNode[];
-  edges: Array<{ sourceTaskId: string; targetTaskId: string }>;
-  origin: { x: number; y: number };
-};
+import { useWorkspaceCopyPaste } from '../hooks/useWorkspaceCopyPaste';
+import { useWorkspaceConnections } from '../hooks/useWorkspaceConnections';
 
 const isEditableShortcutTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -76,17 +66,6 @@ export default function ProjectWorkspacePage() {
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
-  const [connectionHint, setConnectionHint] = useState<{
-    x: number;
-    y: number;
-    message: string;
-    variant: 'info' | 'success' | 'error';
-    closing: boolean;
-  } | null>(null);
-  const connectionSourceRef = useRef<string | null>(null);
-  const copiedSelectionRef = useRef<CopiedWorkspaceSelection | null>(null);
-  const lastPastePositionRef = useRef<{ x: number; y: number } | null>(null);
-  const pasteCountRef = useRef(0);
 
   const {
     takeSnapshot,
@@ -96,6 +75,56 @@ export default function ProjectWorkspacePage() {
     canRedo,
     updateCurrentState
   } = useUndoRedo<WorkspaceNode, TaskFlowEdge, ProjectGraphResponse>();
+
+  const closeEdgeToast = useCallback((id?: number) => {
+    setEdgeToast((current) => {
+      if (!current || (id && current.id !== id)) return current;
+      return { ...current, closing: true };
+    });
+
+    window.setTimeout(() => {
+      setEdgeToast((current) => {
+        if (!current || (id && current.id !== id)) return current;
+        return null;
+      });
+    }, 220);
+  }, []);
+
+  const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
+    const id = Date.now();
+    setEdgeToast({ id, message, variant, closing: false });
+    window.setTimeout(() => closeEdgeToast(id), 4300);
+  }, [closeEdgeToast]);
+
+  const {
+    connectionHint,
+    handleConnect,
+    handleConnectStart,
+    handleConnectEnd,
+    isValidConnection
+  } = useWorkspaceConnections({
+    projectId,
+    graph,
+    setGraph,
+    takeSnapshot,
+    showEdgeToast
+  });
+
+  const {
+    copySelectedTasks,
+    pasteCopiedTasks
+  } = useWorkspaceCopyPaste({
+    projectId,
+    nodes,
+    setNodes,
+    graph,
+    setGraph,
+    setProject,
+    viewMode,
+    flowInstance,
+    takeSnapshot,
+    showEdgeToast
+  });
 
   useEffect(() => {
     updateCurrentState(nodes, edges, graph);
@@ -260,159 +289,6 @@ export default function ProjectWorkspacePage() {
     openTaskCreator(event.clientX, event.clientY);
   }, [openTaskCreator]);
 
-  const closeEdgeToast = useCallback((id?: number) => {
-    setEdgeToast((current) => {
-      if (!current || (id && current.id !== id)) return current;
-      return { ...current, closing: true };
-    });
-
-    window.setTimeout(() => {
-      setEdgeToast((current) => {
-        if (!current || (id && current.id !== id)) return current;
-        return null;
-      });
-    }, 220);
-  }, []);
-
-  const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
-    const id = Date.now();
-    setEdgeToast({ id, message, variant, closing: false });
-    window.setTimeout(() => closeEdgeToast(id), 4300);
-  }, [closeEdgeToast]);
-
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!flowInstance) return;
-      lastPastePositionRef.current = flowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY
-      });
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, [flowInstance]);
-
-  const copySelectedTasks = useCallback(() => {
-    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
-      node.type === 'taskNode' && Boolean(node.selected)
-    );
-
-    if (selectedTaskNodes.length === 0) {
-      showEdgeToast('Select one or more tasks to copy.');
-      return;
-    }
-
-    const selectedIds = new Set(selectedTaskNodes.map((node) => node.id));
-    const selectedEdges = (graph?.edges ?? [])
-      .filter((edge) => selectedIds.has(edge.sourceTaskId) && selectedIds.has(edge.targetTaskId))
-      .map((edge) => ({ sourceTaskId: edge.sourceTaskId, targetTaskId: edge.targetTaskId }));
-
-    const minX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
-    const minY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
-
-    copiedSelectionRef.current = {
-      nodes: selectedTaskNodes.map((node) => ({
-        task: node.data.task,
-        position: node.position
-      })),
-      edges: selectedEdges,
-      origin: { x: minX, y: minY }
-    };
-    pasteCountRef.current = 0;
-    showEdgeToast(`Copied ${selectedTaskNodes.length} task${selectedTaskNodes.length === 1 ? '' : 's'}.`, 'success');
-  }, [graph?.edges, nodes, showEdgeToast]);
-
-  const pasteCopiedTasks = useCallback(async () => {
-    if (!projectId) return;
-    takeSnapshot();
-
-    const copiedSelection = copiedSelectionRef.current;
-    if (!copiedSelection || copiedSelection.nodes.length === 0) {
-      showEdgeToast('Clipboard is empty. Copy tasks first.');
-      return;
-    }
-
-    pasteCountRef.current += 1;
-    const fallbackPosition = flowInstance?.screenToFlowPosition({
-      x: Math.round(window.innerWidth / 2),
-      y: Math.round(window.innerHeight / 2)
-    }) ?? {
-      x: copiedSelection.origin.x + 56 * pasteCountRef.current,
-      y: copiedSelection.origin.y + 56 * pasteCountRef.current
-    };
-    const pasteOrigin = lastPastePositionRef.current ?? fallbackPosition;
-    const offset = {
-      x: pasteOrigin.x - copiedSelection.origin.x,
-      y: pasteOrigin.y - copiedSelection.origin.y
-    };
-
-    try {
-      const createdTasks = await Promise.all(copiedSelection.nodes.map(({ task, position }) =>
-        projectsApi.createTask(projectId, {
-          title: `Copy of ${task.title}`,
-          description: task.description,
-          category: task.category,
-          estimatedHours: task.estimatedHours,
-          startDate: task.startDate,
-          dueDate: task.dueDate,
-          positionX: Math.round(position.x + offset.x),
-          positionY: Math.round(position.y + offset.y)
-        })
-      ));
-
-      const taskIdMap = new Map<string, string>();
-      copiedSelection.nodes.forEach(({ task }, index) => {
-        taskIdMap.set(task.id, createdTasks[index].id);
-      });
-
-      const createdEdges: EdgeResponse[] = [];
-      for (const edge of copiedSelection.edges) {
-        const sourceTaskId = taskIdMap.get(edge.sourceTaskId);
-        const targetTaskId = taskIdMap.get(edge.targetTaskId);
-        if (!sourceTaskId || !targetTaskId) continue;
-
-        try {
-          const createdEdge = await projectsApi.createEdge(projectId, { sourceTaskId, targetTaskId });
-          createdEdges.push(createdEdge);
-        } catch { }
-      }
-
-      const createdTaskNodes: TaskFlowNode[] = createdTasks.map((task, index) => ({
-        id: task.id,
-        type: 'taskNode',
-        position: {
-          x: task.positionX,
-          y: task.positionY
-        },
-        data: { task, viewMode, index: (graph?.nodes.length ?? nodes.length) + index },
-        draggable: true,
-        selected: true
-      }));
-
-      setNodes((currentNodes) => [
-        ...currentNodes.map((node) => ({ ...node, selected: false })),
-        ...createdTaskNodes
-      ]);
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        nodes: [...currentGraph.nodes, ...createdTasks],
-        edges: [...currentGraph.edges, ...createdEdges]
-      } : currentGraph);
-      setProject((currentProject) => currentProject ? {
-        ...currentProject,
-        totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + createdTasks.reduce((sum, task) => sum + (task.estimatedHours ?? 0), 0),
-        updatedAt: createdTasks[createdTasks.length - 1]?.updatedAt ?? currentProject.updatedAt
-      } : currentProject);
-      setIsAligned(false);
-      showEdgeToast(`Pasted ${createdTasks.length} task${createdTasks.length === 1 ? '' : 's'}.`, 'success');
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(parsed.message);
-    }
-  }, [flowInstance, graph?.nodes.length, nodes.length, projectId, setNodes, showEdgeToast, viewMode, takeSnapshot]);
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableShortcutTarget(event.target)) return;
@@ -445,161 +321,6 @@ export default function ProjectWorkspacePage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [copySelectedTasks, pasteCopiedTasks, undo, redo, setNodes, setEdges, setGraph]);
-
-  const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
-    if (sourceTaskId === targetTaskId) return true;
-    if (!graph) return false;
-
-    const adjacency = new Map<string, string[]>();
-    graph.nodes.forEach((node) => adjacency.set(node.id, []));
-    graph.edges.forEach((edge) => {
-      adjacency.get(edge.sourceTaskId)?.push(edge.targetTaskId);
-    });
-
-    const stack = [targetTaskId];
-    const visited = new Set<string>();
-
-    while (stack.length > 0) {
-      const current = stack.pop();
-      if (!current || visited.has(current)) continue;
-      if (current === sourceTaskId) return true;
-
-      visited.add(current);
-      stack.push(...(adjacency.get(current) ?? []));
-    }
-
-    return false;
-  }, [graph]);
-
-  const getConnectionBlockReason = useCallback((sourceTaskId: string, targetTaskId: string) => {
-    if (sourceTaskId === targetTaskId) {
-      return 'Cannot connect a task to itself.';
-    }
-
-    const duplicateEdge = graph?.edges.some((edge) =>
-      edge.sourceTaskId === sourceTaskId && edge.targetTaskId === targetTaskId
-    );
-
-    if (duplicateEdge) {
-      return 'This dependency already exists.';
-    }
-
-    const targetTask = graph?.nodes.find((node) => node.id === targetTaskId);
-    if (targetTask?.status === 'COMPLETED') {
-      return 'Cannot create dependency to a completed task.';
-    }
-
-    if (wouldCreateCycle(sourceTaskId, targetTaskId)) {
-      return 'Cannot create dependency: cycle detected.';
-    }
-
-    return null;
-  }, [graph?.edges, graph?.nodes, wouldCreateCycle]);
-
-  const isValidConnection = useCallback((connection: Connection | TaskFlowEdge) => {
-    if (!connection.source || !connection.target) return false;
-
-    const blockReason = getConnectionBlockReason(connection.source, connection.target);
-    setConnectionHint((current) => {
-      if (!current) return current;
-      const nextMessage = blockReason ?? 'Release to create dependency.';
-      const nextVariant = blockReason ? 'error' : 'success';
-      if (current.message === nextMessage && current.variant === nextVariant) return current;
-      return {
-        ...current,
-        message: nextMessage,
-        variant: nextVariant,
-        closing: false
-      };
-    });
-
-    return !blockReason;
-  }, [getConnectionBlockReason]);
-
-  const getConnectionClientPoint = useCallback((event: MouseEvent | TouchEvent) => {
-    if ('touches' in event && event.touches.length > 0) {
-      return { x: event.touches[0].clientX, y: event.touches[0].clientY };
-    }
-
-    if ('changedTouches' in event && event.changedTouches.length > 0) {
-      return { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
-    }
-
-    return { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
-  }, []);
-
-  const handleConnectStart = useCallback((event: MouseEvent | TouchEvent, params: { nodeId?: string | null }) => {
-    connectionSourceRef.current = params.nodeId ?? null;
-    const point = getConnectionClientPoint(event);
-    setConnectionHint({
-      x: point.x,
-      y: point.y,
-      message: 'Drag to a target task.',
-      variant: 'info',
-      closing: false
-    });
-  }, [getConnectionClientPoint]);
-
-  const handleConnectEnd = useCallback(() => {
-    const linger = connectionHint?.variant === 'error';
-    connectionSourceRef.current = null;
-
-    window.setTimeout(() => {
-      setConnectionHint((current) => current ? { ...current, closing: true } : current);
-      window.setTimeout(() => setConnectionHint(null), 100);
-    }, linger ? 450 : 0);
-  }, [connectionHint?.variant]);
-
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!connectionSourceRef.current) return;
-      setConnectionHint((current) => current ? {
-        ...current,
-        x: event.clientX,
-        y: event.clientY
-      } : current);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, []);
-
-  const isCycleApiError = useCallback((err: unknown, statusCode?: number) => {
-    if (statusCode !== 400) return false;
-    const data = axios.isAxiosError(err) ? err.response?.data : err;
-    const serialized = typeof data === 'string' ? data : JSON.stringify(data ?? '');
-    const lower = serialized.toLowerCase();
-    return lower.includes('cycle') || lower.includes('цик');
-  }, []);
-
-  const handleConnect = useCallback(async (connection: Connection) => {
-    if (!projectId || !connection.source || !connection.target) return;
-    takeSnapshot();
-
-    const blockReason = getConnectionBlockReason(connection.source, connection.target);
-
-    if (blockReason) {
-      showEdgeToast(blockReason);
-      return;
-    }
-
-    try {
-      const createdEdge = await projectsApi.createEdge(projectId, {
-        sourceTaskId: connection.source,
-        targetTaskId: connection.target
-      });
-
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        edges: [...currentGraph.edges, createdEdge]
-      } : currentGraph);
-      showEdgeToast('Dependency created.', 'success');
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
-    }
-  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot]);
 
   const handleTaskCreated = useCallback((createdTask: TaskNode) => {
     if (!taskDraftPosition) return;
