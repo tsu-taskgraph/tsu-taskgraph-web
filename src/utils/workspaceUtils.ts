@@ -4,6 +4,12 @@ import type { ProjectGraphResponse, TaskNode } from '../api/projects';
 export type ViewMode = 'dot' | 'label' | 'full';
 export type EdgeTypeMode = 'smoothstep' | 'default' | 'straight' | 'step';
 export type ThemeMode = 'light' | 'dark';
+export type TaskCreatorMode = 'context' | 'toolbar';
+
+export type TaskDraftPosition = {
+  flow: { x: number; y: number };
+  screen: { x: number; y: number };
+};
 
 export type TaskStatus = TaskNode['status'];
 

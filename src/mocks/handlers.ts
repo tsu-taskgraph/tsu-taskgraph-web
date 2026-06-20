@@ -1045,5 +1045,80 @@ export const handlers = [
     project.updatedAt = now;
 
     return HttpResponse.json(createdTask, { status: 201 });
+  }),
+
+  http.post('*/api/v1/projects/:projectId/edges', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const graph = projectGraphs[projectId];
+
+    if (!graph) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const body = await request.json() as {
+      sourceTaskId?: string;
+      targetTaskId?: string;
+    };
+
+    const sourceTaskId = body.sourceTaskId;
+    const targetTaskId = body.targetTaskId;
+
+    if (!sourceTaskId || !targetTaskId) {
+      return HttpResponse.json({ message: 'sourceTaskId and targetTaskId are required.' }, { status: 400 });
+    }
+
+    if (sourceTaskId === targetTaskId) {
+      return HttpResponse.json({ message: 'Cannot create dependency: source and target task are the same.' }, { status: 400 });
+    }
+
+    const sourceExists = graph.nodes.some((node) => node.id === sourceTaskId);
+    const targetExists = graph.nodes.some((node) => node.id === targetTaskId);
+
+    if (!sourceExists || !targetExists) {
+      return HttpResponse.json({ message: 'Cannot create dependency: task not found.' }, { status: 404 });
+    }
+
+    const targetTask = graph.nodes.find((node) => node.id === targetTaskId);
+    if (targetTask?.status === 'COMPLETED') {
+      return HttpResponse.json({ message: 'Cannot create dependency to a completed task.' }, { status: 400 });
+    }
+
+    const duplicate = graph.edges.some((edge) =>
+      edge.sourceTaskId === sourceTaskId && edge.targetTaskId === targetTaskId
+    );
+
+    if (duplicate) {
+      return HttpResponse.json({ message: 'Cannot create dependency: edge already exists.' }, { status: 409 });
+    }
+
+    const adjacency = new Map<string, string[]>();
+    graph.nodes.forEach((node) => adjacency.set(node.id as string, []));
+    graph.edges.forEach((edge) => {
+      const source = edge.sourceTaskId as string;
+      const target = edge.targetTaskId as string;
+      adjacency.get(source)?.push(target);
+    });
+
+    const stack = [targetTaskId];
+    const visited = new Set<string>();
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (!current || visited.has(current)) continue;
+      if (current === sourceTaskId) {
+        return HttpResponse.json({ message: 'Cannot create dependency: cycle detected.' }, { status: 400 });
+      }
+      visited.add(current);
+      stack.push(...(adjacency.get(current) ?? []));
+    }
+
+    const createdEdge = {
+      id: `manual-edge-${Date.now()}`,
+      sourceTaskId,
+      targetTaskId
+    };
+
+    graph.edges.push(createdEdge);
+    return HttpResponse.json(createdEdge, { status: 201 });
   })
 ];

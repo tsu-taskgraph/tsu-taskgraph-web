@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   ReactFlow,
@@ -9,22 +9,12 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  type Connection,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  AlertCircle,
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  Moon,
-  Plus,
-  RefreshCw,
-  ShieldAlert,
-  Sparkles,
-  Sun,
-} from 'lucide-react';
-import { projectsApi, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
+import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
+import { projectsApi, type EdgeResponse, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useTheme } from '../context/ThemeContext';
 import { SafariTopBar } from '../components/SafariTopBar';
@@ -36,40 +26,32 @@ import {
   type WorkspaceNode,
   type TaskFlowEdge,
   type TaskFlowNode,
+  type TaskCreatorMode,
+  type TaskDraftPosition
 } from '../utils/workspaceUtils';
 import { TaskNodeCard } from '../components/workspace/TaskNodeCard';
 import { LayerHeaderNode } from '../components/workspace/LayerHeaderNode';
 import { TopologicalLanesHeader } from '../components/workspace/TopologicalLanesHeader';
 import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
+import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
+import { TaskCreator } from '../components/workspace/TaskCreator';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 
-type TaskCategory = NonNullable<TaskNode['category']>;
-
-type TaskDraftPosition = {
-  flow: { x: number; y: number };
-  screen: { x: number; y: number };
+type CopiedTaskNode = {
+  task: TaskNode;
+  position: { x: number; y: number };
 };
 
-type TaskCreatorMode = 'context' | 'toolbar';
-
-const taskCategories: TaskCategory[] = ['BACKEND', 'FRONTEND', 'DEVOPS', 'TESTING', 'DOCUMENTATION', 'DESIGN', 'OTHER'];
-
-const taskCategoryTagClass: Record<TaskCategory, string> = {
-  BACKEND: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 light:bg-indigo-500/10 light:text-indigo-700 light:border-indigo-500/20',
-  FRONTEND: 'bg-pink-500/10 text-pink-300 border-pink-500/20 light:bg-pink-500/10 light:text-pink-700 light:border-pink-500/20',
-  DEVOPS: 'bg-orange-500/10 text-orange-300 border-orange-500/20 light:bg-orange-500/10 light:text-orange-700 light:border-orange-500/20',
-  TESTING: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20 light:bg-emerald-500/10 light:text-emerald-700 light:border-emerald-500/20',
-  DOCUMENTATION: 'bg-blue-500/10 text-blue-300 border-blue-500/20 light:bg-blue-500/10 light:text-blue-700 light:border-blue-500/20',
-  DESIGN: 'bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20 light:bg-fuchsia-500/10 light:text-fuchsia-700 light:border-fuchsia-500/20',
-  OTHER: 'bg-slate-500/10 text-slate-300 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200'
+type CopiedWorkspaceSelection = {
+  nodes: CopiedTaskNode[];
+  edges: Array<{ sourceTaskId: string; targetTaskId: string }>;
+  origin: { x: number; y: number };
 };
 
-const taskFormFieldClass = 'w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm font-medium text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900 light:placeholder:text-slate-400 light:focus:border-brand-500 light:focus:ring-brand-500';
-
-const projectStatusClass: Record<ProjectResponse['status'], string> = {
-  ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30',
-  COMPLETED: 'bg-blue-500/10 text-blue-400 border-blue-500/20 light:bg-blue-500/15 light:text-blue-700 light:border-blue-500/30',
-  ARCHIVED: 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200',
-  PENDING_AI: 'bg-amber-500/10 text-amber-400 border-amber-500/20 light:bg-amber-500/15 light:text-amber-700 light:border-amber-500/30'
+const isEditableShortcutTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
 };
 
 export default function ProjectWorkspacePage() {
@@ -90,22 +72,43 @@ export default function ProjectWorkspacePage() {
   const [isAligned, setIsAligned] = useState(true);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<WorkspaceNode, TaskFlowEdge> | null>(null);
   const [taskDraftPosition, setTaskDraftPosition] = useState<TaskDraftPosition | null>(null);
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDescription, setTaskDescription] = useState('');
-  const [taskCategory, setTaskCategory] = useState<TaskCategory>('OTHER');
-  const [taskHours, setTaskHours] = useState('0.0');
-  const [taskFormError, setTaskFormError] = useState<string | null>(null);
-  const [taskFieldErrors, setTaskFieldErrors] = useState<{ title?: string; hours?: string }>({});
-  const [creatingTask, setCreatingTask] = useState(false);
   const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+  const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
+  const [connectionHint, setConnectionHint] = useState<{
+    x: number;
+    y: number;
+    message: string;
+    variant: 'info' | 'success' | 'error';
+    closing: boolean;
+  } | null>(null);
+  const connectionSourceRef = useRef<string | null>(null);
+  const copiedSelectionRef = useRef<CopiedWorkspaceSelection | null>(null);
+  const lastPastePositionRef = useRef<{ x: number; y: number } | null>(null);
+  const pasteCountRef = useRef(0);
+
+  const {
+    takeSnapshot,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    updateCurrentState
+  } = useUndoRedo<WorkspaceNode, TaskFlowEdge, ProjectGraphResponse>();
+
+  useEffect(() => {
+    updateCurrentState(nodes, edges, graph);
+  }, [nodes, edges, graph, updateCurrentState]);
 
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
     layerHeader: LayerHeaderNode
   }), [theme]);
+
+  const handleNodeDragStart = useCallback(() => {
+    takeSnapshot();
+  }, [takeSnapshot]);
 
   const handleNodeDrag = useCallback((_event: any, node: any) => {
     if (node.type !== 'taskNode') return;
@@ -149,10 +152,72 @@ export default function ProjectWorkspacePage() {
 
   const autoArrangeLayout = useCallback(() => {
     if (!graph) return;
+    takeSnapshot();
+
     const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
-    setNodes(flow.nodes);
-    setIsAligned(true);
-  }, [graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes, setNodes]);
+    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
+      node.type === 'taskNode' && Boolean(node.selected)
+    );
+    const selectedTaskIds = new Set(selectedTaskNodes.map((node) => node.id));
+
+    if (selectedTaskIds.size === 0) {
+      setNodes(flow.nodes);
+      setIsAligned(true);
+      return;
+    }
+
+    const allTaskNodesSelected = selectedTaskIds.size === graph.nodes.length;
+
+    if (allTaskNodesSelected) {
+      setNodes(flow.nodes.map((node) => (
+        node.type === 'taskNode' ? { ...node, selected: true } : node
+      )));
+      setIsAligned(true);
+      return;
+    }
+
+    const selectedGraph: ProjectGraphResponse = {
+      ...graph,
+      nodes: graph.nodes.filter((node) => selectedTaskIds.has(node.id)),
+      edges: graph.edges.filter((edge) =>
+        selectedTaskIds.has(edge.sourceTaskId) && selectedTaskIds.has(edge.targetTaskId)
+      )
+    };
+    const selectedFlow = mapGraphToFlow(selectedGraph, theme, viewMode, edgeType, edgesVisible, false);
+    const alignedSelectedTaskNodes = selectedFlow.nodes.filter((node): node is TaskFlowNode => node.type === 'taskNode');
+    const alignedSelectedNodeById = new Map(alignedSelectedTaskNodes.map((node) => [node.id, node]));
+
+    const currentMinX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
+    const currentMinY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
+    const alignedMinX = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.x));
+    const alignedMinY = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.y));
+    const offset = {
+      x: currentMinX - alignedMinX,
+      y: currentMinY - alignedMinY
+    };
+
+    setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+      if (node.type !== 'taskNode' || !selectedTaskIds.has(node.id)) {
+        return node;
+      }
+
+      const alignedNode = alignedSelectedNodeById.get(node.id);
+      if (!alignedNode) return node;
+
+      const updatedNode: TaskFlowNode = {
+        ...node,
+        position: {
+          x: alignedNode.position.x + offset.x,
+          y: alignedNode.position.y + offset.y
+        },
+        data: alignedNode.data,
+        selected: true
+      };
+
+      return updatedNode;
+    }));
+    setIsAligned(false);
+  }, [edgeType, edgesVisible, graph, nodes, setNodes, showTopologicalLanes, theme, viewMode, takeSnapshot]);
 
   const openTaskCreator = useCallback((screenX?: number, screenY?: number, mode: TaskCreatorMode = 'context') => {
     const fallbackScreen = {
@@ -170,7 +235,6 @@ export default function ProjectWorkspacePage() {
 
     setTaskCreatorMode(mode);
     setTaskCreatorAnimationKey((key) => key + 1);
-    setCategoryDropdownOpen(false);
     setTaskDraftPosition({
       screen: {
         x: Math.min(Math.max(screen.x, 12), maxPopoverX),
@@ -181,185 +245,394 @@ export default function ProjectWorkspacePage() {
         y: Math.round(flow.y)
       }
     });
-    setTaskFormError(null);
-    setTaskFieldErrors({});
   }, [flowInstance]);
 
   const closeTaskCreator = useCallback(() => {
-    if (creatingTask) return;
     setIsClosing(true);
     setTimeout(() => {
       setTaskDraftPosition(null);
       setIsClosing(false);
-      setTaskFormError(null);
-      setTaskFieldErrors({});
-      setCategoryDropdownOpen(false);
     }, 200);
-  }, [creatingTask]);
+  }, []);
 
   const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
     event.preventDefault();
     openTaskCreator(event.clientX, event.clientY);
   }, [openTaskCreator]);
 
-  const parseHoursValue = useCallback((value: string): number | null => {
-    const normalized = value.trim().replace(',', '.');
-    if (!normalized) return null;
-
-    if (normalized.includes(':')) {
-      const [hoursPart, minutesPart = '0'] = normalized.split(':');
-      const hours = Number(hoursPart || 0);
-      const minutes = Number(minutesPart || 0);
-
-      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || minutes < 0 || minutes >= 60) {
-        return Number.NaN;
-      }
-
-      return hours + minutes / 60;
-    }
-
-    return Number(normalized);
-  }, []);
-
-  const formatDecimalHours = useCallback((hours: number) => {
-    if (!Number.isFinite(hours) || hours < 0) return '0.0';
-    const fixed = hours.toFixed(2);
-    const trimmed = fixed.replace(/0$/, '');
-    return trimmed.includes('.') ? trimmed : `${trimmed}.0`;
-  }, []);
-
-  const formatHoursValue = useCallback((value: string) => {
-    const normalized = value.trim().replace(',', '.');
-    if (!normalized) return '0.0';
-
-    if (normalized.includes(':')) {
-      const [rawHours = '0', rawMinutes = '0'] = normalized.split(':');
-      const hours = Number(rawHours || 0);
-      const minutes = Number(rawMinutes || 0);
-
-      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || minutes < 0 || minutes >= 60) {
-        return '0.0';
-      }
-
-      return `${Math.floor(hours)}:${String(Math.floor(minutes)).padStart(2, '0')}`;
-    }
-
-    const parsed = Number(normalized);
-    return formatDecimalHours(parsed);
-  }, [formatDecimalHours]);
-
-  const maskHoursValue = useCallback((value: string) => {
-    const normalized = value.replace(',', '.');
-
-    if (normalized.includes(':')) {
-      const [rawHours = '', rawMinutes = ''] = normalized.split(':');
-      const hours = rawHours.replace(/\D/g, '').slice(0, 4);
-      const minutes = rawMinutes.replace(/\D/g, '').slice(0, 2);
-      return `${hours || '0'}:${minutes}`;
-    }
-
-    const cleaned = normalized
-      .replace(/[^0-9.]/g, '')
-      .replace(/(\..*)\./g, '$1');
-
-    const [rawInteger = '', rawDecimal] = cleaned.split('.');
-    const integerPart = rawInteger.replace(/^0+(?=\d)/, '') || '0';
-
-    if (rawDecimal !== undefined) {
-      return `${integerPart}.${rawDecimal.slice(0, 2)}`;
-    }
-
-    return integerPart;
-  }, []);
-
-  const updateHoursByStep = useCallback((direction: 1 | -1) => {
-    setTaskHours((current) => {
-      const parsed = parseHoursValue(current);
-      const next = Math.max(0, (parsed !== null && Number.isFinite(parsed) ? parsed : 0) + direction * 0.25);
-      return formatDecimalHours(next);
+  const closeEdgeToast = useCallback((id?: number) => {
+    setEdgeToast((current) => {
+      if (!current || (id && current.id !== id)) return current;
+      return { ...current, closing: true };
     });
-    setTaskFormError(null);
-    setTaskFieldErrors((prev) => ({ ...prev, hours: undefined }));
-  }, [formatDecimalHours, parseHoursValue]);
 
-  const createTask = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault();
+    window.setTimeout(() => {
+      setEdgeToast((current) => {
+        if (!current || (id && current.id !== id)) return current;
+        return null;
+      });
+    }, 220);
+  }, []);
 
-    if (!projectId || !taskDraftPosition) return;
+  const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
+    const id = Date.now();
+    setEdgeToast({ id, message, variant, closing: false });
+    window.setTimeout(() => closeEdgeToast(id), 4300);
+  }, [closeEdgeToast]);
 
-    const title = taskTitle.trim();
-    const normalizedHours = parseHoursValue(taskHours);
-    const nextFieldErrors: { title?: string; hours?: string } = {};
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!flowInstance) return;
+      lastPastePositionRef.current = flowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY
+      });
+    };
 
-    if (!title) {
-      nextFieldErrors.title = 'Task title is required.';
-    }
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => window.removeEventListener('pointermove', handlePointerMove);
+  }, [flowInstance]);
 
-    if (normalizedHours !== null && (!Number.isFinite(normalizedHours) || normalizedHours < 0)) {
-      nextFieldErrors.hours = 'Enter valid hours.';
-    }
+  const copySelectedTasks = useCallback(() => {
+    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
+      node.type === 'taskNode' && Boolean(node.selected)
+    );
 
-    if (Object.keys(nextFieldErrors).length > 0) {
-      setTaskFieldErrors(nextFieldErrors);
-      setTaskFormError(null);
+    if (selectedTaskNodes.length === 0) {
+      showEdgeToast('Select one or more tasks to copy.');
       return;
     }
 
-    setCreatingTask(true);
-    setTaskFormError(null);
-    setTaskFieldErrors({});
+    const selectedIds = new Set(selectedTaskNodes.map((node) => node.id));
+    const selectedEdges = (graph?.edges ?? [])
+      .filter((edge) => selectedIds.has(edge.sourceTaskId) && selectedIds.has(edge.targetTaskId))
+      .map((edge) => ({ sourceTaskId: edge.sourceTaskId, targetTaskId: edge.targetTaskId }));
+
+    const minX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
+    const minY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
+
+    copiedSelectionRef.current = {
+      nodes: selectedTaskNodes.map((node) => ({
+        task: node.data.task,
+        position: node.position
+      })),
+      edges: selectedEdges,
+      origin: { x: minX, y: minY }
+    };
+    pasteCountRef.current = 0;
+    showEdgeToast(`Copied ${selectedTaskNodes.length} task${selectedTaskNodes.length === 1 ? '' : 's'}.`, 'success');
+  }, [graph?.edges, nodes, showEdgeToast]);
+
+  const pasteCopiedTasks = useCallback(async () => {
+    if (!projectId) return;
+    takeSnapshot();
+
+    const copiedSelection = copiedSelectionRef.current;
+    if (!copiedSelection || copiedSelection.nodes.length === 0) {
+      showEdgeToast('Clipboard is empty. Copy tasks first.');
+      return;
+    }
+
+    pasteCountRef.current += 1;
+    const fallbackPosition = flowInstance?.screenToFlowPosition({
+      x: Math.round(window.innerWidth / 2),
+      y: Math.round(window.innerHeight / 2)
+    }) ?? {
+      x: copiedSelection.origin.x + 56 * pasteCountRef.current,
+      y: copiedSelection.origin.y + 56 * pasteCountRef.current
+    };
+    const pasteOrigin = lastPastePositionRef.current ?? fallbackPosition;
+    const offset = {
+      x: pasteOrigin.x - copiedSelection.origin.x,
+      y: pasteOrigin.y - copiedSelection.origin.y
+    };
 
     try {
-      const createdTask = await projectsApi.createTask(projectId, {
-        title,
-        description: taskDescription.trim() || null,
-        category: taskCategory,
-        estimatedHours: normalizedHours,
-        positionX: taskDraftPosition.flow.x,
-        positionY: taskDraftPosition.flow.y
+      const createdTasks = await Promise.all(copiedSelection.nodes.map(({ task, position }) =>
+        projectsApi.createTask(projectId, {
+          title: `Copy of ${task.title}`,
+          description: task.description,
+          category: task.category,
+          estimatedHours: task.estimatedHours,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+          positionX: Math.round(position.x + offset.x),
+          positionY: Math.round(position.y + offset.y)
+        })
+      ));
+
+      const taskIdMap = new Map<string, string>();
+      copiedSelection.nodes.forEach(({ task }, index) => {
+        taskIdMap.set(task.id, createdTasks[index].id);
       });
 
-      const createdNode: TaskFlowNode = {
-        id: createdTask.id,
+      const createdEdges: EdgeResponse[] = [];
+      for (const edge of copiedSelection.edges) {
+        const sourceTaskId = taskIdMap.get(edge.sourceTaskId);
+        const targetTaskId = taskIdMap.get(edge.targetTaskId);
+        if (!sourceTaskId || !targetTaskId) continue;
+
+        try {
+          const createdEdge = await projectsApi.createEdge(projectId, { sourceTaskId, targetTaskId });
+          createdEdges.push(createdEdge);
+        } catch { }
+      }
+
+      const createdTaskNodes: TaskFlowNode[] = createdTasks.map((task, index) => ({
+        id: task.id,
         type: 'taskNode',
         position: {
-          x: createdTask.positionX ?? taskDraftPosition.flow.x,
-          y: createdTask.positionY ?? taskDraftPosition.flow.y
+          x: task.positionX,
+          y: task.positionY
         },
-        data: { task: createdTask, viewMode, index: graph?.nodes.length ?? nodes.length },
+        data: { task, viewMode, index: (graph?.nodes.length ?? nodes.length) + index },
         draggable: true,
         selected: true
-      };
+      }));
 
       setNodes((currentNodes) => [
         ...currentNodes.map((node) => ({ ...node, selected: false })),
-        createdNode
+        ...createdTaskNodes
       ]);
       setGraph((currentGraph) => currentGraph ? {
         ...currentGraph,
-        nodes: [...currentGraph.nodes, createdTask]
+        nodes: [...currentGraph.nodes, ...createdTasks],
+        edges: [...currentGraph.edges, ...createdEdges]
       } : currentGraph);
       setProject((currentProject) => currentProject ? {
         ...currentProject,
-        totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + (createdTask.estimatedHours ?? 0),
-        updatedAt: createdTask.updatedAt
+        totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + createdTasks.reduce((sum, task) => sum + (task.estimatedHours ?? 0), 0),
+        updatedAt: createdTasks[createdTasks.length - 1]?.updatedAt ?? currentProject.updatedAt
       } : currentProject);
       setIsAligned(false);
-      setTaskDraftPosition(null);
-      setTaskTitle('');
-      setTaskDescription('');
-      setTaskCategory('OTHER');
-      setTaskHours('0.0');
-      setTaskFieldErrors({});
-      setCategoryDropdownOpen(false);
+      showEdgeToast(`Pasted ${createdTasks.length} task${createdTasks.length === 1 ? '' : 's'}.`, 'success');
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
-      setTaskFormError(parsed.message);
-    } finally {
-      setCreatingTask(false);
+      showEdgeToast(parsed.message);
     }
-  }, [graph?.nodes.length, nodes.length, parseHoursValue, projectId, setNodes, taskCategory, taskDescription, taskDraftPosition, taskHours, taskTitle, viewMode]);
+  }, [flowInstance, graph?.nodes.length, nodes.length, projectId, setNodes, showEdgeToast, viewMode, takeSnapshot]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableShortcutTarget(event.target)) return;
+      const isModifierPressed = event.metaKey || event.ctrlKey;
+      if (!isModifierPressed) return;
+
+      const key = event.key.toLowerCase();
+      if (key === 'c') {
+        event.preventDefault();
+        copySelectedTasks();
+      }
+      if (key === 'v') {
+        event.preventDefault();
+        void pasteCopiedTasks();
+      }
+      if (key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          redo(setNodes, setEdges, setGraph);
+        } else {
+          undo(setNodes, setEdges, setGraph);
+        }
+      }
+      if (key === 'y') {
+        event.preventDefault();
+        redo(setNodes, setEdges, setGraph);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [copySelectedTasks, pasteCopiedTasks, undo, redo, setNodes, setEdges, setGraph]);
+
+  const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
+    if (sourceTaskId === targetTaskId) return true;
+    if (!graph) return false;
+
+    const adjacency = new Map<string, string[]>();
+    graph.nodes.forEach((node) => adjacency.set(node.id, []));
+    graph.edges.forEach((edge) => {
+      adjacency.get(edge.sourceTaskId)?.push(edge.targetTaskId);
+    });
+
+    const stack = [targetTaskId];
+    const visited = new Set<string>();
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (!current || visited.has(current)) continue;
+      if (current === sourceTaskId) return true;
+
+      visited.add(current);
+      stack.push(...(adjacency.get(current) ?? []));
+    }
+
+    return false;
+  }, [graph]);
+
+  const getConnectionBlockReason = useCallback((sourceTaskId: string, targetTaskId: string) => {
+    if (sourceTaskId === targetTaskId) {
+      return 'Cannot connect a task to itself.';
+    }
+
+    const duplicateEdge = graph?.edges.some((edge) =>
+      edge.sourceTaskId === sourceTaskId && edge.targetTaskId === targetTaskId
+    );
+
+    if (duplicateEdge) {
+      return 'This dependency already exists.';
+    }
+
+    const targetTask = graph?.nodes.find((node) => node.id === targetTaskId);
+    if (targetTask?.status === 'COMPLETED') {
+      return 'Cannot create dependency to a completed task.';
+    }
+
+    if (wouldCreateCycle(sourceTaskId, targetTaskId)) {
+      return 'Cannot create dependency: cycle detected.';
+    }
+
+    return null;
+  }, [graph?.edges, graph?.nodes, wouldCreateCycle]);
+
+  const isValidConnection = useCallback((connection: Connection | TaskFlowEdge) => {
+    if (!connection.source || !connection.target) return false;
+
+    const blockReason = getConnectionBlockReason(connection.source, connection.target);
+    setConnectionHint((current) => {
+      if (!current) return current;
+      const nextMessage = blockReason ?? 'Release to create dependency.';
+      const nextVariant = blockReason ? 'error' : 'success';
+      if (current.message === nextMessage && current.variant === nextVariant) return current;
+      return {
+        ...current,
+        message: nextMessage,
+        variant: nextVariant,
+        closing: false
+      };
+    });
+
+    return !blockReason;
+  }, [getConnectionBlockReason]);
+
+  const getConnectionClientPoint = useCallback((event: MouseEvent | TouchEvent) => {
+    if ('touches' in event && event.touches.length > 0) {
+      return { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }
+
+    if ('changedTouches' in event && event.changedTouches.length > 0) {
+      return { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
+    }
+
+    return { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
+  }, []);
+
+  const handleConnectStart = useCallback((event: MouseEvent | TouchEvent, params: { nodeId?: string | null }) => {
+    connectionSourceRef.current = params.nodeId ?? null;
+    const point = getConnectionClientPoint(event);
+    setConnectionHint({
+      x: point.x,
+      y: point.y,
+      message: 'Drag to a target task.',
+      variant: 'info',
+      closing: false
+    });
+  }, [getConnectionClientPoint]);
+
+  const handleConnectEnd = useCallback(() => {
+    const linger = connectionHint?.variant === 'error';
+    connectionSourceRef.current = null;
+
+    window.setTimeout(() => {
+      setConnectionHint((current) => current ? { ...current, closing: true } : current);
+      window.setTimeout(() => setConnectionHint(null), 100);
+    }, linger ? 450 : 0);
+  }, [connectionHint?.variant]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!connectionSourceRef.current) return;
+      setConnectionHint((current) => current ? {
+        ...current,
+        x: event.clientX,
+        y: event.clientY
+      } : current);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => window.removeEventListener('pointermove', handlePointerMove);
+  }, []);
+
+  const isCycleApiError = useCallback((err: unknown, statusCode?: number) => {
+    if (statusCode !== 400) return false;
+    const data = axios.isAxiosError(err) ? err.response?.data : err;
+    const serialized = typeof data === 'string' ? data : JSON.stringify(data ?? '');
+    const lower = serialized.toLowerCase();
+    return lower.includes('cycle') || lower.includes('цик');
+  }, []);
+
+  const handleConnect = useCallback(async (connection: Connection) => {
+    if (!projectId || !connection.source || !connection.target) return;
+    takeSnapshot();
+
+    const blockReason = getConnectionBlockReason(connection.source, connection.target);
+
+    if (blockReason) {
+      showEdgeToast(blockReason);
+      return;
+    }
+
+    try {
+      const createdEdge = await projectsApi.createEdge(projectId, {
+        sourceTaskId: connection.source,
+        targetTaskId: connection.target
+      });
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        edges: [...currentGraph.edges, createdEdge]
+      } : currentGraph);
+      showEdgeToast('Dependency created.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
+    }
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot]);
+
+  const handleTaskCreated = useCallback((createdTask: TaskNode) => {
+    if (!taskDraftPosition) return;
+    takeSnapshot();
+
+    const createdNode: TaskFlowNode = {
+      id: createdTask.id,
+      type: 'taskNode',
+      position: {
+        x: createdTask.positionX ?? taskDraftPosition.flow.x,
+        y: createdTask.positionY ?? taskDraftPosition.flow.y
+      },
+      data: { task: createdTask, viewMode, index: graph?.nodes.length ?? nodes.length },
+      draggable: true,
+      selected: true
+    };
+
+    setNodes((currentNodes) => [
+      ...currentNodes.map((node) => ({ ...node, selected: false })),
+      createdNode
+    ]);
+    setGraph((currentGraph) => currentGraph ? {
+      ...currentGraph,
+      nodes: [...currentGraph.nodes, createdTask]
+    } : currentGraph);
+    setProject((currentProject) => currentProject ? {
+      ...currentProject,
+      totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + (createdTask.estimatedHours ?? 0),
+      updatedAt: createdTask.updatedAt
+    } : currentProject);
+    setIsAligned(false);
+    setTaskDraftPosition(null);
+  }, [graph?.nodes.length, nodes.length, taskDraftPosition, viewMode, setNodes, takeSnapshot]);
 
   const graphStats = useMemo(() => {
     const allNodes = graph?.nodes ?? [];
@@ -449,14 +722,14 @@ export default function ProjectWorkspacePage() {
     const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
     setNodes((currentNodes) => {
       const currentNodeById = new Map(currentNodes.map((node) => [node.id, node]));
+      const useNewPosition = (nodeType: string | undefined) => nodeType === 'layerHeader';
 
       return flow.nodes.map((node) => {
         const currentNode = currentNodeById.get(node.id);
-        const useNewPosition = node.type === 'layerHeader';
 
         return {
           ...node,
-          position: useNewPosition ? node.position : (currentNode?.position ?? node.position),
+          position: useNewPosition(node.type) ? node.position : (currentNode?.position ?? node.position),
           selected: currentNode?.selected
         };
       });
@@ -469,12 +742,6 @@ export default function ProjectWorkspacePage() {
     const layers = Array.from(new Set(graph.nodes.map((n: TaskNode) => n.layer).filter((l): l is number => typeof l === 'number'))) as number[];
     return layers.sort((a, b) => a - b);
   }, [graph]);
-
-  const categoryDropdownOpensUp = Boolean(
-    taskDraftPosition &&
-    typeof window !== 'undefined' &&
-    taskDraftPosition.screen.y > window.innerHeight - 520
-  );
 
   return (
     <div className="relative min-h-screen bg-slate-950 light:bg-[#f1f5f9] text-slate-100 light:text-slate-900 flex flex-col font-sans transition-colors duration-300">
@@ -498,79 +765,16 @@ export default function ProjectWorkspacePage() {
         <rect width="100%" height="100%" filter="url(#workspaceNoiseFilter)" />
       </svg>
 
-      <div className={`absolute inset-0 z-0 pointer-events-none md:hidden ${theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'}`} />
-      <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 to-transparent pointer-events-none z-30 light:from-[#f1f5f9]" />
-
-      <div className="sticky top-0 z-40 h-[88px] w-full pointer-events-none sm:h-24">
-        <header className={`w-full pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'}`}>
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className={`relative z-50 flex h-14 items-center justify-between rounded-2xl border px-4 shadow-lg backdrop-blur-xl transition-all duration-500 sm:h-16 sm:px-6 animate-slide-down-fade ${isScrolled
-              ? 'border-brand-500/20 bg-[#020617]/70 shadow-brand-500/5 light:bg-white/75 light:border-brand-500/20'
-              : 'border-white/10 bg-[#020617]/70 shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10'
-              }`}>
-              <div className="flex min-w-0 items-center gap-3">
-                <Link
-                  to="/"
-                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/45 text-slate-300 backdrop-blur-xl transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:text-brand-600"
-                  aria-label="Back to dashboard"
-                >
-                  <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                </Link>
-
-                <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <h1 className="truncate text-base font-bold tracking-tight text-white light:text-slate-900 sm:text-lg max-w-[120px] sm:max-w-[280px] md:max-w-[420px] lg:max-w-[600px]" title={project?.name}>
-                      {project?.name
-                        ? (project.name.length > 80 ? `${project.name.slice(0, 80)}...` : project.name)
-                        : 'Project Workspace'}
-                    </h1>
-                    {project && (
-                      <span className={`hidden shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline-flex ${projectStatusClass[project.status]}`}>
-                        {project.status.replace('_', ' ')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="hidden truncate text-xs text-slate-400 light:text-slate-600 sm:block max-w-[180px] sm:max-w-[280px] md:max-w-[420px] lg:max-w-[600px]">
-                    {project?.description
-                      ? (project.description.length > 120 ? `${project.description.slice(0, 120)}...` : project.description)
-                      : 'Interactive task graph · dependencies and execution flow'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 xl:flex">
-                    <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
-                    <span>{graph.enrichmentStatus}</span>
-                  </div>
-                )}
-                <button
-                  onClick={() => loadWorkspace(true)}
-                  disabled={refreshing || loading}
-                  className="flex h-9 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/45 text-xs font-semibold text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900 w-9 lg:w-auto px-0 lg:px-3 shrink-0"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                  <span className="hidden lg:inline">Refresh</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-slate-950/45 text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 cursor-pointer light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900 group shrink-0"
-                  aria-label="Toggle theme"
-                  title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                >
-                  {theme === 'light' ? (
-                    <Moon className="w-3.5 h-3.5 transition-transform duration-500 rotate-0 group-hover:-rotate-12 group-hover:scale-110" />
-                  ) : (
-                    <Sun className="w-3.5 h-3.5 transition-transform duration-500 rotate-0 group-hover:rotate-90 group-hover:scale-110" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-      </div>
+      <WorkspaceHeader
+        project={project}
+        graph={graph}
+        loading={loading}
+        refreshing={refreshing}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onRefresh={() => loadWorkspace(true)}
+        isScrolled={isScrolled}
+      />
 
       <main className="relative z-20 mx-auto flex w-full max-w-none flex-1 flex-col gap-4 px-2 pb-4 pt-0 sm:px-3 lg:px-4">
         {loading ? (
@@ -636,6 +840,17 @@ export default function ProjectWorkspacePage() {
                       nodeTypes={nodeTypes}
                       onNodesChange={onNodesChange}
                       onEdgesChange={onEdgesChange}
+                      onConnect={handleConnect}
+                      onConnectStart={handleConnectStart}
+                      onConnectEnd={handleConnectEnd}
+                      isValidConnection={isValidConnection}
+                      connectionLineStyle={connectionHint?.variant === 'error'
+                        ? { stroke: '#ef4444', strokeWidth: 2.6, strokeDasharray: '6 6' }
+                        : connectionHint?.variant === 'success'
+                          ? { stroke: '#22c55e', strokeWidth: 2.6 }
+                          : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
+                      }
+                      onNodeDragStart={handleNodeDragStart}
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}
@@ -691,216 +906,68 @@ export default function ProjectWorkspacePage() {
                         autoArrangeLayout={autoArrangeLayout}
                         onCreateTask={() => openTaskCreator(undefined, undefined, 'toolbar')}
                         graphStats={graphStats}
+                        undo={() => undo(setNodes, setEdges, setGraph)}
+                        redo={() => redo(setNodes, setEdges, setGraph)}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
                       />
-                      {taskDraftPosition && (
-                        <>
-                          {taskCreatorMode === 'toolbar' && (
-                            <div
-                              className={`fixed inset-0 z-[60] backdrop-blur-[1px] light:bg-slate-900/5 transition-all duration-200 ${
-                                isClosing ? 'modal-overlay-exit' : 'animate-slow-fade bg-slate-950/20'
-                              }`}
-                              onPointerDown={closeTaskCreator}
-                              aria-hidden="true"
-                            />
-                          )}
-                          <div
-                            key={`${taskCreatorMode}-${taskCreatorAnimationKey}`}
-                            className={`fixed z-[70] rounded-3xl p-4 text-slate-100 shadow-2xl backdrop-blur-2xl light:text-slate-900 ${
-                              isClosing ? 'modal-content-exit' : 'animate-zoom-in-fade'
-                            } ${
-                              taskCreatorMode === 'toolbar'
-                                ? 'w-[min(420px,calc(100vw-1.5rem))] border border-white/10 bg-[#020617]/75 shadow-black/10 light:border-slate-200/60 light:bg-white/80 light:shadow-slate-200/20'
-                                : 'w-[min(360px,calc(100vw-1.5rem))] border border-white/10 bg-[#020617]/85 shadow-black/25 light:border-slate-200/70 light:bg-white/90 light:shadow-slate-300/30'
+                      {taskDraftPosition && projectId && (
+                        <TaskCreator
+                          projectId={projectId}
+                          taskDraftPosition={taskDraftPosition}
+                          mode={taskCreatorMode}
+                          isClosing={isClosing}
+                          onClose={closeTaskCreator}
+                          onTaskCreated={handleTaskCreated}
+                          animationKey={taskCreatorAnimationKey}
+                        />
+                      )}
+
+                      {connectionHint && (
+                        <div
+                          className={`pointer-events-none fixed z-[85] max-w-[260px] rounded-2xl border px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-2xl transition-colors duration-200 ${connectionHint.closing ? 'connection-hint-exit' : 'connection-hint-enter'} ${connectionHint.variant === 'error'
+                            ? 'border-red-500/25 bg-red-500/15 text-red-100 shadow-red-950/15 light:bg-red-50/95 light:text-red-700 light:shadow-red-200/30'
+                            : connectionHint.variant === 'success'
+                              ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-100 shadow-emerald-950/15 light:bg-emerald-50/95 light:text-emerald-700 light:shadow-emerald-200/30'
+                              : 'border-brand-500/25 bg-[#020617]/80 text-brand-100 shadow-black/20 light:bg-white/90 light:text-brand-700 light:shadow-slate-300/25'
                             }`}
-                            style={taskCreatorMode === 'toolbar'
-                              ? { left: 'max(12px, calc(50vw - 210px))', top: 'max(112px, calc(50vh - 270px))' }
-                              : { left: taskDraftPosition.screen.x, top: taskDraftPosition.screen.y }
-                            }
-                            onPointerDown={(event) => event.stopPropagation()}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <div className="mb-4 flex items-start justify-between gap-3">
-                              <div>
-                                <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/25 bg-brand-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-300 light:text-brand-700">
-                                  <Plus className="h-3 w-3" />
-                                  {taskCreatorMode === 'toolbar' ? 'Create task' : 'New task'}
-                                </div>
-                                <p className="mt-2 text-xs text-slate-400 light:text-slate-600">
-                                  {taskCreatorMode === 'toolbar'
-                                    ? 'Create a task from the toolbar. It will be placed in the center of the current canvas view.'
-                                    : 'Fill in the details and create a node on the graph.'}
-                                </p>
-                              </div>
-
-                            </div>
-
-                            <form className="space-y-3" onSubmit={createTask}>
-                              <div>
-                                <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                                  <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 light:text-slate-500">
-                                    Title
-                                  </label>
-                                  {taskFieldErrors.title && (
-                                    <span className="animate-error-pop text-right text-[10px] font-medium leading-none text-red-400">{taskFieldErrors.title}</span>
-                                  )}
-                                </div>
-                                <input
-                                  value={taskTitle}
-                                  onChange={(event) => {
-                                    setTaskTitle(event.target.value);
-                                    setTaskFormError(null);
-                                    setTaskFieldErrors((prev) => ({ ...prev, title: undefined }));
-                                  }}
-                                  autoFocus
-                                  placeholder="e.g. Build task creation UI"
-                                  className={`${taskFormFieldClass} ${taskFieldErrors.title ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                  disabled={creatingTask}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500 light:text-slate-500">
-                                  Description
-                                </label>
-                                <textarea
-                                  value={taskDescription}
-                                  onChange={(event) => setTaskDescription(event.target.value)}
-                                  placeholder="Short task details"
-                                  rows={3}
-                                  className={`${taskFormFieldClass} resize-none`}
-                                  disabled={creatingTask}
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500 light:text-slate-500">
-                                    Category
-                                  </label>
-                                  <div className="relative">
-                                    <button
-                                      type="button"
-                                      onClick={() => !creatingTask && setCategoryDropdownOpen((open) => !open)}
-                                      className={`${taskFormFieldClass} flex items-center justify-between gap-2 font-semibold`}
-                                      disabled={creatingTask}
-                                      aria-haspopup="listbox"
-                                      aria-expanded={categoryDropdownOpen}
-                                    >
-                                      <span className={`max-w-[calc(100%-1.5rem)] truncate rounded-lg border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${taskCategoryTagClass[taskCategory]}`}>
-                                        {taskCategory}
-                                      </span>
-                                      <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {categoryDropdownOpen && (
-                                      <div
-                                        className={`absolute left-0 right-0 z-[90] max-h-[min(19rem,calc(100vh-8rem))] overflow-y-auto rounded-xl border border-white/10 bg-slate-950/85 p-1.5 shadow-xl backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95 light:shadow-[0_10px_25px_-5px_rgba(15,23,42,0.08)] [scrollbar-width:thin] ${categoryDropdownOpensUp ? 'bottom-full mb-2 origin-bottom' : 'top-full mt-2 origin-top'}`}
-                                        role="listbox"
-                                      >
-                                        {taskCategories.map((category) => {
-                                          const active = taskCategory === category;
-                                          return (
-                                            <button
-                                              key={category}
-                                              type="button"
-                                              onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                setTaskCategory(category);
-                                                setCategoryDropdownOpen(false);
-                                              }}
-                                              className={`flex w-full items-center px-2.5 py-2 text-left transition-colors duration-200 cursor-pointer rounded-lg ${active
-                                                ? 'bg-white/5 light:bg-slate-50'
-                                                : 'hover:bg-white/5 light:hover:bg-slate-50'
-                                                }`}
-                                              role="option"
-                                              aria-selected={active}
-                                            >
-                                              <span className={`rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${taskCategoryTagClass[category]}`}>
-                                                {category}
-                                              </span>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 light:text-slate-500">
-                                      Hours
-                                    </label>
-                                    {taskFieldErrors.hours && (
-                                      <span className="animate-error-pop text-right text-[10px] font-medium leading-none text-red-400">{taskFieldErrors.hours}</span>
-                                    )}
-                                  </div>
-                                  <div className="relative">
-                                    <input
-                                      type="text"
-                                      inputMode="text"
-                                      value={taskHours}
-                                      placeholder="1.5 or 1:30"
-                                      onChange={(event) => {
-                                        setTaskHours(maskHoursValue(event.target.value));
-                                        setTaskFormError(null);
-                                        setTaskFieldErrors((prev) => ({ ...prev, hours: undefined }));
-                                      }}
-                                      onFocus={(event) => event.target.select()}
-                                      onBlur={() => setTaskHours((current) => formatHoursValue(current))}
-                                      className={`${taskFormFieldClass} pr-9 font-semibold tabular-nums ${taskFieldErrors.hours ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                      disabled={creatingTask}
-                                    />
-                                    <div className="absolute inset-y-1.5 right-1.5 flex w-6 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-900/70 light:border-slate-200/80 light:bg-slate-50">
-                                      <button
-                                        type="button"
-                                        onClick={() => updateHoursByStep(1)}
-                                        disabled={creatingTask}
-                                        className="flex flex-1 items-center justify-center text-slate-400 transition hover:bg-white/5 hover:text-brand-300 disabled:opacity-50 light:text-slate-500 light:hover:bg-white light:hover:text-brand-600"
-                                        aria-label="Increase estimated hours"
-                                      >
-                                        <ChevronUp className="h-3 w-3" />
-                                      </button>
-                                      <div className="h-px bg-white/10 light:bg-slate-200" />
-                                      <button
-                                        type="button"
-                                        onClick={() => updateHoursByStep(-1)}
-                                        disabled={creatingTask}
-                                        className="flex flex-1 items-center justify-center text-slate-400 transition hover:bg-white/5 hover:text-brand-300 disabled:opacity-50 light:text-slate-500 light:hover:bg-white light:hover:text-brand-600"
-                                        aria-label="Decrease estimated hours"
-                                      >
-                                        <ChevronDown className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {taskFormError && (
-                                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300 light:text-red-700">
-                                  {taskFormError}
-                                </div>
-                              )}
-
-                              <div className="flex items-center justify-end gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={closeTaskCreator}
-                                  disabled={creatingTask}
-                                  className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-200 disabled:opacity-50 light:text-slate-600 light:hover:bg-slate-950/5 light:hover:text-slate-900"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="submit"
-                                  disabled={creatingTask}
-                                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition hover:shadow-brand-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-                                >
-                                  {creatingTask ? 'Creating...' : 'Create'}
-                                </button>
-                              </div>
-                            </form>
+                          style={{
+                            left: Math.min(connectionHint.x + 14, window.innerWidth - 280),
+                            top: Math.min(connectionHint.y + 14, window.innerHeight - 90)
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {connectionHint.variant === 'error' ? <AlertCircle className="h-4 w-4 shrink-0" /> : <GitBranch className="h-4 w-4 shrink-0" />}
+                            <span>{connectionHint.message}</span>
                           </div>
-                        </>
+                        </div>
+                      )}
+
+                      {edgeToast && (
+                        <div className={`fixed right-4 top-28 z-[80] max-w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#020617]/85 p-3 pr-10 text-sm text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25 ${edgeToast.closing ? 'toast-exit' : 'animate-slide-down-fade'}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${edgeToast.variant === 'success'
+                              ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 light:text-emerald-700'
+                              : 'border-red-500/25 bg-red-500/10 text-red-300 light:text-red-700'
+                              }`}>
+                              {edgeToast.variant === 'success' ? <GitBranch className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
+                                {edgeToast.variant === 'success' ? 'Workspace updated' : 'Workspace error'}
+                              </div>
+                              <p className="mt-0.5 leading-relaxed text-slate-200 light:text-slate-700">{edgeToast.message}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => closeEdgeToast(edgeToast.id)}
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
+                            aria-label="Close notification"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
                       )}
 
                       <TopologicalLanesHeader
