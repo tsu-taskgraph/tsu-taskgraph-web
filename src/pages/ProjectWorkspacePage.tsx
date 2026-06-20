@@ -35,6 +35,7 @@ import { TopologicalLanesHeader } from '../components/workspace/TopologicalLanes
 import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
 import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
 import { TaskCreator } from '../components/workspace/TaskCreator';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 
 type CopiedTaskNode = {
   task: TaskNode;
@@ -87,10 +88,27 @@ export default function ProjectWorkspacePage() {
   const lastPastePositionRef = useRef<{ x: number; y: number } | null>(null);
   const pasteCountRef = useRef(0);
 
+  const {
+    takeSnapshot,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    updateCurrentState
+  } = useUndoRedo<WorkspaceNode, TaskFlowEdge, ProjectGraphResponse>();
+
+  useEffect(() => {
+    updateCurrentState(nodes, edges, graph);
+  }, [nodes, edges, graph, updateCurrentState]);
+
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
     layerHeader: LayerHeaderNode
   }), [theme]);
+
+  const handleNodeDragStart = useCallback(() => {
+    takeSnapshot();
+  }, [takeSnapshot]);
 
   const handleNodeDrag = useCallback((_event: any, node: any) => {
     if (node.type !== 'taskNode') return;
@@ -134,6 +152,7 @@ export default function ProjectWorkspacePage() {
 
   const autoArrangeLayout = useCallback(() => {
     if (!graph) return;
+    takeSnapshot();
 
     const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
     const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
@@ -198,7 +217,7 @@ export default function ProjectWorkspacePage() {
       return updatedNode;
     }));
     setIsAligned(false);
-  }, [edgeType, edgesVisible, graph, nodes, setNodes, showTopologicalLanes, theme, viewMode]);
+  }, [edgeType, edgesVisible, graph, nodes, setNodes, showTopologicalLanes, theme, viewMode, takeSnapshot]);
 
   const openTaskCreator = useCallback((screenX?: number, screenY?: number, mode: TaskCreatorMode = 'context') => {
     const fallbackScreen = {
@@ -306,6 +325,7 @@ export default function ProjectWorkspacePage() {
 
   const pasteCopiedTasks = useCallback(async () => {
     if (!projectId) return;
+    takeSnapshot();
 
     const copiedSelection = copiedSelectionRef.current;
     if (!copiedSelection || copiedSelection.nodes.length === 0) {
@@ -391,7 +411,7 @@ export default function ProjectWorkspacePage() {
       const parsed = mapServerErrorToEnglish(err, statusCode);
       showEdgeToast(parsed.message);
     }
-  }, [flowInstance, graph?.nodes.length, nodes.length, projectId, setNodes, showEdgeToast, viewMode]);
+  }, [flowInstance, graph?.nodes.length, nodes.length, projectId, setNodes, showEdgeToast, viewMode, takeSnapshot]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -408,11 +428,23 @@ export default function ProjectWorkspacePage() {
         event.preventDefault();
         void pasteCopiedTasks();
       }
+      if (key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          redo(setNodes, setEdges, setGraph);
+        } else {
+          undo(setNodes, setEdges, setGraph);
+        }
+      }
+      if (key === 'y') {
+        event.preventDefault();
+        redo(setNodes, setEdges, setGraph);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelectedTasks, pasteCopiedTasks]);
+  }, [copySelectedTasks, pasteCopiedTasks, undo, redo, setNodes, setEdges, setGraph]);
 
   const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
     if (sourceTaskId === targetTaskId) return true;
@@ -542,6 +574,7 @@ export default function ProjectWorkspacePage() {
 
   const handleConnect = useCallback(async (connection: Connection) => {
     if (!projectId || !connection.source || !connection.target) return;
+    takeSnapshot();
 
     const blockReason = getConnectionBlockReason(connection.source, connection.target);
 
@@ -566,10 +599,11 @@ export default function ProjectWorkspacePage() {
       const parsed = mapServerErrorToEnglish(err, statusCode);
       showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
     }
-  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast]);
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot]);
 
   const handleTaskCreated = useCallback((createdTask: TaskNode) => {
     if (!taskDraftPosition) return;
+    takeSnapshot();
 
     const createdNode: TaskFlowNode = {
       id: createdTask.id,
@@ -598,7 +632,7 @@ export default function ProjectWorkspacePage() {
     } : currentProject);
     setIsAligned(false);
     setTaskDraftPosition(null);
-  }, [graph?.nodes.length, nodes.length, taskDraftPosition, viewMode, setNodes]);
+  }, [graph?.nodes.length, nodes.length, taskDraftPosition, viewMode, setNodes, takeSnapshot]);
 
   const graphStats = useMemo(() => {
     const allNodes = graph?.nodes ?? [];
@@ -816,6 +850,7 @@ export default function ProjectWorkspacePage() {
                           ? { stroke: '#22c55e', strokeWidth: 2.6 }
                           : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
                       }
+                      onNodeDragStart={handleNodeDragStart}
                       onNodeDrag={handleNodeDrag}
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}
@@ -871,6 +906,10 @@ export default function ProjectWorkspacePage() {
                         autoArrangeLayout={autoArrangeLayout}
                         onCreateTask={() => openTaskCreator(undefined, undefined, 'toolbar')}
                         graphStats={graphStats}
+                        undo={() => undo(setNodes, setEdges, setGraph)}
+                        redo={() => redo(setNodes, setEdges, setGraph)}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
                       />
                       {taskDraftPosition && projectId && (
                         <TaskCreator

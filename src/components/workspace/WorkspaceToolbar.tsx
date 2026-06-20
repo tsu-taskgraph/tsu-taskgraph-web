@@ -12,7 +12,9 @@ import {
   GitBranch,
   Zap,
   Clock,
-  Plus
+  Plus,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 import type { ViewMode, EdgeTypeMode } from '../../utils/workspaceUtils';
 
@@ -48,6 +50,10 @@ interface WorkspaceToolbarProps {
     loggedHours: number;
     completion: number;
   };
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export function WorkspaceToolbar({
@@ -60,7 +66,11 @@ export function WorkspaceToolbar({
   isAligned,
   autoArrangeLayout,
   onCreateTask,
-  graphStats
+  graphStats,
+  undo,
+  redo,
+  canUndo,
+  canRedo
 }: WorkspaceToolbarProps) {
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
@@ -161,6 +171,36 @@ export function WorkspaceToolbar({
             >
               <LayoutGrid className="h-4 w-4 shrink-0" />
               <span className="hidden 2xl:inline">Align</span>
+            </button>
+
+            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:mx-1" />
+
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${
+                canUndo
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                  : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
+              }`}
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo"
+            >
+              <Undo2 className="h-4 w-4 shrink-0" />
+            </button>
+
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${
+                canRedo
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                  : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
+              }`}
+              title="Redo (Ctrl+Y)"
+              aria-label="Redo"
+            >
+              <Redo2 className="h-4 w-4 shrink-0" />
             </button>
 
           </div>
