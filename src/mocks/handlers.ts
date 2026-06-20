@@ -60,9 +60,9 @@ const projectsList: Project[] = [
     ownerId: '00000000-0000-0000-0000-000000000000',
     teamSize: 3,
     aiEstimate: true,
-    totalEstimatedHours: 36,
+    totalEstimatedHours: 39,
     totalLoggedHours: 8,
-    completionPercent: 20,
+    completionPercent: 17,
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -200,6 +200,36 @@ const projectsList: Project[] = [
     completionPercent: 20,
     createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mock-workspace-project-error',
+    name: 'Mock: Workspace Project Error',
+    description: 'Технический мок для просмотра состояния ошибки при загрузке проекта на ProjectWorkspacePage.',
+    techStack: ['MSW', 'Error State', 'ReactFlow'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 1,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mock-workspace-graph-error',
+    name: 'Mock: Workspace Graph Error',
+    description: 'Технический мок для просмотра состояния ошибки при загрузке графа задач на ProjectWorkspacePage.',
+    techStack: ['MSW', 'Graph API', '500'],
+    status: 'ACTIVE',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: false,
+    totalEstimatedHours: 1,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];
 
@@ -229,14 +259,185 @@ const projectGraphs: Record<string, {
   },
   '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b': {
     projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
-    nodes: [],
-    edges: [],
+    nodes: [
+      {
+        id: 'crm-1',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'Модель клиентов и сделок',
+        description: 'Спроектировать сущности Customer, Lead, Deal и этапы воронки продаж.',
+        status: 'COMPLETED',
+        category: 'BACKEND',
+        positionX: 80,
+        positionY: 220,
+        estimatedHours: 10,
+        loggedHours: 10,
+        enrichment: { checklist: ['Описать связи коллекций', 'Добавить индексы по email и статусу'], pitfalls: ['Не смешивать лиды и активных клиентов в одной сущности'], links: [] }
+      },
+      {
+        id: 'crm-2',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'REST API воронки продаж',
+        description: 'CRUD для сделок, смена этапов, фильтры по менеджерам и сумме сделки.',
+        status: 'IN_PROGRESS',
+        category: 'BACKEND',
+        positionX: 330,
+        positionY: 100,
+        estimatedHours: 18,
+        loggedHours: 9,
+        enrichment: { checklist: ['Создать контроллеры Express', 'Добавить валидацию DTO', 'Покрыть stage transitions тестами'], pitfalls: ['Проверить права доступа менеджеров к чужим сделкам'], links: [] }
+      },
+      {
+        id: 'crm-3',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'Kanban UI для сделок',
+        description: 'Доска со стадиями продаж, drag-and-drop карточек и быстрым редактированием суммы.',
+        status: 'AVAILABLE',
+        category: 'FRONTEND',
+        positionX: 330,
+        positionY: 340,
+        estimatedHours: 16,
+        loggedHours: 2,
+        enrichment: { checklist: ['Сверстать колонки', 'Подключить optimistic updates', 'Добавить skeleton состояния'], pitfalls: ['Не терять позицию карточки при ошибке API'], links: [] }
+      },
+      {
+        id: 'crm-4',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'WebSocket уведомления',
+        description: 'События по новым лидам, изменению стадии сделки и назначению менеджера.',
+        status: 'LOCKED',
+        category: 'BACKEND',
+        positionX: 600,
+        positionY: 40,
+        estimatedHours: 14,
+        loggedHours: 0,
+        enrichment: { checklist: ['Определить события домена', 'Настроить room per account'], pitfalls: ['Не отправлять персональные данные в общие комнаты'], links: [] }
+      },
+      {
+        id: 'crm-5',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'Интеграция телефонии',
+        description: 'Импорт звонков, запись активностей и привязка контактов к клиентам.',
+        status: 'LOCKED',
+        category: 'BACKEND',
+        positionX: 600,
+        positionY: 220,
+        estimatedHours: 20,
+        loggedHours: 0,
+        enrichment: { checklist: ['Согласовать формат webhook', 'Сделать retry обработчик'], pitfalls: ['Дедуплицировать повторные webhook события'], links: [] }
+      },
+      {
+        id: 'crm-6',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'Отчеты по продажам',
+        description: 'Виджеты конверсии, прогноз выручки и экспорт CSV для руководителя.',
+        status: 'AVAILABLE',
+        category: 'FRONTEND',
+        positionX: 600,
+        positionY: 400,
+        estimatedHours: 12,
+        loggedHours: 3,
+        enrichment: { checklist: ['Сделать график конверсии', 'Добавить экспорт CSV'], pitfalls: ['Сверить timezone при группировке по дням'], links: [] }
+      },
+      {
+        id: 'crm-7',
+        projectId: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+        title: 'Legacy импорт XLS',
+        description: 'Отложили ручной импорт старых Excel файлов в пользу API импорта из CRM источника.',
+        status: 'SKIPPED',
+        category: 'OTHER',
+        positionX: 860,
+        positionY: 330,
+        estimatedHours: 8,
+        loggedHours: 0,
+        enrichment: { checklist: ['Зафиксировать решение', 'Удалить пункт из roadmap MVP'], pitfalls: ['Предупредить sales-команду о новом сценарии импорта'], links: [] }
+      }
+    ],
+    edges: [
+      { id: 'crm-e1', sourceTaskId: 'crm-1', targetTaskId: 'crm-2' },
+      { id: 'crm-e2', sourceTaskId: 'crm-1', targetTaskId: 'crm-3' },
+      { id: 'crm-e3', sourceTaskId: 'crm-2', targetTaskId: 'crm-4' },
+      { id: 'crm-e4', sourceTaskId: 'crm-2', targetTaskId: 'crm-5' },
+      { id: 'crm-e5', sourceTaskId: 'crm-3', targetTaskId: 'crm-6' },
+      { id: 'crm-e6', sourceTaskId: 'crm-6', targetTaskId: 'crm-7' }
+    ],
     enrichmentStatus: 'COMPLETED'
   },
   '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c': {
     projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
-    nodes: [],
-    edges: [],
+    nodes: [
+      {
+        id: 'fit-1',
+        projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+        title: 'Дизайн навигации мобильного приложения',
+        description: 'Определить tabs, onboarding и структуру экранов тренировок.',
+        status: 'COMPLETED',
+        category: 'DESIGN',
+        positionX: 80,
+        positionY: 180,
+        estimatedHours: 8,
+        loggedHours: 8,
+        enrichment: { checklist: ['Согласовать IA', 'Подготовить состояния пустых экранов'], pitfalls: [], links: [] }
+      },
+      {
+        id: 'fit-2',
+        projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+        title: 'GraphQL схема тренировок',
+        description: 'Схема Workout, Exercise, Set и мутации создания тренировок.',
+        status: 'IN_PROGRESS',
+        category: 'BACKEND',
+        positionX: 330,
+        positionY: 80,
+        estimatedHours: 14,
+        loggedHours: 7,
+        enrichment: { checklist: ['Описать SDL', 'Добавить resolver permissions'], pitfalls: ['Не отдавать чужие тренировки по ID'], links: [] }
+      },
+      {
+        id: 'fit-3',
+        projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+        title: 'Экран дневника тренировок',
+        description: 'Список тренировок, быстрый старт шаблонов и просмотр истории.',
+        status: 'AVAILABLE',
+        category: 'FRONTEND',
+        positionX: 330,
+        positionY: 280,
+        estimatedHours: 12,
+        loggedHours: 1,
+        enrichment: { checklist: ['Сверстать список', 'Добавить pull-to-refresh'], pitfalls: ['Синхронизировать local cache после мутации'], links: [] }
+      },
+      {
+        id: 'fit-4',
+        projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+        title: 'Интеграция Apple Health',
+        description: 'Чтение шагов, веса, сна и синхронизация разрешений пользователя.',
+        status: 'LOCKED',
+        category: 'BACKEND',
+        positionX: 600,
+        positionY: 80,
+        estimatedHours: 18,
+        loggedHours: 0,
+        enrichment: { checklist: ['Запросить permissions', 'Сделать sync adapter'], pitfalls: ['Обработать отказ пользователя от доступа'], links: [] }
+      },
+      {
+        id: 'fit-5',
+        projectId: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+        title: 'Тестирование offline режима',
+        description: 'Проверить запись тренировок без сети и последующую синхронизацию.',
+        status: 'LOCKED',
+        category: 'TESTING',
+        positionX: 600,
+        positionY: 280,
+        estimatedHours: 10,
+        loggedHours: 0,
+        enrichment: { checklist: ['Сценарии airplane mode', 'Конфликты повторной синхронизации'], pitfalls: ['Не перезаписывать новые серверные данные старыми локальными'], links: [] }
+      }
+    ],
+    edges: [
+      { id: 'fit-e1', sourceTaskId: 'fit-1', targetTaskId: 'fit-2' },
+      { id: 'fit-e2', sourceTaskId: 'fit-1', targetTaskId: 'fit-3' },
+      { id: 'fit-e3', sourceTaskId: 'fit-2', targetTaskId: 'fit-4' },
+      { id: 'fit-e4', sourceTaskId: 'fit-3', targetTaskId: 'fit-5' },
+      { id: 'fit-e5', sourceTaskId: 'fit-4', targetTaskId: 'fit-5' }
+    ],
     enrichmentStatus: 'COMPLETED'
   },
   '7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d': {
@@ -396,6 +597,29 @@ const projectGraphs: Record<string, {
           ],
           links: []
         }
+      },
+      {
+        id: 't6',
+        projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+        title: 'Отказ от legacy-шаблона админки',
+        description: 'Исключили отдельный Bootstrap-шаблон админ-панели, чтобы не плодить второй UI-контур и оставить управление внутри React workspace.',
+        status: 'SKIPPED',
+        category: 'DESIGN',
+        positionX: 520,
+        positionY: 360,
+        estimatedHours: 3,
+        loggedHours: 0,
+        enrichment: {
+          checklist: [
+            'Зафиксировать решение в README проекта',
+            'Удалить задачу из критического пути релиза',
+            'Проверить, что навигация React покрывает административные сценарии'
+          ],
+          pitfalls: [
+            'Не оставляйте мертвые роуты и ссылки на удаленный шаблон'
+          ],
+          links: []
+        }
       }
     ],
     edges: [
@@ -403,7 +627,8 @@ const projectGraphs: Record<string, {
       { id: 'e2', sourceTaskId: 't1', targetTaskId: 't3' },
       { id: 'e3', sourceTaskId: 't2', targetTaskId: 't4' },
       { id: 'e4', sourceTaskId: 't3', targetTaskId: 't5' },
-      { id: 'e5', sourceTaskId: 't4', targetTaskId: 't5' }
+      { id: 'e5', sourceTaskId: 't4', targetTaskId: 't5' },
+      { id: 'e6', sourceTaskId: 't3', targetTaskId: 't6' }
     ],
     enrichmentStatus: 'COMPLETED'
   }
@@ -650,6 +875,14 @@ export const handlers = [
 
   http.get('*/api/v1/projects/:projectId', ({ params }) => {
     const { projectId } = params;
+
+    if (projectId === 'mock-workspace-project-error') {
+      return HttpResponse.json(
+        { message: 'Мок: ошибка загрузки проекта для проверки ProjectWorkspacePage.' },
+        { status: 500 }
+      );
+    }
+
     const project = projectsList.find(p => p.id === projectId);
 
     if (!project) {
@@ -661,6 +894,14 @@ export const handlers = [
 
   http.get('*/api/v1/projects/:projectId/graph', ({ params }) => {
     const { projectId } = params;
+
+    if (projectId === 'mock-workspace-graph-error') {
+      return HttpResponse.json(
+        { message: 'Мок: ошибка загрузки графа задач для проверки ProjectWorkspacePage.' },
+        { status: 500 }
+      );
+    }
+
     const graph = projectGraphs[projectId as string];
 
     if (!graph) {
@@ -674,6 +915,7 @@ export const handlers = [
             description: 'Пожалуйста, создайте задачи или запустите ИИ-мутацию.',
             status: 'AVAILABLE',
             category: 'OTHER',
+            layer: 0,
             positionX: 300,
             positionY: 200,
             estimatedHours: 1,
@@ -690,6 +932,53 @@ export const handlers = [
       });
     }
 
-    return HttpResponse.json(graph);
+    const nodeMap: Record<string, any> = {};
+    (graph.nodes as any[]).forEach((node: any) => {
+      nodeMap[node.id] = { ...node, layer: 0 };
+    });
+
+    const adj: Record<string, string[]> = {};
+    const inDegree: Record<string, number> = {};
+    (graph.nodes as any[]).forEach((node: any) => {
+      adj[node.id] = [];
+      inDegree[node.id] = 0;
+    });
+
+    (graph.edges as any[]).forEach((edge: any) => {
+      const u = edge.sourceTaskId as string;
+      const v = edge.targetTaskId as string;
+      if (adj[u] && adj[v] !== undefined) {
+        adj[u].push(v);
+        inDegree[v] = (inDegree[v] || 0) + 1;
+      }
+    });
+
+    const queue: { id: string; layer: number }[] = [];
+    (graph.nodes as any[]).forEach((node: any) => {
+      if (inDegree[node.id] === 0) {
+        queue.push({ id: node.id as string, layer: 0 });
+      }
+    });
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) continue;
+      const { id, layer } = current;
+      nodeMap[id].layer = Math.max(nodeMap[id].layer || 0, layer);
+
+      if (adj[id]) {
+        adj[id].forEach((neighbor) => {
+          inDegree[neighbor]--;
+          queue.push({ id: neighbor, layer: layer + 1 });
+        });
+      }
+    }
+
+    const resolvedGraph = {
+      ...graph,
+      nodes: (graph.nodes as any[]).map((node: any) => nodeMap[node.id] || node)
+    };
+
+    return HttpResponse.json(resolvedGraph);
   })
 ];

@@ -31,6 +31,7 @@
   --animate-zoom-in-fade: zoom-in-fade 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-slow-fade: slow-fade 1.5s ease-out both;
   --animate-header-fade-in: header-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-edge-fade-in: edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 
   @keyframes fade-in {
     from {
@@ -142,6 +143,12 @@
     }
   }
 
+  @keyframes edge-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
   @keyframes blob-one {
 
     0%,
@@ -227,7 +234,6 @@
     margin: 0;
     padding: 0;
 
-    &.light,
     .light & {
       background: #f1f5f9 !important;
     }
@@ -246,31 +252,41 @@
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-  }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 9999px;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.25);
+    &-track {
+      background: transparent;
     }
-  }
 
-  .light ::-webkit-scrollbar-thumb {
-    background: rgba(15, 23, 42, 0.12);
+    &-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
 
-    &:hover {
-      background: rgba(15, 23, 42, 0.25);
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .light & {
+        background: rgba(15, 23, 42, 0.12);
+
+        &:hover {
+          background: rgba(15, 23, 42, 0.25);
+        }
+      }
     }
   }
 }
 
 @layer utilities {
+
+  .bg-gradient-mobile,
+  .dashboard-bg-mobile,
+  .light-gradient-mobile,
+  .light-dashboard-bg-mobile {
+    @media (min-width: 768px) {
+      background-image: none !important;
+    }
+  }
+
   .bg-gradient-mobile {
     background-color: #020617;
     background-image:
@@ -307,14 +323,28 @@
       radial-gradient(circle at 80% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
   }
 
-  @media (min-width: 768px) {
+  .workspace-flow-surface {
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(79, 70, 229, 0.10) 0%, transparent 32%),
+      radial-gradient(circle at 82% 18%, rgba(147, 51, 234, 0.08) 0%, transparent 34%),
+      radial-gradient(circle at 24% 78%, rgba(37, 99, 235, 0.08) 0%, transparent 36%),
+      radial-gradient(circle at 78% 82%, rgba(245, 158, 11, 0.055) 0%, transparent 34%);
+  }
 
-    .bg-gradient-mobile,
-    .dashboard-bg-mobile,
-    .light-gradient-mobile,
-    .light-dashboard-bg-mobile {
-      background-image: none !important;
-    }
+  .light .workspace-flow-surface {
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(79, 70, 229, 0.055) 0%, transparent 34%),
+      radial-gradient(circle at 82% 18%, rgba(147, 51, 234, 0.045) 0%, transparent 36%),
+      radial-gradient(circle at 24% 78%, rgba(37, 99, 235, 0.045) 0%, transparent 38%),
+      radial-gradient(circle at 78% 82%, rgba(245, 158, 11, 0.040) 0%, transparent 36%);
+  }
+
+  .workspace-flow-vignette {
+    background: radial-gradient(circle at center, transparent 38%, rgba(2, 6, 23, 0.20) 78%, rgba(2, 6, 23, 0.42) 100%);
+  }
+
+  .light .workspace-flow-vignette {
+    background: radial-gradient(circle at center, transparent 42%, rgba(226, 232, 240, 0.12) 78%, rgba(203, 213, 225, 0.22) 100%);
   }
 
   .modal-content-exit {
@@ -346,4 +376,538 @@
       opacity: 0;
     }
   }
+}
+
+@layer components {
+  .taskgraph-flow {
+    background-color: transparent !important;
+    --xy-edge-stroke-default: rgba(148, 163, 184, 0.45);
+    --xy-edge-stroke-width-default: 2;
+    --xy-selection-background-color-default: rgba(245, 158, 11, 0.08);
+    --xy-selection-border-default: 1px dotted rgba(245, 158, 11, 0.45);
+    color: inherit;
+
+    .react-flow__renderer {
+      animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .react-flow__pane {
+      cursor: grab;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+
+    .react-flow__controls,
+    .react-flow__minimap {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(18px);
+
+      .light & {
+        border-color: rgba(226, 232, 240, 0.9);
+        background: rgba(255, 255, 255, 0.82);
+      }
+    }
+
+    .react-flow__controls-button {
+      width: 34px;
+      height: 34px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      color: rgb(203, 213, 225);
+      fill: currentColor;
+
+      &:hover {
+        background: rgba(245, 158, 11, 0.12);
+        color: rgb(251, 191, 36);
+      }
+
+      .light & {
+        border-bottom-color: rgba(226, 232, 240, 0.9);
+        color: rgb(71, 85, 105);
+
+        &:hover {
+          background: rgba(245, 158, 11, 0.10);
+          color: rgb(217, 119, 6);
+        }
+      }
+    }
+
+    .taskgraph-corner-controls.react-flow__controls,
+    .taskgraph-corner-minimap.react-flow__minimap {
+      overflow: hidden !important;
+      border: 1px solid rgba(255, 255, 255, 0.10) !important;
+      border-radius: 1rem !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+      background: rgba(2, 6, 23, 0.70) !important;
+      backdrop-filter: blur(18px) !important;
+
+      .light & {
+        border-color: rgba(226, 232, 240, 0.80) !important;
+        background: rgba(255, 255, 255, 0.75) !important;
+        box-shadow: 0 10px 30px rgba(148, 163, 184, 0.10) !important;
+      }
+    }
+
+    .taskgraph-corner-controls {
+      .react-flow__controls-button {
+        width: 34px !important;
+        height: 34px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+        background: transparent !important;
+        color: rgb(203, 213, 225) !important;
+        fill: currentColor !important;
+
+        svg {
+          fill: currentColor !important;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06) !important;
+          color: rgb(241, 245, 249) !important;
+        }
+
+        .light & {
+          border-bottom-color: rgba(226, 232, 240, 0.95) !important;
+          color: rgb(51, 65, 85) !important;
+
+          &:hover {
+            background: rgba(241, 245, 249, 0.90) !important;
+            color: rgb(15, 23, 42) !important;
+          }
+        }
+      }
+
+      &.horizontal .react-flow__controls-button {
+        border-bottom: 0 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+
+        &:last-child {
+          border-right: 0 !important;
+        }
+
+        .light & {
+          border-right-color: rgba(226, 232, 240, 0.95) !important;
+        }
+      }
+    }
+
+    .react-flow__edge-path {
+      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .react-flow__edge.edge-status-in_progress path.react-flow__edge-path {
+      stroke-dasharray: 8 8 !important;
+      animation: flow-active 0.8s linear infinite !important;
+    }
+
+    .react-flow__edge.edge-status-completed path.react-flow__edge-path {
+      stroke-dasharray: 12 12 !important;
+      animation: flow-completed 4s linear infinite !important;
+    }
+
+    .react-flow__edge.edge-status-available path.react-flow__edge-path {
+      stroke-dasharray: 5 10 !important;
+      animation: flow-available 6s linear infinite !important;
+    }
+  }
+}
+
+@keyframes flow-active {
+  from {
+    stroke-dashoffset: 16;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flow-completed {
+  from {
+    stroke-dashoffset: 24;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flow-available {
+  from {
+    stroke-dashoffset: 30;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse-in-progress {
+
+  0%,
+  100% {
+    border-color: rgba(14, 165, 233, 0.3);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  50% {
+    border-color: rgba(14, 165, 233, 0.6);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 14px rgba(14, 165, 233, 0.2);
+  }
+}
+
+@keyframes pulse-in-progress-light {
+
+  0%,
+  100% {
+    border-color: rgba(2, 132, 199, 0.35);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12);
+  }
+
+  50% {
+    border-color: rgba(2, 132, 199, 0.65);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 14px rgba(2, 132, 199, 0.16);
+  }
+}
+
+@keyframes progress-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-in-progress-node {
+  animation: pulse-in-progress 4s infinite ease-in-out !important;
+}
+
+.light .animate-in-progress-node {
+  animation: pulse-in-progress-light 4s infinite ease-in-out !important;
+}
+
+.animate-progress-flow {
+  background-size: 200% 200%;
+  animation: progress-flow 2s linear infinite !important;
+}
+
+@keyframes hourglass-turn {
+
+  0%,
+  40% {
+    transform: rotate(0deg);
+  }
+
+  50%,
+  90% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-hourglass-turn {
+  display: inline-block;
+  transform-origin: center;
+  animation: hourglass-turn 4s cubic-bezier(0.77, 0, 0.175, 1) infinite !important;
+}
+
+@keyframes view-change-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-view-change {
+  animation: view-change-fade 0.25s ease-out;
+}
+
+@keyframes zap-flash {
+
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(245, 158, 11, 0));
+    opacity: 0.95;
+  }
+
+  75% {
+    transform: scale(1.22) rotate(3deg);
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.75)) brightness(1.4);
+    opacity: 1;
+  }
+
+  80% {
+    transform: scale(0.95) rotate(-2deg);
+    filter: drop-shadow(0 0 1px rgba(245, 158, 11, 0.2)) brightness(1.0);
+    opacity: 0.95;
+  }
+
+  85% {
+    transform: scale(1.26) rotate(5deg);
+    filter: drop-shadow(0 0 11px rgba(245, 158, 11, 0.85)) brightness(1.5);
+    opacity: 1;
+  }
+
+  90% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(245, 158, 11, 0));
+    opacity: 0.95;
+  }
+}
+
+.animate-zap-flash {
+  display: inline-block;
+  transform-origin: center;
+  animation: zap-flash 2.5s cubic-bezier(0.25, 0.8, 0.25, 1) infinite !important;
+}
+
+@keyframes pulse-available {
+
+  0%,
+  100% {
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  50% {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 14px rgba(245, 158, 11, 0.2);
+  }
+}
+
+@keyframes pulse-available-light {
+
+  0%,
+  100% {
+    border-color: rgba(217, 119, 6, 0.35);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12);
+  }
+
+  50% {
+    border-color: rgba(217, 119, 6, 0.65);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 14px rgba(217, 119, 6, 0.16);
+  }
+}
+
+.animate-available-node {
+  animation: pulse-available 4s infinite ease-in-out !important;
+}
+
+.light .animate-available-node {
+  animation: pulse-available-light 4s infinite ease-in-out !important;
+}
+
+@keyframes pulse-completed {
+
+  0%,
+  100% {
+    border-color: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  50% {
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18), 0 0 10px rgba(16, 185, 129, 0.12);
+  }
+}
+
+@keyframes pulse-completed-light {
+
+  0%,
+  100% {
+    border-color: rgba(16, 185, 129, 0.18);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12);
+  }
+
+  50% {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 16px 40px rgba(148, 163, 184, 0.12), 0 0 10px rgba(16, 185, 129, 0.1);
+  }
+}
+
+.animate-completed-node {
+  animation: pulse-completed 6s infinite ease-in-out !important;
+}
+
+.light .animate-completed-node {
+  animation: pulse-completed-light 6s infinite ease-in-out !important;
+}
+
+@keyframes pulse-locked {
+
+  0%,
+  100% {
+    border-color: rgba(148, 163, 184, 0.1);
+  }
+
+  50% {
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+}
+
+@keyframes pulse-locked-light {
+
+  0%,
+  100% {
+    border-color: rgba(148, 163, 184, 0.12);
+  }
+
+  50% {
+    border-color: rgba(148, 163, 184, 0.26);
+  }
+}
+
+.animate-locked-node {
+  animation: pulse-locked 8s infinite ease-in-out !important;
+}
+
+.light .animate-locked-node {
+  animation: pulse-locked-light 8s infinite ease-in-out !important;
+}
+
+@keyframes pulse-skipped {
+
+  0%,
+  100% {
+    border-color: rgba(139, 92, 246, 0.1);
+  }
+
+  50% {
+    border-color: rgba(139, 92, 246, 0.22);
+  }
+}
+
+@keyframes pulse-skipped-light {
+
+  0%,
+  100% {
+    border-color: rgba(139, 92, 246, 0.12);
+  }
+
+  50% {
+    border-color: rgba(139, 92, 246, 0.26);
+  }
+}
+
+.animate-skipped-node {
+  animation: pulse-skipped 8s infinite ease-in-out !important;
+}
+
+.light .animate-skipped-node {
+  animation: pulse-skipped-light 8s infinite ease-in-out !important;
+}
+
+@keyframes completed-nod {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  85% {
+    transform: scale(1.1) rotate(4deg);
+    filter: brightness(1.2);
+  }
+
+  90% {
+    transform: scale(1.1) rotate(-2deg);
+    filter: brightness(1.2);
+  }
+
+  95% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-completed-icon {
+  display: inline-block;
+  transform-origin: center;
+  animation: completed-nod 6s ease-in-out infinite !important;
+}
+
+@keyframes lock-nudge {
+
+  0%,
+  85%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  87% {
+    transform: translate(-1.5px, 0);
+  }
+
+  89% {
+    transform: translate(1.5px, 0);
+  }
+
+  91% {
+    transform: translate(-1px, 0);
+  }
+
+  93% {
+    transform: translate(1px, 0);
+  }
+
+  95% {
+    transform: translate(0, 0);
+  }
+}
+
+.animate-locked-icon {
+  display: inline-block;
+  transform-origin: center;
+  animation: lock-nudge 8s ease-in-out infinite !important;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-skipped-icon {
+  display: inline-block;
+  transform-origin: center;
+  animation: spin-slow 15s linear infinite !important;
+}
+
+.react-flow__node-taskNode {
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-radius: 24px !important;
+}
+
+@utility scroll-fade-mask {
+  mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+}
+
+@utility scroll-fade-none {
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
 }
