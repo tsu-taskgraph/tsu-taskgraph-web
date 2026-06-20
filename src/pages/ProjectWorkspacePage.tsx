@@ -100,6 +100,7 @@ export default function ProjectWorkspacePage() {
   const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
+  const [isClosing, setIsClosing] = useState(false);
 
   const nodeTypes = useMemo(() => ({
     taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
@@ -186,10 +187,14 @@ export default function ProjectWorkspacePage() {
 
   const closeTaskCreator = useCallback(() => {
     if (creatingTask) return;
-    setTaskDraftPosition(null);
-    setTaskFormError(null);
-    setTaskFieldErrors({});
-    setCategoryDropdownOpen(false);
+    setIsClosing(true);
+    setTimeout(() => {
+      setTaskDraftPosition(null);
+      setIsClosing(false);
+      setTaskFormError(null);
+      setTaskFieldErrors({});
+      setCategoryDropdownOpen(false);
+    }, 200);
   }, [creatingTask]);
 
   const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
@@ -615,9 +620,9 @@ export default function ProjectWorkspacePage() {
                       </p>
                       <button
                         onClick={() => openTaskCreator(undefined, undefined, 'toolbar')}
-                        className="relative mt-6 flex items-center justify-center gap-2 rounded-xl border-0 bg-gradient-to-r from-brand-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-300 hover:scale-[1.03] hover:shadow-brand-500/40 hover:brightness-110 active:scale-95 cursor-pointer"
+                        className="group relative mt-6 flex items-center justify-center gap-2 rounded-xl border-0 bg-gradient-to-r from-brand-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.03] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer"
                       >
-                        <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 opacity-20 blur-sm transition-opacity duration-300 hover:opacity-50 pointer-events-none" />
+                        <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 opacity-10 blur-[2px] transition-opacity duration-300 group-hover:opacity-20 pointer-events-none" />
                         <Plus className="relative z-10 h-4 w-4 shrink-0" />
                         <span className="relative z-10">Create First Task</span>
                       </button>
@@ -635,6 +640,7 @@ export default function ProjectWorkspacePage() {
                       onNodeDragStop={handleNodeDrag}
                       onInit={setFlowInstance}
                       onPaneContextMenu={handlePaneContextMenu}
+                      onPaneClick={closeTaskCreator}
                       fitView
                       fitViewOptions={{ padding: 0.2 }}
                       minZoom={0.2}
@@ -690,17 +696,22 @@ export default function ProjectWorkspacePage() {
                         <>
                           {taskCreatorMode === 'toolbar' && (
                             <div
-                              className="fixed inset-0 z-[60] animate-slow-fade bg-slate-950/20 backdrop-blur-[1px] light:bg-slate-900/5"
+                              className={`fixed inset-0 z-[60] backdrop-blur-[1px] light:bg-slate-900/5 transition-all duration-200 ${
+                                isClosing ? 'modal-overlay-exit' : 'animate-slow-fade bg-slate-950/20'
+                              }`}
                               onPointerDown={closeTaskCreator}
                               aria-hidden="true"
                             />
                           )}
                           <div
                             key={`${taskCreatorMode}-${taskCreatorAnimationKey}`}
-                            className={`fixed z-[70] animate-zoom-in-fade rounded-3xl p-4 text-slate-100 shadow-2xl backdrop-blur-2xl light:text-slate-900 ${taskCreatorMode === 'toolbar'
-                              ? 'w-[min(420px,calc(100vw-1.5rem))] border border-white/10 bg-[#020617]/75 shadow-black/10 light:border-slate-200/60 light:bg-white/80 light:shadow-slate-200/20'
-                              : 'w-[min(360px,calc(100vw-1.5rem))] border border-white/10 bg-[#020617]/85 shadow-black/25 light:border-slate-200/70 light:bg-white/90 light:shadow-slate-300/30'
-                              }`}
+                            className={`fixed z-[70] rounded-3xl p-4 text-slate-100 shadow-2xl backdrop-blur-2xl light:text-slate-900 ${
+                              isClosing ? 'modal-content-exit' : 'animate-zoom-in-fade'
+                            } ${
+                              taskCreatorMode === 'toolbar'
+                                ? 'w-[min(420px,calc(100vw-1.5rem))] border border-white/10 bg-[#020617]/75 shadow-black/10 light:border-slate-200/60 light:bg-white/80 light:shadow-slate-200/20'
+                                : 'w-[min(360px,calc(100vw-1.5rem))] border border-white/10 bg-[#020617]/85 shadow-black/25 light:border-slate-200/70 light:bg-white/90 light:shadow-slate-300/30'
+                            }`}
                             style={taskCreatorMode === 'toolbar'
                               ? { left: 'max(12px, calc(50vw - 210px))', top: 'max(112px, calc(50vh - 270px))' }
                               : { left: taskDraftPosition.screen.x, top: taskDraftPosition.screen.y }

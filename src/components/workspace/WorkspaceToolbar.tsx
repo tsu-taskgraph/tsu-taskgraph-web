@@ -194,11 +194,11 @@ export function WorkspaceToolbar({
         <button
           type="button"
           onClick={onCreateTask}
-          className="relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-xl shadow-brand-500/25 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/40 hover:brightness-110 active:scale-95 cursor-pointer animate-slide-up-fade [animation-delay:300ms]"
+          className="group relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer animate-slide-up-fade [animation-delay:300ms]"
           title="Create a new task in the center of the viewport"
           aria-label="Create a new task"
         >
-          <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-brand-500 to-orange-500 opacity-20 blur-sm transition-opacity duration-300 hover:opacity-50 pointer-events-none" />
+          <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-brand-500 to-orange-500 opacity-10 blur-[2px] transition-opacity duration-300 group-hover:opacity-20 pointer-events-none" />
           <Plus className="relative z-10 h-5 w-5 shrink-0" />
           <span className="relative z-10 hidden lg:inline">Create Task</span>
         </button>
