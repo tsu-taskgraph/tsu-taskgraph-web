@@ -18,6 +18,8 @@ interface UserProfile {
   createdAt: string;
 }
 
+type MockTaskCategory = 'BACKEND' | 'FRONTEND' | 'DEVOPS' | 'TESTING' | 'DOCUMENTATION' | 'DESIGN' | 'OTHER' | null;
+
 interface Project {
   id: string;
   name: string;
@@ -980,5 +982,68 @@ export const handlers = [
     };
 
     return HttpResponse.json(resolvedGraph);
+  }),
+
+  http.post('*/api/v1/projects/:projectId/tasks', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const project = projectsList.find(p => p.id === projectId);
+
+    if (!project) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const body = await request.json() as {
+      title?: string;
+      description?: string | null;
+      category?: MockTaskCategory;
+      estimatedHours?: number | null;
+      startDate?: string | null;
+      dueDate?: string | null;
+      positionX?: number;
+      positionY?: number;
+    };
+
+    if (!body.title?.trim()) {
+      return HttpResponse.json({ message: 'Task title is required.' }, { status: 400 });
+    }
+
+    const now = new Date().toISOString();
+    const positionX = Number.isFinite(body.positionX) ? Number(body.positionX) : 0;
+    const positionY = Number.isFinite(body.positionY) ? Number(body.positionY) : 0;
+    const graph = projectGraphs[projectId] ?? {
+      projectId,
+      nodes: [],
+      edges: [],
+      enrichmentStatus: 'COMPLETED' as const
+    };
+
+    const createdTask = {
+      id: `manual-task-${Date.now()}`,
+      projectId,
+      title: body.title.trim(),
+      description: body.description?.trim() || null,
+      status: 'AVAILABLE' as const,
+      category: body.category ?? 'OTHER',
+      layer: Math.max(0, Math.round(positionX / 400)),
+      positionX,
+      positionY,
+      assignees: [],
+      enrichment: null,
+      completionPercent: 0,
+      estimatedHours: body.estimatedHours ?? null,
+      loggedHours: 0,
+      startDate: body.startDate ?? null,
+      dueDate: body.dueDate ?? null,
+      wikiPageId: null,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    graph.nodes.push(createdTask);
+    projectGraphs[projectId] = graph;
+    project.totalEstimatedHours = (project.totalEstimatedHours ?? 0) + (createdTask.estimatedHours ?? 0);
+    project.updatedAt = now;
+
+    return HttpResponse.json(createdTask, { status: 201 });
   })
 ];
