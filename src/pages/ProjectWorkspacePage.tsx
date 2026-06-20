@@ -142,7 +142,7 @@ const statusSkin: Record<TaskStatus, {
     glowClass: 'bg-slate-500/10',
     iconClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200',
     progressClass: 'from-slate-500 to-slate-400',
-    mutedClass: 'opacity-70'
+    mutedClass: ''
   },
   AVAILABLE: {
     borderClass: 'border-amber-500/30 light:border-amber-500/35',
@@ -174,7 +174,7 @@ const statusSkin: Record<TaskStatus, {
     glowClass: 'bg-violet-500/15',
     iconClass: 'bg-violet-500/10 text-violet-300 border-violet-500/20 light:bg-violet-500/10 light:text-violet-700 light:border-violet-500/25',
     progressClass: 'from-violet-500 to-fuchsia-500',
-    mutedClass: 'opacity-80'
+    mutedClass: ''
   }
 };
 
@@ -307,7 +307,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   const timePercent = estimatedHours > 0 ? Math.min(100, Math.round((loggedHours / estimatedHours) * 100)) : 0;
   const layerLabel = typeof task.layer === 'number' ? `Layer ${task.layer}` : 'Auto layer';
   const compactLayerLabel = typeof task.layer === 'number' ? `L${task.layer}` : 'Auto';
-  const surfaceClass = `border bg-[#020617]/70 shadow-lg shadow-black/10 backdrop-blur-xl light:bg-white/75 light:shadow-slate-200/10 ${skin.borderClass} ${skin.mutedClass}`;
+  const surfaceClass = `border bg-slate-900/40 shadow-lg shadow-black/10 backdrop-blur-2xl light:bg-white/60 light:shadow-slate-200/10 ${skin.borderClass} ${skin.mutedClass}`;
   const selectedClass = selected
     ? 'scale-[1.02] border-brand-400/75 ring-2 ring-brand-500/35 ring-offset-2 ring-offset-slate-950 light:border-brand-500/75 light:ring-brand-500/25 light:ring-offset-white/50'
     : 'hover:-translate-y-1 hover:border-brand-500/45 light:hover:border-brand-500/50';
@@ -346,7 +346,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
           <StatusIcon className={`relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700 ${iconAnimClass}`} />
         </div>
 
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/70 p-4 text-xs opacity-0 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-xs opacity-0 shadow-lg shadow-black/10 backdrop-blur-2xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className={`rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
               {category}
@@ -487,15 +487,15 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
         )}
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-white/10 bg-[#020617]/45 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/30 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
             <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Estimate</div>
             <div className="mt-1 text-xs font-bold text-slate-200 light:text-slate-800">{formatHours(estimatedHours)}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[#020617]/45 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/30 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
             <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Logged</div>
             <div className="mt-1 text-xs font-bold text-slate-200 light:text-slate-800">{formatHours(loggedHours)}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[#020617]/45 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/30 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
             <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Layer</div>
             <div className="mt-1 truncate text-xs font-bold text-slate-200 light:text-slate-800">{layerLabel}</div>
           </div>
