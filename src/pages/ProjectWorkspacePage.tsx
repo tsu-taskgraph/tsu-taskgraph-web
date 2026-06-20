@@ -307,7 +307,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
   const timePercent = estimatedHours > 0 ? Math.min(100, Math.round((loggedHours / estimatedHours) * 100)) : 0;
   const layerLabel = typeof task.layer === 'number' ? `Layer ${task.layer}` : 'Auto layer';
   const compactLayerLabel = typeof task.layer === 'number' ? `L${task.layer}` : 'Auto';
-  const surfaceClass = `border bg-[#020617]/80 shadow-[0_16px_45px_rgba(0,0,0,0.18)] backdrop-blur-xl light:bg-white/80 light:shadow-[0_16px_40px_rgba(148,163,184,0.16)] ${skin.borderClass} ${skin.mutedClass}`;
+  const surfaceClass = `border bg-[#020617]/70 shadow-lg shadow-black/10 backdrop-blur-xl light:bg-white/75 light:shadow-slate-200/10 ${skin.borderClass} ${skin.mutedClass}`;
   const selectedClass = selected
     ? 'scale-[1.02] border-brand-400/75 ring-2 ring-brand-500/35 ring-offset-2 ring-offset-slate-950 light:border-brand-500/75 light:ring-brand-500/25 light:ring-offset-white/50'
     : 'hover:-translate-y-1 hover:border-brand-500/45 light:hover:border-brand-500/50';
@@ -346,7 +346,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
           <StatusIcon className={`relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700 ${iconAnimClass}`} />
         </div>
 
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/82 p-4 text-xs opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/70 light:bg-white/90 light:shadow-[0_18px_45px_rgba(148,163,184,0.16)]">
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-[#020617]/70 p-4 text-xs opacity-0 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className={`rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
               {category}
@@ -362,7 +362,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
               {description}
             </p>
           )}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/5 pt-3 light:border-slate-200/70">
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/5 pt-3 light:border-slate-200/40">
             <div>
               <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Progress</div>
               <div className="mt-0.5 font-bold text-slate-200 light:text-slate-800">{progress}%</div>
@@ -407,7 +407,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
                 <h3 className="line-clamp-2 text-[13px] font-bold leading-snug tracking-tight text-slate-100 light:text-slate-900">
                   {task.title}
                 </h3>
-                <span className="shrink-0 rounded-lg bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-300 light:bg-slate-100/70 light:text-slate-700">
+                <span className="shrink-0 rounded-lg border border-white/5 bg-slate-950/40 px-2 py-1 text-[10px] font-bold text-slate-300 backdrop-blur-sm light:border-slate-200/40 light:bg-white/45 light:text-slate-700">
                   {progress}%
                 </span>
               </div>
@@ -416,10 +416,10 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
                 <span className={`max-w-[112px] truncate rounded-lg border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
                   {category}
                 </span>
-                <span className="rounded-lg border border-white/5 bg-white/5 px-2 py-0.5 text-[9px] font-semibold text-slate-400 light:border-slate-200/70 light:bg-slate-50/70 light:text-slate-600">
+                <span className="rounded-lg border border-white/10 bg-slate-950/40 px-2 py-0.5 text-[9px] font-semibold text-slate-400 backdrop-blur-sm light:border-slate-200/50 light:bg-white/45 light:text-slate-600">
                   {compactLayerLabel}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-white/5 px-2 py-0.5 text-[9px] font-semibold text-slate-400 light:border-slate-200/70 light:bg-slate-50/70 light:text-slate-600">
+                <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-slate-950/40 px-2 py-0.5 text-[9px] font-semibold text-slate-400 backdrop-blur-sm light:border-slate-200/50 light:bg-white/45 light:text-slate-600">
                   <Clock className="h-3 w-3" />
                   {formatHours(loggedHours)} / {formatHours(estimatedHours)}
                 </span>
@@ -487,15 +487,15 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
         )}
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-2.5 light:border-slate-200/70 light:bg-slate-50/70">
+          <div className="rounded-2xl border border-white/10 bg-[#020617]/45 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
             <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Estimate</div>
             <div className="mt-1 text-xs font-bold text-slate-200 light:text-slate-800">{formatHours(estimatedHours)}</div>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-2.5 light:border-slate-200/70 light:bg-slate-50/70">
+          <div className="rounded-2xl border border-white/10 bg-[#020617]/45 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
             <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Logged</div>
             <div className="mt-1 text-xs font-bold text-slate-200 light:text-slate-800">{formatHours(loggedHours)}</div>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-2.5 light:border-slate-200/70 light:bg-slate-50/70">
+          <div className="rounded-2xl border border-white/10 bg-[#020617]/45 backdrop-blur-md p-2.5 light:border-slate-200/50 light:bg-white/45">
             <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Layer</div>
             <div className="mt-1 truncate text-xs font-bold text-slate-200 light:text-slate-800">{layerLabel}</div>
           </div>
@@ -546,7 +546,7 @@ function TaskNodeCard({ data, selected }: NodeProps<TaskFlowNode>) {
             </span>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-white/5 bg-white/[0.04] px-2 py-1 text-[10px] font-bold text-slate-400 light:border-slate-200/70 light:bg-slate-50/70 light:text-slate-600">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-[#020617]/45 backdrop-blur-md px-2 py-1 text-[10px] font-bold text-slate-400 light:border-slate-200/50 light:bg-white/45 light:text-slate-600">
             <Clock className="h-3.5 w-3.5" />
             <span>{timePercent}% time</span>
           </div>
@@ -592,7 +592,7 @@ function TopologicalLanesHeader({
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="rounded-full border border-slate-800/80 bg-[#020617]/75 px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 backdrop-blur-md shadow-md light:border-slate-300/80 light:bg-white/90 light:text-slate-500">
+            <div className="rounded-full border border-white/10 bg-[#020617]/70 px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
               Layer {layer}
             </div>
           </div>
@@ -944,16 +944,16 @@ export default function ProjectWorkspacePage() {
       <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 to-transparent pointer-events-none z-30 light:from-[#f1f5f9]" />
 
       <div className="sticky top-0 z-40 h-[88px] w-full pointer-events-none sm:h-24">
-        <header className={`w-full pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'} animate-slide-down-fade`}>
+        <header className={`w-full pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isScrolled ? 'py-1.5 sm:py-2' : 'py-3 sm:py-4'}`}>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className={`relative z-50 flex h-14 items-center justify-between rounded-2xl border px-4 shadow-lg backdrop-blur-xl transition-all duration-500 sm:h-16 sm:px-6 ${isScrolled
+            <div className={`relative z-50 flex h-14 items-center justify-between rounded-2xl border px-4 shadow-lg backdrop-blur-xl transition-all duration-500 sm:h-16 sm:px-6 animate-slide-down-fade ${isScrolled
               ? 'border-brand-500/20 bg-[#020617]/70 shadow-brand-500/5 light:bg-white/75 light:border-brand-500/20'
               : 'border-white/10 bg-[#020617]/70 shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10'
               }`}>
               <div className="flex min-w-0 items-center gap-3">
                 <Link
                   to="/"
-                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 text-slate-300 backdrop-blur-md transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 light:hover:text-brand-600"
+                  className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#020617]/45 text-slate-300 backdrop-blur-xl transition-all hover:border-brand-500/30 hover:text-brand-400 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:text-brand-600"
                   aria-label="Back to dashboard"
                 >
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -982,7 +982,7 @@ export default function ProjectWorkspacePage() {
 
               <div className="flex items-center gap-2">
                 {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-md light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 md:flex">
+                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 md:flex">
                     <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
                     <span>Enrichment: {graph.enrichmentStatus}</span>
                   </div>
@@ -990,7 +990,7 @@ export default function ProjectWorkspacePage() {
                 <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
-                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/70 px-3 text-xs font-semibold text-slate-400 backdrop-blur-md transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/80 light:bg-slate-100/80 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
+                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-slate-950/45 px-3 text-xs font-semibold text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -1100,73 +1100,73 @@ export default function ProjectWorkspacePage() {
                       />
 
                       <Panel position="bottom-center" className="!mb-6 hidden lg:block">
-                        <div className="flex items-stretch gap-3 animate-slide-up-fade [animation-delay:250ms]">
+                        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms]">
 
-                          <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
-                            <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
-                              <span
-                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
-                                  ? 'translate-x-0'
-                                  : activeViewOffset === 1
-                                    ? 'translate-x-[calc(100%+0.25rem)]'
-                                    : 'translate-x-[calc(200%+0.5rem)]'
-                                  }`}
-                              />
-                              {viewModes.map(({ key, label, icon: Icon }) => {
-                                const active = viewMode === key;
-                                return (
-                                  <button
-                                    key={key}
-                                    onClick={() => setViewMode(key)}
-                                    className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
-                                      ? 'text-white'
-                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                      }`}
-                                  >
-                                    <Icon className="h-4 w-4" />
-                                    <span>{label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                          <div className="relative grid grid-cols-3 items-stretch gap-1 h-full" role="tablist">
+                            <span
+                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
+                                ? 'translate-x-0'
+                                : activeViewOffset === 1
+                                  ? 'translate-x-[calc(100%+0.25rem)]'
+                                  : 'translate-x-[calc(200%+0.5rem)]'
+                                }`}
+                            />
+                            {viewModes.map(({ key, label, icon: Icon }) => {
+                              const active = viewMode === key;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => setViewMode(key)}
+                                  className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
+                                    ? 'text-white'
+                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                    }`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  <span>{label}</span>
+                                </button>
+                              );
+                            })}
                           </div>
 
-                          <div className="rounded-full border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
-                            <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
-                              <span
-                                className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
-                                  ? 'translate-x-0'
-                                  : activeEdgeTypeOffset === 1
-                                    ? 'translate-x-[calc(100%+0.25rem)]'
-                                    : activeEdgeTypeOffset === 2
-                                      ? 'translate-x-[calc(200%+0.5rem)]'
-                                      : 'translate-x-[calc(300%+0.75rem)]'
-                                  }`}
-                              />
-                              {edgeTypeModes.map(({ key, label, icon: Icon }) => {
-                                const active = edgeType === key;
-                                return (
-                                  <button
-                                    key={key}
-                                    onClick={() => setEdgeType(key)}
-                                    className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
-                                      ? 'text-white'
-                                      : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
-                                      }`}
-                                  >
-                                    <Icon className="h-4 w-4" />
-                                    <span>{label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                          <div className="h-6 w-px bg-white/10 light:bg-slate-200 mx-1" />
+
+                          <div className="relative grid grid-cols-4 items-stretch gap-1 h-full" role="tablist">
+                            <span
+                              className={`absolute inset-y-0 left-0 w-[calc((100%-0.75rem)/4)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeEdgeTypeOffset === 0
+                                ? 'translate-x-0'
+                                : activeEdgeTypeOffset === 1
+                                  ? 'translate-x-[calc(100%+0.25rem)]'
+                                  : activeEdgeTypeOffset === 2
+                                    ? 'translate-x-[calc(200%+0.5rem)]'
+                                    : 'translate-x-[calc(300%+0.75rem)]'
+                                }`}
+                            />
+                            {edgeTypeModes.map(({ key, label, icon: Icon }) => {
+                              const active = edgeType === key;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => setEdgeType(key)}
+                                  className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors duration-300 ease-out cursor-pointer ${active
+                                    ? 'text-white'
+                                    : 'text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900'
+                                    }`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  <span>{label}</span>
+                                </button>
+                              );
+                            })}
                           </div>
+
+                          <div className="h-6 w-px bg-white/10 light:bg-slate-200 mx-1" />
 
                           <button
                             onClick={() => setShowTopologicalLanes(!showTopologicalLanes)}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${showTopologicalLanes
-                              ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
-                              : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
+                            className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${showTopologicalLanes
+                              ? 'border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-300 shadow-md shadow-brand-500/5 light:border-brand-500/30 light:bg-gradient-to-r light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700'
+                              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
                               }`}
                           >
                             <Network className="h-4 w-4" />
@@ -1175,9 +1175,9 @@ export default function ProjectWorkspacePage() {
 
                           <button
                             onClick={autoArrangeLayout}
-                            className={`rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 ${isAligned
-                              ? 'bg-gradient-to-r from-brand-500 to-orange-500 text-white border-transparent'
-                              : 'border-white/10 bg-[#020617]/70 text-slate-400 hover:text-slate-200 light:border-slate-200/60 light:bg-white/75 light:text-slate-600 light:hover:text-slate-900'
+                            className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${isAligned
+                              ? 'border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-300 shadow-md shadow-brand-500/5 light:border-brand-500/30 light:bg-gradient-to-r light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700'
+                              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
                               }`}
                             title="Auto-arrange and align all task nodes by topological layers"
                           >
