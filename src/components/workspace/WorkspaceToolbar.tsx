@@ -73,19 +73,6 @@ export function WorkspaceToolbar({
         <div className="max-h-[42dvh] max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms] 2xl:rounded-full flex flex-col">
           <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-fade-mask min-[2200px]:scroll-fade-none px-3">
 
-            <button
-              type="button"
-              onClick={onCreateTask}
-              className="flex min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 px-3 py-2 text-[12px] font-semibold text-brand-300 shadow-md shadow-brand-500/5 transition-all hover:border-brand-400/60 hover:from-brand-500/30 hover:to-orange-500/30 hover:text-white active:scale-95 light:border-brand-500/30 light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700 light:hover:text-brand-800 2xl:px-4"
-              title="Add task at the center of the canvas"
-              aria-label="Add task"
-            >
-              <Plus className="h-4 w-4 shrink-0" />
-              <span className="hidden 2xl:inline">Task</span>
-            </button>
-
-            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:mx-1" />
-
             <div className="relative grid h-full shrink-0 grid-cols-3 items-stretch gap-1" role="tablist">
               <span
                 className={`absolute inset-y-0 left-0 w-[calc((100%-0.5rem)/3)] rounded-full bg-gradient-to-r from-brand-500 to-orange-500 shadow-md shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeViewOffset === 0
@@ -203,8 +190,20 @@ export function WorkspaceToolbar({
         </div>
       </Panel>
 
-      <Panel position="bottom-right" className="!mb-6 !mr-6 hidden min-[2200px]:block">
-        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:350ms]">
+      <Panel position="bottom-right" className="!mb-[145px] lg:!mb-6 !mr-6 z-40 flex flex-col items-end gap-3">
+        <button
+          type="button"
+          onClick={onCreateTask}
+          className="relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-xl shadow-brand-500/25 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/40 hover:brightness-110 active:scale-95 cursor-pointer animate-slide-up-fade [animation-delay:300ms]"
+          title="Create a new task in the center of the viewport"
+          aria-label="Create a new task"
+        >
+          <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-brand-500 to-orange-500 opacity-20 blur-sm transition-opacity duration-300 hover:opacity-50 pointer-events-none" />
+          <Plus className="relative z-10 h-5 w-5 shrink-0" />
+          <span className="relative z-10 hidden lg:inline">Create Task</span>
+        </button>
+
+        <div className="hidden min-[2200px]:flex items-center gap-4 rounded-full border border-white/10 bg-[#020617]/70 p-1.5 pr-6 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:350ms]">
           <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500/15 to-orange-500/15 px-4 py-2 text-[12px] font-bold whitespace-nowrap text-brand-300 light:text-brand-700">
             <CheckCircle2 className="h-4 w-4" />
             <span>{graphStats.completion}% complete</span>

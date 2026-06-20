@@ -535,9 +535,9 @@ export default function ProjectWorkspacePage() {
 
               <div className="flex items-center gap-2">
                 {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 lg:flex">
+                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 xl:flex">
                     <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
-                    <span>Enrichment: {graph.enrichmentStatus}</span>
+                    <span>{graph.enrichmentStatus}</span>
                   </div>
                 )}
                 <button
@@ -603,9 +603,9 @@ export default function ProjectWorkspacePage() {
                 <div className="workspace-flow-surface absolute inset-0 pointer-events-none" />
                 <div className="workspace-flow-vignette absolute inset-0 pointer-events-none" />
 
-                {!graph ? (
+                {!graph || graph.nodes.length === 0 ? (
                   <div className="relative z-10 flex h-full min-h-dvh items-center justify-center p-8 text-center animate-zoom-in-fade">
-                    <div className="max-w-sm">
+                    <div className="max-w-sm flex flex-col items-center">
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
                         <ShieldAlert className="h-7 w-7" />
                       </div>
@@ -613,6 +613,14 @@ export default function ProjectWorkspacePage() {
                       <p className="mt-2 text-sm text-slate-400 light:text-slate-600">
                         The API returned no tasks for this project yet. Create tasks or trigger AI decomposition to populate the workspace.
                       </p>
+                      <button
+                        onClick={() => openTaskCreator(undefined, undefined, 'toolbar')}
+                        className="relative mt-6 flex items-center justify-center gap-2 rounded-xl border-0 bg-gradient-to-r from-brand-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-300 hover:scale-[1.03] hover:shadow-brand-500/40 hover:brightness-110 active:scale-95 cursor-pointer"
+                      >
+                        <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 opacity-20 blur-sm transition-opacity duration-300 hover:opacity-50 pointer-events-none" />
+                        <Plus className="relative z-10 h-4 w-4 shrink-0" />
+                        <span className="relative z-10">Create First Task</span>
+                      </button>
                     </div>
                   </div>
                 ) : (
