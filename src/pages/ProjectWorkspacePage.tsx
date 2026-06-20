@@ -909,20 +909,6 @@ export default function ProjectWorkspacePage() {
       <SafariTopBar />
       <SafariBottomBar />
 
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2.5 rounded-xl border border-white/10 bg-slate-900/40 backdrop-blur-md text-slate-400 hover:text-white hover:border-brand-500/30 transition-all hover:scale-110 active:scale-95 cursor-pointer z-50 shadow-lg light:bg-white/60 light:border-slate-200/80 light:text-slate-600 light:hover:text-slate-900 light:hover:border-brand-500/40 light:shadow-slate-200/30 group"
-        aria-label="Toggle theme"
-        title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-      >
-        {theme === 'light' ? (
-          <Moon className="w-5 h-5 transition-transform duration-500 rotate-0 group-hover:-rotate-12 group-hover:scale-110" />
-        ) : (
-          <Sun className="w-5 h-5 transition-transform duration-500 rotate-0 group-hover:rotate-90 group-hover:scale-110" />
-        )}
-      </button>
-
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 animate-slow-fade hidden md:block">
         <div className="absolute inset-[-30%] h-[160%] w-[160%] animate-[spin_200s_linear_infinite] opacity-[0.85] mix-blend-normal">
           <div className="absolute top-[20%] left-[15%] h-[55vw] min-h-[650px] w-[55vw] min-w-[650px] animate-blob-one rounded-full bg-indigo-600/10 blur-[180px] light:bg-indigo-500/5" />
@@ -961,7 +947,7 @@ export default function ProjectWorkspacePage() {
 
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h1 className="truncate text-base font-bold tracking-tight text-white light:text-slate-900 sm:text-lg max-w-[120px] sm:max-w-[200px] md:max-w-[300px] lg:max-w-[400px]" title={project?.name}>
+                    <h1 className="truncate text-base font-bold tracking-tight text-white light:text-slate-900 sm:text-lg max-w-[120px] sm:max-w-[280px] md:max-w-[420px] lg:max-w-[600px]" title={project?.name}>
                       {project?.name
                         ? (project.name.length > 80 ? `${project.name.slice(0, 80)}...` : project.name)
                         : 'Project Workspace'}
@@ -972,7 +958,7 @@ export default function ProjectWorkspacePage() {
                       </span>
                     )}
                   </div>
-                  <p className="hidden truncate text-xs text-slate-400 light:text-slate-600 sm:block max-w-[180px] sm:max-w-[280px] md:max-w-[380px] lg:max-w-[500px]">
+                  <p className="hidden truncate text-xs text-slate-400 light:text-slate-600 sm:block max-w-[180px] sm:max-w-[280px] md:max-w-[420px] lg:max-w-[600px]">
                     {project?.description
                       ? (project.description.length > 120 ? `${project.description.slice(0, 120)}...` : project.description)
                       : 'Interactive task graph · dependencies and execution flow'}
@@ -982,7 +968,7 @@ export default function ProjectWorkspacePage() {
 
               <div className="flex items-center gap-2">
                 {graph && (
-                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 md:flex">
+                  <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 lg:flex">
                     <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
                     <span>Enrichment: {graph.enrichmentStatus}</span>
                   </div>
@@ -990,10 +976,23 @@ export default function ProjectWorkspacePage() {
                 <button
                   onClick={() => loadWorkspace(true)}
                   disabled={refreshing || loading}
-                  className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-slate-950/45 px-3 text-xs font-semibold text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900"
+                  className="flex h-9 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/45 text-xs font-semibold text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900 w-9 lg:w-auto px-0 lg:px-3 shrink-0"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">Refresh</span>
+                  <span className="hidden lg:inline">Refresh</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-slate-950/45 text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white active:scale-95 cursor-pointer light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900 group shrink-0"
+                  aria-label="Toggle theme"
+                  title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                >
+                  {theme === 'light' ? (
+                    <Moon className="w-3.5 h-3.5 transition-transform duration-500 rotate-0 group-hover:-rotate-12 group-hover:scale-110" />
+                  ) : (
+                    <Sun className="w-3.5 h-3.5 transition-transform duration-500 rotate-0 group-hover:rotate-90 group-hover:scale-110" />
+                  )}
                 </button>
               </div>
             </div>
