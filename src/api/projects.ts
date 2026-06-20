@@ -93,6 +93,17 @@ export interface CreateProjectResponse extends ProjectResponse {
   graph: ProjectGraphResponse;
 }
 
+export interface CreateTaskRequest {
+  title: string;
+  description?: string | null;
+  category?: TaskNode['category'];
+  estimatedHours?: number | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  positionX: number;
+  positionY: number;
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -115,6 +126,11 @@ export const projectsApi = {
 
   async getProjectGraph(projectId: string): Promise<ProjectGraphResponse> {
     const response = await apiClient.get<ProjectGraphResponse>(`/api/v1/projects/${projectId}/graph`);
+    return response.data;
+  },
+
+  async createTask(projectId: string, data: CreateTaskRequest): Promise<TaskNode> {
+    const response = await apiClient.post<TaskNode>(`/api/v1/projects/${projectId}/tasks`, data);
     return response.data;
   }
 };

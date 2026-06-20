@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   GitBranch,
   Zap,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 import type { ViewMode, EdgeTypeMode } from '../../utils/workspaceUtils';
 
@@ -37,6 +38,7 @@ interface WorkspaceToolbarProps {
   setShowTopologicalLanes: (show: boolean) => void;
   isAligned: boolean;
   autoArrangeLayout: () => void;
+  onCreateTask: () => void;
   graphStats: {
     tasks: number;
     dependencies: number;
@@ -57,6 +59,7 @@ export function WorkspaceToolbar({
   setShowTopologicalLanes,
   isAligned,
   autoArrangeLayout,
+  onCreateTask,
   graphStats
 }: WorkspaceToolbarProps) {
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
@@ -69,6 +72,19 @@ export function WorkspaceToolbar({
       <Panel position="bottom-center" className="!mb-6 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:!w-auto sm:!max-w-[calc(100vw-2rem)]">
         <div className="max-h-[42dvh] max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms] 2xl:rounded-full flex flex-col">
           <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-fade-mask lg:scroll-fade-none px-3">
+
+            <button
+              type="button"
+              onClick={onCreateTask}
+              className="flex min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-orange-500/20 px-3 py-2 text-[12px] font-semibold text-brand-300 shadow-md shadow-brand-500/5 transition-all hover:border-brand-400/60 hover:from-brand-500/30 hover:to-orange-500/30 hover:text-white active:scale-95 light:border-brand-500/30 light:from-brand-500/15 light:to-orange-500/15 light:text-brand-700 light:hover:text-brand-800 2xl:px-4"
+              title="Add task at the center of the canvas"
+              aria-label="Add task"
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+              <span className="hidden 2xl:inline">Task</span>
+            </button>
+
+            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:mx-1" />
 
             <div className="relative grid h-full shrink-0 grid-cols-3 items-stretch gap-1" role="tablist">
               <span
