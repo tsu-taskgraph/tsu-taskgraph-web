@@ -1,5 +1,5 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import type { ProjectGraphResponse, TaskNode } from '../api/projects';
+import type { ProjectGraphResponse, TaskNode } from '../../../api/projects';
 
 export type ViewMode = 'dot' | 'label' | 'full';
 export type EdgeTypeMode = 'smoothstep' | 'default' | 'straight' | 'step';
@@ -24,79 +24,54 @@ export type LayerHeaderNode = Node<{ label: string }, 'layerHeader'>;
 export type WorkspaceNode = TaskFlowNode | LayerHeaderNode;
 export type TaskFlowEdge = Edge;
 
-export function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus, targetStatus?: TaskStatus) {
-  const palette = {
-    brand: theme === 'light' ? '#d97706' : '#f59e0b',
-    sky: theme === 'light' ? '#0284c7' : '#38bdf8',
-    emerald: theme === 'light' ? '#059669' : '#34d399',
-    violet: theme === 'light' ? '#7c3aed' : '#a78bfa',
-    slate: theme === 'light' ? 'rgba(100, 116, 139, 0.58)' : 'rgba(148, 163, 184, 0.46)',
-    neutral: theme === 'light' ? 'rgba(100, 116, 139, 0.48)' : 'rgba(148, 163, 184, 0.38)'
-  };
-
-  if (sourceStatus === 'LOCKED' || targetStatus === 'LOCKED') {
-    return {
-      color: palette.slate,
-      strokeWidth: 1.55,
-      dashArray: '7 7',
-      animated: false,
-      opacity: 0.78,
-      filter: 'none'
-    };
-  }
-
-  if (sourceStatus === 'SKIPPED' || targetStatus === 'SKIPPED') {
-    return {
-      color: palette.violet,
-      strokeWidth: 1.8,
-      dashArray: '8 6',
-      animated: false,
-      opacity: 0.82,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(124, 58, 237, 0.14))' : 'drop-shadow(0 2px 7px rgba(167, 139, 250, 0.18))'
-    };
-  }
-
-  if (sourceStatus === 'IN_PROGRESS') {
-    return {
-      color: palette.sky,
-      strokeWidth: 2.6,
-      dashArray: undefined,
-      animated: true,
-      opacity: 0.95,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 7px rgba(2, 132, 199, 0.16))' : 'drop-shadow(0 2px 8px rgba(56, 189, 248, 0.22))'
-    };
-  }
-
-  if (sourceStatus === 'COMPLETED') {
-    return {
-      color: palette.emerald,
-      strokeWidth: 2.15,
-      dashArray: undefined,
-      animated: false,
-      opacity: 0.92,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(5, 150, 105, 0.12))' : 'drop-shadow(0 2px 7px rgba(52, 211, 153, 0.18))'
-    };
-  }
-
-  if (sourceStatus === 'AVAILABLE') {
-    return {
-      color: palette.brand,
-      strokeWidth: 2,
-      dashArray: undefined,
-      animated: false,
-      opacity: 0.9,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(217, 119, 6, 0.14))' : 'drop-shadow(0 2px 7px rgba(245, 158, 11, 0.20))'
-    };
-  }
-
+export function buildEdgeMarker(color: string, width = 30, height = 30) {
   return {
-    color: palette.neutral,
-    strokeWidth: 1.8,
-    dashArray: undefined,
-    animated: false,
-    opacity: 0.72,
-    filter: 'none'
+    type: MarkerType.ArrowClosed,
+    width,
+    height,
+    color,
+    markerUnits: 'userSpaceOnUse' as const,
   };
+}
+
+export const EDGE_HOVER_COLOR = '#f43f5e';
+
+const EDGE_GRADIENT_STOPS: Record<ThemeMode, Record<TaskStatus, [string, string]>> = {
+  dark: {
+    AVAILABLE: ['#f97316', '#fbbf24'],
+    IN_PROGRESS: ['#3b82f6', '#38bdf8'],
+    COMPLETED: ['#14b8a6', '#34d399'],
+    SKIPPED: ['#d946ef', '#a78bfa'],
+    LOCKED: ['#64748b', '#94a3b8']
+  },
+  light: {
+    AVAILABLE: ['#c2410c', '#d97706'],
+    IN_PROGRESS: ['#1d4ed8', '#0284c7'],
+    COMPLETED: ['#059669', '#0d9488'],
+    SKIPPED: ['#c026d3', '#7c3aed'],
+    LOCKED: ['#475569', '#64748b']
+  }
+};
+
+export type EdgeVisual = {
+  from: string;
+  to: string;
+  strokeWidth: number;
+  dashArray: string;
+  opacity: number;
+  flowDuration: string;
+};
+
+function edgeGradientColors(theme: ThemeMode, status: TaskStatus): [string, string] {
+  return EDGE_GRADIENT_STOPS[theme][status] ?? EDGE_GRADIENT_STOPS[theme].AVAILABLE;
+}
+
+export function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus): EdgeVisual {
+  const status = sourceStatus ?? 'AVAILABLE';
+  const [from, to] = edgeGradientColors(theme, status);
+  const flowDuration = status === 'IN_PROGRESS' ? '0.5s' : '2.4s';
+
+  return { from, to, strokeWidth: 1.8, dashArray: '6 6', opacity: 0.9, flowDuration };
 }
 
 export function mapGraphToFlow(
@@ -173,33 +148,31 @@ export function mapGraphToFlow(
   }
 
   const edges: TaskFlowEdge[] = graph.edges.map((edge) => {
-    const targetStatus = nodeStatus.get(edge.targetTaskId) ?? 'AVAILABLE';
     const sourceStatus = nodeStatus.get(edge.sourceTaskId) ?? 'AVAILABLE';
-    const visual = getEdgeVisual(theme, sourceStatus, targetStatus);
+    const visual = getEdgeVisual(theme, sourceStatus);
+    const animation = edgesVisible
+      ? `edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both, flow-dash ${visual.flowDuration} linear infinite`
+      : 'none';
 
     return {
       id: edge.id,
       source: edge.sourceTaskId,
       target: edge.targetTaskId,
-      type: edgeType,
-      animated: visual.animated,
+      type: 'gradient',
+      data: { shape: edgeType, from: visual.from, to: visual.to, sourceStatus },
+      animated: false,
+      reconnectable: true,
       className: `edge-status-${sourceStatus.toLowerCase()}`,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 18,
-        height: 18,
-        color: visual.color
-      },
+      markerEnd: buildEdgeMarker(visual.to),
       style: {
-        stroke: visual.color,
+        stroke: visual.to,
         strokeWidth: visual.strokeWidth,
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         strokeDasharray: visual.dashArray,
         opacity: edgesVisible ? visual.opacity : 0,
-        filter: visual.filter,
-        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s, d 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        animation: edgesVisible ? 'edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' : 'none'
+        transition: 'stroke 0.3s ease, stroke-width 0.3s ease, opacity 0.3s ease, d 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        animation
       } as React.CSSProperties
     };
   });

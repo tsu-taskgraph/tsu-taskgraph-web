@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { authApi } from '../api/auth';
+import { useAuth } from '../../features/auth/context/AuthContext';
+import { authApi } from '../../api/auth';
 import { X, Camera, Trash2, Loader2, User, Mail, Check, Cpu } from 'lucide-react';
 import { SafariTopBar } from './SafariTopBar';
 import { SafariBottomBar } from './SafariBottomBar';
 import axios from 'axios';
-import { mapServerErrorToEnglish } from '../api/errors';
+import { mapServerErrorToEnglish } from '../../api/errors';
 
 interface UserProfileOverlayProps {
   isOpen: boolean;

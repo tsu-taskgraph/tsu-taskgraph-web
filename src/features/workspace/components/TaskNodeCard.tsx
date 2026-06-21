@@ -8,8 +8,8 @@ import {
   UserRound,
   Zap
 } from 'lucide-react';
-import type { TaskNode } from '../../api/projects';
-import type { TaskStatus, TaskFlowNode, ThemeMode } from '../../utils/workspaceUtils';
+import type { TaskNode } from '../../../api/projects';
+import type { TaskStatus, TaskFlowNode, ThemeMode } from '../utils/workspaceUtils';
 
 type TaskCategory = NonNullable<TaskNode['category']>;
 
@@ -131,10 +131,7 @@ function getInitials(displayName: string) {
 }
 
 function getTaskProgress(task: TaskNode) {
-  if (typeof task.completionPercent === 'number') return task.completionPercent;
-  if (task.status === 'COMPLETED') return 100;
-  if (task.status === 'IN_PROGRESS') return 50;
-  return 0;
+  return typeof task.completionPercent === 'number' ? task.completionPercent : 0;
 }
 
 function formatHours(hours: number | null | undefined) {

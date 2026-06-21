@@ -636,6 +636,56 @@ const projectGraphs: Record<string, {
   }
 };
 
+function recalculateTaskStatuses(graph: typeof projectGraphs[string]) {
+  const now = new Date().toISOString();
+  const completedIds = new Set(
+    graph.nodes
+      .filter((node: any) => node.status === 'COMPLETED' || node.status === 'SKIPPED')
+      .map((node: any) => node.id as string)
+  );
+
+  graph.nodes = graph.nodes.map((node: any) => {
+    if (node.status === 'COMPLETED' || node.status === 'SKIPPED') {
+      return node;
+    }
+
+    const incomingEdges = graph.edges.filter((edge: any) => edge.targetTaskId === node.id);
+
+    if (incomingEdges.length === 0) {
+      if (node.status === 'LOCKED') {
+        return {
+          ...node,
+          status: 'AVAILABLE',
+          updatedAt: now
+        };
+      }
+      return node;
+    }
+
+    const allCompleted = incomingEdges.every((edge: any) => completedIds.has(edge.sourceTaskId as string));
+
+    if (allCompleted) {
+      if (node.status === 'LOCKED') {
+        return {
+          ...node,
+          status: 'AVAILABLE',
+          updatedAt: now
+        };
+      }
+    } else {
+      if (node.status !== 'LOCKED') {
+        return {
+          ...node,
+          status: 'LOCKED',
+          updatedAt: now
+        };
+      }
+    }
+
+    return node;
+  });
+}
+
 export const handlers = [
   http.post('*/api/v1/auth/login', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
@@ -1047,6 +1097,171 @@ export const handlers = [
     return HttpResponse.json(createdTask, { status: 201 });
   }),
 
+  http.patch('*/api/v1/tasks/:taskId', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as {
+      title?: string;
+      description?: string | null;
+      category?: MockTaskCategory;
+      estimatedHours?: number | null;
+      completionPercent?: number | null;
+      startDate?: string | null;
+      dueDate?: string | null;
+      positionX?: number;
+      positionY?: number;
+    };
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const now = new Date().toISOString();
+    const updatedTask = {
+      ...targetTask,
+      ...(body.title !== undefined ? { title: body.title } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.category !== undefined ? { category: body.category } : {}),
+      ...(body.estimatedHours !== undefined ? { estimatedHours: body.estimatedHours } : {}),
+      ...(body.completionPercent !== undefined ? { completionPercent: body.completionPercent } : {}),
+      ...(body.startDate !== undefined ? { startDate: body.startDate } : {}),
+      ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
+      ...(body.positionX !== undefined ? { positionX: body.positionX } : {}),
+      ...(body.positionY !== undefined ? { positionY: body.positionY } : {}),
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+    return HttpResponse.json(updatedTask);
+  }),
+
+  http.post('*/api/v1/tasks/:taskId/time-logs', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as { hours?: number; comment?: string | null };
+
+    if (!Number.isFinite(body.hours) || !body.hours || body.hours <= 0) {
+      return HttpResponse.json({ message: 'Logged hours must be positive.' }, { status: 400 });
+    }
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const now = new Date().toISOString();
+    const updatedTask = {
+      ...targetTask,
+      loggedHours: Number(targetTask.loggedHours ?? 0) + Number(body.hours),
+      updatedAt: now
+    };
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+
+    return HttpResponse.json({
+      id: `time-log-${Date.now()}`,
+      taskId,
+      userId: '00000000-0000-0000-0000-000000000000',
+      hours: body.hours,
+      comment: body.comment ?? null,
+      loggedAt: now
+    }, { status: 201 });
+  }),
+
+  http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as {
+      status?: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
+      loggedHours?: number | null;
+      comment?: string | null;
+    };
+
+    if (!body.status || !['IN_PROGRESS', 'COMPLETED', 'SKIPPED'].includes(body.status)) {
+      return HttpResponse.json({ message: 'Invalid task status.' }, { status: 400 });
+    }
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    if (targetTask.status === 'LOCKED') {
+      return HttpResponse.json({ message: 'Cannot update status of a locked task.' }, { status: 409 });
+    }
+
+    const now = new Date().toISOString();
+    const updatedTask = {
+      ...targetTask,
+      status: body.status,
+      completionPercent: targetTask.completionPercent ?? 0,
+      loggedHours: typeof body.loggedHours === 'number' ? body.loggedHours : targetTask.loggedHours ?? 0,
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+
+    const completedIds = new Set(
+      targetGraph.nodes
+        .filter((node) => node.status === 'COMPLETED' || node.status === 'SKIPPED')
+        .map((node) => node.id as string)
+    );
+    const unlockedTasks: Record<string, unknown>[] = [];
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => {
+      if (node.status !== 'LOCKED') return node;
+
+      const incomingEdges = targetGraph.edges.filter((edge) => edge.targetTaskId === node.id);
+      const dependenciesCompleted = incomingEdges.length > 0 && incomingEdges.every((edge) => completedIds.has(edge.sourceTaskId as string));
+
+      if (!dependenciesCompleted) return node;
+
+      const unlockedTask = {
+        ...node,
+        status: 'AVAILABLE',
+        updatedAt: now
+      };
+      unlockedTasks.push(unlockedTask);
+      return unlockedTask;
+    });
+
+    return HttpResponse.json({
+      updatedTask,
+      unlockedTasks,
+      graph: targetGraph
+    });
+  }),
+
   http.post('*/api/v1/projects/:projectId/edges', async ({ params, request }) => {
     const projectId = params.projectId as string;
     const graph = projectGraphs[projectId];
@@ -1119,6 +1334,55 @@ export const handlers = [
     };
 
     graph.edges.push(createdEdge);
+    recalculateTaskStatuses(graph);
     return HttpResponse.json(createdEdge, { status: 201 });
+  }),
+
+  http.delete('*/api/v1/edges/:edgeId', ({ params }) => {
+    const edgeId = params.edgeId as string;
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let foundEdge: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const edge = graph.edges.find((e) => e.id === edgeId);
+      if (edge) {
+        targetGraph = graph;
+        foundEdge = edge;
+        break;
+      }
+    }
+
+    if (!targetGraph || !foundEdge) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    targetGraph.edges = targetGraph.edges.filter((e) => e.id !== edgeId);
+    recalculateTaskStatuses(targetGraph);
+    return HttpResponse.json(targetGraph);
+  }),
+
+  http.delete('*/api/v1/tasks/:taskId', ({ params }) => {
+    const taskId = params.taskId as string;
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let found = false;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const idx = graph.nodes.findIndex((n: any) => n.id === taskId);
+      if (idx !== -1) {
+        targetGraph = graph;
+        graph.nodes.splice(idx, 1);
+        graph.edges = graph.edges.filter((e: any) => e.sourceTaskId !== taskId && e.targetTaskId !== taskId);
+        found = true;
+        break;
+      }
+    }
+
+    if (!targetGraph || !found) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    recalculateTaskStatuses(targetGraph);
+    return new HttpResponse(null, { status: 204 });
   })
 ];

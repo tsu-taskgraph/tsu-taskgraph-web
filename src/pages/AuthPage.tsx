@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus, Mail, Lock, User, ArrowRight, ShieldAlert, Eye, EyeOff, Sun, Moon } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../features/auth/context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import axios from 'axios';
 import logo from '../assets/logo.png';

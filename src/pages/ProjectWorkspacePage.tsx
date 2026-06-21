@@ -1,747 +1,44 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
   ReactFlowProvider,
-  useEdgesState,
-  useNodesState,
-  type Connection,
-  type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { projectsApi, type EdgeResponse, type ProjectResponse, type ProjectGraphResponse, type TaskNode } from '../api/projects';
-import { mapServerErrorToEnglish } from '../api/errors';
-import { useTheme } from '../context/ThemeContext';
-import { SafariTopBar } from '../components/SafariTopBar';
-import { SafariBottomBar } from '../components/SafariBottomBar';
+import { SafariTopBar } from '../components/common/SafariTopBar';
+import { SafariBottomBar } from '../components/common/SafariBottomBar';
 import {
-  mapGraphToFlow,
-  type ViewMode,
-  type EdgeTypeMode,
   type WorkspaceNode,
   type TaskFlowEdge,
   type TaskFlowNode,
-  type TaskCreatorMode,
-  type TaskDraftPosition
-} from '../utils/workspaceUtils';
-import { TaskNodeCard } from '../components/workspace/TaskNodeCard';
-import { LayerHeaderNode } from '../components/workspace/LayerHeaderNode';
-import { TopologicalLanesHeader } from '../components/workspace/TopologicalLanesHeader';
-import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
-import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
-import { TaskCreator } from '../components/workspace/TaskCreator';
-import { useUndoRedo } from '../hooks/useUndoRedo';
-
-type CopiedTaskNode = {
-  task: TaskNode;
-  position: { x: number; y: number };
-};
-
-type CopiedWorkspaceSelection = {
-  nodes: CopiedTaskNode[];
-  edges: Array<{ sourceTaskId: string; targetTaskId: string }>;
-  origin: { x: number; y: number };
-};
-
-const isEditableShortcutTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) return false;
-  const tagName = target.tagName.toLowerCase();
-  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
-};
+} from '../features/workspace/utils/workspaceUtils';
+import { TaskNodeCard } from '../features/workspace/components/TaskNodeCard';
+import { GradientEdge } from '../features/workspace/components/GradientEdge';
+import { LayerHeaderNode } from '../features/workspace/components/LayerHeaderNode';
+import { TopologicalLanesHeader } from '../features/workspace/components/TopologicalLanesHeader';
+import { WorkspaceToolbar } from '../features/workspace/components/WorkspaceToolbar';
+import { WorkspaceHeader } from '../features/workspace/components/WorkspaceHeader';
+import { TaskCreator } from '../features/workspace/components/TaskCreator';
+import { TaskDetailsSidebar } from '../features/workspace/components/TaskDetailsSidebar';
+import { TaskStatusMenu } from '../features/workspace/components/TaskStatusMenu';
+import { TaskActionsModal } from '../features/workspace/components/TaskActionsModal';
+import { ConfirmModal } from '../features/workspace/components/ConfirmModal';
+import { useWorkspace } from '../features/workspace/hooks/useWorkspace';
 
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { theme, toggleTheme } = useTheme();
-  const [project, setProject] = useState<ProjectResponse | null>(null);
-  const [graph, setGraph] = useState<ProjectGraphResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('label');
-  const [edgeType, setEdgeType] = useState<EdgeTypeMode>('default');
-  const [nodes, setNodes, onNodesChange] = useNodesState<WorkspaceNode>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<TaskFlowEdge>([]);
-  const [edgesVisible, setEdgesVisible] = useState(true);
-  const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
-  const [isAligned, setIsAligned] = useState(true);
-  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<WorkspaceNode, TaskFlowEdge> | null>(null);
-  const [taskDraftPosition, setTaskDraftPosition] = useState<TaskDraftPosition | null>(null);
-  const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
-  const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
-  const [isClosing, setIsClosing] = useState(false);
-  const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
-  const [connectionHint, setConnectionHint] = useState<{
-    x: number;
-    y: number;
-    message: string;
-    variant: 'info' | 'success' | 'error';
-    closing: boolean;
-  } | null>(null);
-  const connectionSourceRef = useRef<string | null>(null);
-  const copiedSelectionRef = useRef<CopiedWorkspaceSelection | null>(null);
-  const lastPastePositionRef = useRef<{ x: number; y: number } | null>(null);
-  const pasteCountRef = useRef(0);
-
-  const {
-    takeSnapshot,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    updateCurrentState
-  } = useUndoRedo<WorkspaceNode, TaskFlowEdge, ProjectGraphResponse>();
-
-  useEffect(() => {
-    updateCurrentState(nodes, edges, graph);
-  }, [nodes, edges, graph, updateCurrentState]);
+  const workspace = useWorkspace(projectId);
 
   const nodeTypes = useMemo(() => ({
-    taskNode: (props: any) => <TaskNodeCard {...props} theme={theme} />,
+    taskNode: (props: any) => <TaskNodeCard {...props} theme={workspace.theme} />,
     layerHeader: LayerHeaderNode
-  }), [theme]);
+  }), [workspace.theme]);
 
-  const handleNodeDragStart = useCallback(() => {
-    takeSnapshot();
-  }, [takeSnapshot]);
-
-  const handleNodeDrag = useCallback((_event: any, node: any) => {
-    if (node.type !== 'taskNode') return;
-
-    setIsAligned(false);
-
-    setNodes((prevNodes) => {
-      const tasksByLayer = new Map<number, WorkspaceNode[]>();
-      prevNodes.forEach((n) => {
-        if (n.type === 'taskNode') {
-          const taskNode = n as TaskFlowNode;
-          const layer = taskNode.data.task.layer ?? 0;
-          if (!tasksByLayer.has(layer)) {
-            tasksByLayer.set(layer, []);
-          }
-          tasksByLayer.get(layer)!.push(n);
-        }
-      });
-
-      return prevNodes.map((n) => {
-        if (n.type === 'layerHeader') {
-          const layerNum = Number((n.data as any).label);
-          const nodesInLayer = tasksByLayer.get(layerNum) ?? [];
-          if (nodesInLayer.length > 0) {
-            const sumX = nodesInLayer.reduce((sum, taskNode) => sum + taskNode.position.x, 0);
-            const avgX = sumX / nodesInLayer.length;
-            const centerOffset = viewMode === 'dot' ? 22 : viewMode === 'label' ? 146 : 159;
-            return {
-              ...n,
-              position: {
-                x: avgX + centerOffset,
-                y: n.position.y
-              }
-            };
-          }
-        }
-        return n;
-      });
-    });
-  }, [setNodes, viewMode]);
-
-  const autoArrangeLayout = useCallback(() => {
-    if (!graph) return;
-    takeSnapshot();
-
-    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
-    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
-      node.type === 'taskNode' && Boolean(node.selected)
-    );
-    const selectedTaskIds = new Set(selectedTaskNodes.map((node) => node.id));
-
-    if (selectedTaskIds.size === 0) {
-      setNodes(flow.nodes);
-      setIsAligned(true);
-      return;
-    }
-
-    const allTaskNodesSelected = selectedTaskIds.size === graph.nodes.length;
-
-    if (allTaskNodesSelected) {
-      setNodes(flow.nodes.map((node) => (
-        node.type === 'taskNode' ? { ...node, selected: true } : node
-      )));
-      setIsAligned(true);
-      return;
-    }
-
-    const selectedGraph: ProjectGraphResponse = {
-      ...graph,
-      nodes: graph.nodes.filter((node) => selectedTaskIds.has(node.id)),
-      edges: graph.edges.filter((edge) =>
-        selectedTaskIds.has(edge.sourceTaskId) && selectedTaskIds.has(edge.targetTaskId)
-      )
-    };
-    const selectedFlow = mapGraphToFlow(selectedGraph, theme, viewMode, edgeType, edgesVisible, false);
-    const alignedSelectedTaskNodes = selectedFlow.nodes.filter((node): node is TaskFlowNode => node.type === 'taskNode');
-    const alignedSelectedNodeById = new Map(alignedSelectedTaskNodes.map((node) => [node.id, node]));
-
-    const currentMinX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
-    const currentMinY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
-    const alignedMinX = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.x));
-    const alignedMinY = Math.min(...alignedSelectedTaskNodes.map((node) => node.position.y));
-    const offset = {
-      x: currentMinX - alignedMinX,
-      y: currentMinY - alignedMinY
-    };
-
-    setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-      if (node.type !== 'taskNode' || !selectedTaskIds.has(node.id)) {
-        return node;
-      }
-
-      const alignedNode = alignedSelectedNodeById.get(node.id);
-      if (!alignedNode) return node;
-
-      const updatedNode: TaskFlowNode = {
-        ...node,
-        position: {
-          x: alignedNode.position.x + offset.x,
-          y: alignedNode.position.y + offset.y
-        },
-        data: alignedNode.data,
-        selected: true
-      };
-
-      return updatedNode;
-    }));
-    setIsAligned(false);
-  }, [edgeType, edgesVisible, graph, nodes, setNodes, showTopologicalLanes, theme, viewMode, takeSnapshot]);
-
-  const openTaskCreator = useCallback((screenX?: number, screenY?: number, mode: TaskCreatorMode = 'context') => {
-    const fallbackScreen = {
-      x: Math.round(window.innerWidth / 2),
-      y: Math.round(window.innerHeight / 2)
-    };
-    const screen = {
-      x: screenX ?? fallbackScreen.x,
-      y: screenY ?? fallbackScreen.y
-    };
-    const flow = flowInstance?.screenToFlowPosition(screen) ?? { x: 0, y: 0 };
-
-    const maxPopoverX = Math.max(12, window.innerWidth - 372);
-    const maxPopoverY = Math.max(96, window.innerHeight - 432);
-
-    setTaskCreatorMode(mode);
-    setTaskCreatorAnimationKey((key) => key + 1);
-    setTaskDraftPosition({
-      screen: {
-        x: Math.min(Math.max(screen.x, 12), maxPopoverX),
-        y: Math.min(Math.max(screen.y, 96), maxPopoverY)
-      },
-      flow: {
-        x: Math.round(flow.x),
-        y: Math.round(flow.y)
-      }
-    });
-  }, [flowInstance]);
-
-  const closeTaskCreator = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setTaskDraftPosition(null);
-      setIsClosing(false);
-    }, 200);
-  }, []);
-
-  const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
-    event.preventDefault();
-    openTaskCreator(event.clientX, event.clientY);
-  }, [openTaskCreator]);
-
-  const closeEdgeToast = useCallback((id?: number) => {
-    setEdgeToast((current) => {
-      if (!current || (id && current.id !== id)) return current;
-      return { ...current, closing: true };
-    });
-
-    window.setTimeout(() => {
-      setEdgeToast((current) => {
-        if (!current || (id && current.id !== id)) return current;
-        return null;
-      });
-    }, 220);
-  }, []);
-
-  const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
-    const id = Date.now();
-    setEdgeToast({ id, message, variant, closing: false });
-    window.setTimeout(() => closeEdgeToast(id), 4300);
-  }, [closeEdgeToast]);
-
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!flowInstance) return;
-      lastPastePositionRef.current = flowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY
-      });
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, [flowInstance]);
-
-  const copySelectedTasks = useCallback(() => {
-    const selectedTaskNodes = nodes.filter((node): node is TaskFlowNode =>
-      node.type === 'taskNode' && Boolean(node.selected)
-    );
-
-    if (selectedTaskNodes.length === 0) {
-      showEdgeToast('Select one or more tasks to copy.');
-      return;
-    }
-
-    const selectedIds = new Set(selectedTaskNodes.map((node) => node.id));
-    const selectedEdges = (graph?.edges ?? [])
-      .filter((edge) => selectedIds.has(edge.sourceTaskId) && selectedIds.has(edge.targetTaskId))
-      .map((edge) => ({ sourceTaskId: edge.sourceTaskId, targetTaskId: edge.targetTaskId }));
-
-    const minX = Math.min(...selectedTaskNodes.map((node) => node.position.x));
-    const minY = Math.min(...selectedTaskNodes.map((node) => node.position.y));
-
-    copiedSelectionRef.current = {
-      nodes: selectedTaskNodes.map((node) => ({
-        task: node.data.task,
-        position: node.position
-      })),
-      edges: selectedEdges,
-      origin: { x: minX, y: minY }
-    };
-    pasteCountRef.current = 0;
-    showEdgeToast(`Copied ${selectedTaskNodes.length} task${selectedTaskNodes.length === 1 ? '' : 's'}.`, 'success');
-  }, [graph?.edges, nodes, showEdgeToast]);
-
-  const pasteCopiedTasks = useCallback(async () => {
-    if (!projectId) return;
-    takeSnapshot();
-
-    const copiedSelection = copiedSelectionRef.current;
-    if (!copiedSelection || copiedSelection.nodes.length === 0) {
-      showEdgeToast('Clipboard is empty. Copy tasks first.');
-      return;
-    }
-
-    pasteCountRef.current += 1;
-    const fallbackPosition = flowInstance?.screenToFlowPosition({
-      x: Math.round(window.innerWidth / 2),
-      y: Math.round(window.innerHeight / 2)
-    }) ?? {
-      x: copiedSelection.origin.x + 56 * pasteCountRef.current,
-      y: copiedSelection.origin.y + 56 * pasteCountRef.current
-    };
-    const pasteOrigin = lastPastePositionRef.current ?? fallbackPosition;
-    const offset = {
-      x: pasteOrigin.x - copiedSelection.origin.x,
-      y: pasteOrigin.y - copiedSelection.origin.y
-    };
-
-    try {
-      const createdTasks = await Promise.all(copiedSelection.nodes.map(({ task, position }) =>
-        projectsApi.createTask(projectId, {
-          title: `Copy of ${task.title}`,
-          description: task.description,
-          category: task.category,
-          estimatedHours: task.estimatedHours,
-          startDate: task.startDate,
-          dueDate: task.dueDate,
-          positionX: Math.round(position.x + offset.x),
-          positionY: Math.round(position.y + offset.y)
-        })
-      ));
-
-      const taskIdMap = new Map<string, string>();
-      copiedSelection.nodes.forEach(({ task }, index) => {
-        taskIdMap.set(task.id, createdTasks[index].id);
-      });
-
-      const createdEdges: EdgeResponse[] = [];
-      for (const edge of copiedSelection.edges) {
-        const sourceTaskId = taskIdMap.get(edge.sourceTaskId);
-        const targetTaskId = taskIdMap.get(edge.targetTaskId);
-        if (!sourceTaskId || !targetTaskId) continue;
-
-        try {
-          const createdEdge = await projectsApi.createEdge(projectId, { sourceTaskId, targetTaskId });
-          createdEdges.push(createdEdge);
-        } catch { }
-      }
-
-      const createdTaskNodes: TaskFlowNode[] = createdTasks.map((task, index) => ({
-        id: task.id,
-        type: 'taskNode',
-        position: {
-          x: task.positionX,
-          y: task.positionY
-        },
-        data: { task, viewMode, index: (graph?.nodes.length ?? nodes.length) + index },
-        draggable: true,
-        selected: true
-      }));
-
-      setNodes((currentNodes) => [
-        ...currentNodes.map((node) => ({ ...node, selected: false })),
-        ...createdTaskNodes
-      ]);
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        nodes: [...currentGraph.nodes, ...createdTasks],
-        edges: [...currentGraph.edges, ...createdEdges]
-      } : currentGraph);
-      setProject((currentProject) => currentProject ? {
-        ...currentProject,
-        totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + createdTasks.reduce((sum, task) => sum + (task.estimatedHours ?? 0), 0),
-        updatedAt: createdTasks[createdTasks.length - 1]?.updatedAt ?? currentProject.updatedAt
-      } : currentProject);
-      setIsAligned(false);
-      showEdgeToast(`Pasted ${createdTasks.length} task${createdTasks.length === 1 ? '' : 's'}.`, 'success');
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(parsed.message);
-    }
-  }, [flowInstance, graph?.nodes.length, nodes.length, projectId, setNodes, showEdgeToast, viewMode, takeSnapshot]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableShortcutTarget(event.target)) return;
-      const isModifierPressed = event.metaKey || event.ctrlKey;
-      if (!isModifierPressed) return;
-
-      const key = event.key.toLowerCase();
-      if (key === 'c') {
-        event.preventDefault();
-        copySelectedTasks();
-      }
-      if (key === 'v') {
-        event.preventDefault();
-        void pasteCopiedTasks();
-      }
-      if (key === 'z') {
-        event.preventDefault();
-        if (event.shiftKey) {
-          redo(setNodes, setEdges, setGraph);
-        } else {
-          undo(setNodes, setEdges, setGraph);
-        }
-      }
-      if (key === 'y') {
-        event.preventDefault();
-        redo(setNodes, setEdges, setGraph);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelectedTasks, pasteCopiedTasks, undo, redo, setNodes, setEdges, setGraph]);
-
-  const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
-    if (sourceTaskId === targetTaskId) return true;
-    if (!graph) return false;
-
-    const adjacency = new Map<string, string[]>();
-    graph.nodes.forEach((node) => adjacency.set(node.id, []));
-    graph.edges.forEach((edge) => {
-      adjacency.get(edge.sourceTaskId)?.push(edge.targetTaskId);
-    });
-
-    const stack = [targetTaskId];
-    const visited = new Set<string>();
-
-    while (stack.length > 0) {
-      const current = stack.pop();
-      if (!current || visited.has(current)) continue;
-      if (current === sourceTaskId) return true;
-
-      visited.add(current);
-      stack.push(...(adjacency.get(current) ?? []));
-    }
-
-    return false;
-  }, [graph]);
-
-  const getConnectionBlockReason = useCallback((sourceTaskId: string, targetTaskId: string) => {
-    if (sourceTaskId === targetTaskId) {
-      return 'Cannot connect a task to itself.';
-    }
-
-    const duplicateEdge = graph?.edges.some((edge) =>
-      edge.sourceTaskId === sourceTaskId && edge.targetTaskId === targetTaskId
-    );
-
-    if (duplicateEdge) {
-      return 'This dependency already exists.';
-    }
-
-    const targetTask = graph?.nodes.find((node) => node.id === targetTaskId);
-    if (targetTask?.status === 'COMPLETED') {
-      return 'Cannot create dependency to a completed task.';
-    }
-
-    if (wouldCreateCycle(sourceTaskId, targetTaskId)) {
-      return 'Cannot create dependency: cycle detected.';
-    }
-
-    return null;
-  }, [graph?.edges, graph?.nodes, wouldCreateCycle]);
-
-  const isValidConnection = useCallback((connection: Connection | TaskFlowEdge) => {
-    if (!connection.source || !connection.target) return false;
-
-    const blockReason = getConnectionBlockReason(connection.source, connection.target);
-    setConnectionHint((current) => {
-      if (!current) return current;
-      const nextMessage = blockReason ?? 'Release to create dependency.';
-      const nextVariant = blockReason ? 'error' : 'success';
-      if (current.message === nextMessage && current.variant === nextVariant) return current;
-      return {
-        ...current,
-        message: nextMessage,
-        variant: nextVariant,
-        closing: false
-      };
-    });
-
-    return !blockReason;
-  }, [getConnectionBlockReason]);
-
-  const getConnectionClientPoint = useCallback((event: MouseEvent | TouchEvent) => {
-    if ('touches' in event && event.touches.length > 0) {
-      return { x: event.touches[0].clientX, y: event.touches[0].clientY };
-    }
-
-    if ('changedTouches' in event && event.changedTouches.length > 0) {
-      return { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
-    }
-
-    return { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
-  }, []);
-
-  const handleConnectStart = useCallback((event: MouseEvent | TouchEvent, params: { nodeId?: string | null }) => {
-    connectionSourceRef.current = params.nodeId ?? null;
-    const point = getConnectionClientPoint(event);
-    setConnectionHint({
-      x: point.x,
-      y: point.y,
-      message: 'Drag to a target task.',
-      variant: 'info',
-      closing: false
-    });
-  }, [getConnectionClientPoint]);
-
-  const handleConnectEnd = useCallback(() => {
-    const linger = connectionHint?.variant === 'error';
-    connectionSourceRef.current = null;
-
-    window.setTimeout(() => {
-      setConnectionHint((current) => current ? { ...current, closing: true } : current);
-      window.setTimeout(() => setConnectionHint(null), 100);
-    }, linger ? 450 : 0);
-  }, [connectionHint?.variant]);
-
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!connectionSourceRef.current) return;
-      setConnectionHint((current) => current ? {
-        ...current,
-        x: event.clientX,
-        y: event.clientY
-      } : current);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, []);
-
-  const isCycleApiError = useCallback((err: unknown, statusCode?: number) => {
-    if (statusCode !== 400) return false;
-    const data = axios.isAxiosError(err) ? err.response?.data : err;
-    const serialized = typeof data === 'string' ? data : JSON.stringify(data ?? '');
-    const lower = serialized.toLowerCase();
-    return lower.includes('cycle') || lower.includes('цик');
-  }, []);
-
-  const handleConnect = useCallback(async (connection: Connection) => {
-    if (!projectId || !connection.source || !connection.target) return;
-    takeSnapshot();
-
-    const blockReason = getConnectionBlockReason(connection.source, connection.target);
-
-    if (blockReason) {
-      showEdgeToast(blockReason);
-      return;
-    }
-
-    try {
-      const createdEdge = await projectsApi.createEdge(projectId, {
-        sourceTaskId: connection.source,
-        targetTaskId: connection.target
-      });
-
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        edges: [...currentGraph.edges, createdEdge]
-      } : currentGraph);
-      showEdgeToast('Dependency created.', 'success');
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
-    }
-  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot]);
-
-  const handleTaskCreated = useCallback((createdTask: TaskNode) => {
-    if (!taskDraftPosition) return;
-    takeSnapshot();
-
-    const createdNode: TaskFlowNode = {
-      id: createdTask.id,
-      type: 'taskNode',
-      position: {
-        x: createdTask.positionX ?? taskDraftPosition.flow.x,
-        y: createdTask.positionY ?? taskDraftPosition.flow.y
-      },
-      data: { task: createdTask, viewMode, index: graph?.nodes.length ?? nodes.length },
-      draggable: true,
-      selected: true
-    };
-
-    setNodes((currentNodes) => [
-      ...currentNodes.map((node) => ({ ...node, selected: false })),
-      createdNode
-    ]);
-    setGraph((currentGraph) => currentGraph ? {
-      ...currentGraph,
-      nodes: [...currentGraph.nodes, createdTask]
-    } : currentGraph);
-    setProject((currentProject) => currentProject ? {
-      ...currentProject,
-      totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + (createdTask.estimatedHours ?? 0),
-      updatedAt: createdTask.updatedAt
-    } : currentProject);
-    setIsAligned(false);
-    setTaskDraftPosition(null);
-  }, [graph?.nodes.length, nodes.length, taskDraftPosition, viewMode, setNodes, takeSnapshot]);
-
-  const graphStats = useMemo(() => {
-    const allNodes = graph?.nodes ?? [];
-    const completed = allNodes.filter((node: TaskNode) => node.status === 'COMPLETED').length;
-    const available = allNodes.filter((node: TaskNode) => node.status === 'AVAILABLE' || node.status === 'IN_PROGRESS').length;
-    const estimatedHours = allNodes.reduce((sum: number, node: TaskNode) => sum + (node.estimatedHours ?? 0), 0);
-    const loggedHours = allNodes.reduce((sum: number, node: TaskNode) => sum + (node.loggedHours ?? 0), 0);
-
-    return {
-      tasks: allNodes.length,
-      dependencies: graph?.edges.length ?? 0,
-      completed,
-      available,
-      estimatedHours,
-      loggedHours,
-      completion: allNodes.length ? Math.round((completed / allNodes.length) * 100) : 0
-    };
-  }, [graph]);
-
-  const loadWorkspace = useCallback(async (showRefresh = false) => {
-    if (!projectId) {
-      setError('Project id is missing.');
-      setLoading(false);
-      return;
-    }
-
-    if (showRefresh) {
-      setRefreshing(true);
-      setIsAligned(false);
-    } else {
-      setLoading(true);
-    }
-
-    setError(null);
-    try {
-      const [projectResponse, graphResponse] = await Promise.all([
-        projectsApi.getProject(projectId),
-        projectsApi.getProjectGraph(projectId)
-      ]);
-      setProject(projectResponse);
-      setGraph(graphResponse);
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      setError(parsed.message);
-      setProject(null);
-      setGraph(null);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      loadWorkspace();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [loadWorkspace]);
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    if (graph) {
-      setEdgesVisible(true);
-    } else {
-      setEdgesVisible(false);
-    }
-  }, [graph]);
-
-  useEffect(() => {
-    setIsAligned(false);
-  }, [viewMode]);
-
-  useEffect(() => {
-    if (!graph) {
-      setNodes([]);
-      setEdges([]);
-      return;
-    }
-
-    const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
-    setNodes((currentNodes) => {
-      const currentNodeById = new Map(currentNodes.map((node) => [node.id, node]));
-      const useNewPosition = (nodeType: string | undefined) => nodeType === 'layerHeader';
-
-      return flow.nodes.map((node) => {
-        const currentNode = currentNodeById.get(node.id);
-
-        return {
-          ...node,
-          position: useNewPosition(node.type) ? node.position : (currentNode?.position ?? node.position),
-          selected: currentNode?.selected
-        };
-      });
-    });
-    setEdges(flow.edges);
-  }, [edgeType, graph, setEdges, setNodes, theme, viewMode, edgesVisible, showTopologicalLanes]);
-
-  const uniqueLayers = useMemo(() => {
-    if (!graph) return [];
-    const layers = Array.from(new Set(graph.nodes.map((n: TaskNode) => n.layer).filter((l): l is number => typeof l === 'number'))) as number[];
-    return layers.sort((a, b) => a - b);
-  }, [graph]);
+  const edgeTypes = useMemo(() => ({ gradient: GradientEdge }), []);
 
   return (
     <div className="relative min-h-screen bg-slate-950 light:bg-[#f1f5f9] text-slate-100 light:text-slate-900 flex flex-col font-sans transition-colors duration-300">
@@ -766,18 +63,18 @@ export default function ProjectWorkspacePage() {
       </svg>
 
       <WorkspaceHeader
-        project={project}
-        graph={graph}
-        loading={loading}
-        refreshing={refreshing}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        onRefresh={() => loadWorkspace(true)}
-        isScrolled={isScrolled}
+        project={workspace.project}
+        graph={workspace.graph}
+        loading={workspace.loading}
+        refreshing={workspace.refreshing}
+        theme={workspace.theme}
+        toggleTheme={workspace.toggleTheme}
+        onRefresh={() => workspace.loadWorkspace(true)}
+        isScrolled={workspace.isScrolled}
       />
 
       <main className="relative z-20 mx-auto flex w-full max-w-none flex-1 flex-col gap-4 px-2 pb-4 pt-0 sm:px-3 lg:px-4">
-        {loading ? (
+        {workspace.loading ? (
           <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/10 bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-zoom-in-fade">
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-12 w-12">
@@ -787,7 +84,7 @@ export default function ProjectWorkspacePage() {
               <span className="text-sm font-medium text-slate-400 light:text-slate-600 animate-pulse">Loading project graph...</span>
             </div>
           </div>
-        ) : error ? (
+        ) : workspace.error ? (
           <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-red-500/20 bg-[#020617]/70 p-6 text-center backdrop-blur-xl shadow-lg shadow-black/10 light:bg-white/75 light:border-red-500/30 light:shadow-slate-200/10 animate-zoom-in-fade">
             <div className="flex max-w-md flex-col items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400">
@@ -795,10 +92,10 @@ export default function ProjectWorkspacePage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-red-300 light:text-red-700">Failed to load workspace</h2>
-                <p className="mt-1 text-sm text-red-200/80 light:text-red-700/80">{error}</p>
+                <p className="mt-1 text-sm text-red-200/80 light:text-red-700/80">{workspace.error}</p>
               </div>
               <button
-                onClick={() => loadWorkspace()}
+                onClick={() => workspace.loadWorkspace()}
                 className="rounded-xl border border-white/10 bg-[#020617]/70 backdrop-blur-md px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-slate-800/80 light:bg-slate-100/80 light:border-slate-200/80 light:text-red-600 light:hover:bg-slate-50"
               >
                 Try again
@@ -812,7 +109,7 @@ export default function ProjectWorkspacePage() {
                 <div className="workspace-flow-surface absolute inset-0 pointer-events-none" />
                 <div className="workspace-flow-vignette absolute inset-0 pointer-events-none" />
 
-                {!graph || graph.nodes.length === 0 ? (
+                {!workspace.graph || workspace.graph.nodes.length === 0 ? (
                   <div className="relative z-10 flex h-full min-h-dvh items-center justify-center p-8 text-center animate-zoom-in-fade">
                     <div className="max-w-sm flex flex-col items-center">
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
@@ -823,7 +120,7 @@ export default function ProjectWorkspacePage() {
                         The API returned no tasks for this project yet. Create tasks or trigger AI decomposition to populate the workspace.
                       </p>
                       <button
-                        onClick={() => openTaskCreator(undefined, undefined, 'toolbar')}
+                        onClick={() => workspace.openTaskCreator(undefined, undefined, 'toolbar')}
                         className="group relative mt-6 flex items-center justify-center gap-2 rounded-xl border-0 bg-gradient-to-r from-brand-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.03] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer"
                       >
                         <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 opacity-10 blur-[2px] transition-opacity duration-300 group-hover:opacity-20 pointer-events-none" />
@@ -835,37 +132,47 @@ export default function ProjectWorkspacePage() {
                 ) : (
                   <ReactFlowProvider>
                     <ReactFlow<WorkspaceNode, TaskFlowEdge>
-                      nodes={nodes}
-                      edges={edges}
+                      nodes={workspace.nodes}
+                      edges={workspace.displayEdges}
                       nodeTypes={nodeTypes}
-                      onNodesChange={onNodesChange}
-                      onEdgesChange={onEdgesChange}
-                      onConnect={handleConnect}
-                      onConnectStart={handleConnectStart}
-                      onConnectEnd={handleConnectEnd}
-                      isValidConnection={isValidConnection}
-                      connectionLineStyle={connectionHint?.variant === 'error'
+                      edgeTypes={edgeTypes}
+                      onNodesChange={workspace.onNodesChange}
+                      onEdgesChange={workspace.onEdgesChange}
+                      onConnect={workspace.handleConnect}
+                      onConnectStart={workspace.handleConnectStart}
+                      onConnectEnd={workspace.handleConnectEnd}
+                      onReconnect={workspace.handleReconnect}
+                      onReconnectStart={workspace.handleReconnectStart}
+                      onReconnectEnd={workspace.handleReconnectEnd}
+                      isValidConnection={workspace.isValidConnection}
+                      connectionLineStyle={workspace.connectionHint?.variant === 'error'
                         ? { stroke: '#ef4444', strokeWidth: 2.6, strokeDasharray: '6 6' }
-                        : connectionHint?.variant === 'success'
+                        : workspace.connectionHint?.variant === 'success'
                           ? { stroke: '#22c55e', strokeWidth: 2.6 }
-                          : { stroke: theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
+                          : { stroke: workspace.theme === 'light' ? '#d97706' : '#f59e0b', strokeWidth: 2.2 }
                       }
-                      onNodeDragStart={handleNodeDragStart}
-                      onNodeDrag={handleNodeDrag}
-                      onNodeDragStop={handleNodeDrag}
-                      onInit={setFlowInstance}
-                      onPaneContextMenu={handlePaneContextMenu}
-                      onPaneClick={closeTaskCreator}
+                      onNodeClick={workspace.handleNodeClick}
+                      onNodeContextMenu={workspace.handleNodeContextMenu}
+                      onSelectionChange={workspace.handleSelectionChange}
+                      onNodeDragStart={workspace.handleNodeDragStart}
+                      onNodeDrag={workspace.handleNodeDrag}
+                      onNodeDragStop={workspace.handleNodeDrag}
+                      onInit={workspace.setFlowInstance}
+                      onPaneContextMenu={workspace.handlePaneContextMenu}
+                      onPaneClick={workspace.handlePaneClick}
+                      onEdgeClick={workspace.handleEdgeClick}
+                      onEdgeMouseEnter={workspace.handleEdgeMouseEnter}
+                      onEdgeMouseLeave={workspace.handleEdgeMouseLeave}
                       fitView
                       fitViewOptions={{ padding: 0.2 }}
                       minZoom={0.2}
                       maxZoom={2}
                       proOptions={{ hideAttribution: true }}
-                      colorMode={theme}
+                      colorMode={workspace.theme}
                       className="taskgraph-flow bg-transparent [&_.react-flow__attribution]:!bg-slate-900/70 [&_.react-flow__attribution]:!text-slate-500 light:[&_.react-flow__attribution]:!bg-white/80 light:[&_.react-flow__attribution]:!text-slate-500"
                     >
                       <Background
-                        color={theme === 'light' ? 'rgba(100,116,139,0.26)' : 'rgba(148,163,184,0.18)'}
+                        color={workspace.theme === 'light' ? 'rgba(100,116,139,0.26)' : 'rgba(148,163,184,0.18)'}
                         gap={22}
                         size={0.9}
                         className="opacity-35 light:opacity-30"
@@ -882,12 +189,12 @@ export default function ProjectWorkspacePage() {
                           const taskNode = node as TaskFlowNode;
                           const status = taskNode.data.task.status;
 
-                          if (status === 'IN_PROGRESS') return theme === 'light' ? 'rgba(245, 158, 11, 0.75)' : 'rgba(251, 191, 36, 0.8)';
-                          if (status === 'COMPLETED') return theme === 'light' ? 'rgba(16, 185, 129, 0.75)' : 'rgba(52, 211, 153, 0.8)';
-                          if (status === 'LOCKED') return theme === 'light' ? 'rgba(148, 163, 184, 0.45)' : 'rgba(71, 85, 105, 0.55)';
-                          return theme === 'light' ? 'rgba(79, 70, 229, 0.55)' : 'rgba(99, 102, 241, 0.7)';
+                          if (status === 'IN_PROGRESS') return workspace.theme === 'light' ? 'rgba(245, 158, 11, 0.75)' : 'rgba(251, 191, 36, 0.8)';
+                          if (status === 'COMPLETED') return workspace.theme === 'light' ? 'rgba(16, 185, 129, 0.75)' : 'rgba(52, 211, 153, 0.8)';
+                          if (status === 'LOCKED') return workspace.theme === 'light' ? 'rgba(148, 163, 184, 0.45)' : 'rgba(71, 85, 105, 0.55)';
+                          return workspace.theme === 'light' ? 'rgba(79, 70, 229, 0.55)' : 'rgba(99, 102, 241, 0.7)';
                         }}
-                        maskColor={theme === 'light' ? 'rgba(241, 245, 249, 0.5)' : 'rgba(2, 6, 23, 0.6)'}
+                        maskColor={workspace.theme === 'light' ? 'rgba(241, 245, 249, 0.5)' : 'rgba(2, 6, 23, 0.6)'}
                         style={{ width: 140, height: 100 }}
                       />
                       <Controls
@@ -896,86 +203,132 @@ export default function ProjectWorkspacePage() {
                         className="taskgraph-corner-controls !hidden lg:!flex !mb-6 !ml-4 overflow-hidden !rounded-2xl border border-white/10 !bg-[#020617]/70 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:!bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:150ms]"
                       />
                       <WorkspaceToolbar
-                        viewMode={viewMode}
-                        setViewMode={setViewMode}
-                        edgeType={edgeType}
-                        setEdgeType={setEdgeType}
-                        showTopologicalLanes={showTopologicalLanes}
-                        setShowTopologicalLanes={setShowTopologicalLanes}
-                        isAligned={isAligned}
-                        autoArrangeLayout={autoArrangeLayout}
-                        onCreateTask={() => openTaskCreator(undefined, undefined, 'toolbar')}
-                        graphStats={graphStats}
-                        undo={() => undo(setNodes, setEdges, setGraph)}
-                        redo={() => redo(setNodes, setEdges, setGraph)}
-                        canUndo={canUndo}
-                        canRedo={canRedo}
+                        viewMode={workspace.viewMode}
+                        setViewMode={workspace.setViewMode}
+                        edgeType={workspace.edgeType}
+                        setEdgeType={workspace.setEdgeType}
+                        showTopologicalLanes={workspace.showTopologicalLanes}
+                        setShowTopologicalLanes={workspace.setShowTopologicalLanes}
+                        isAligned={workspace.isAligned}
+                        autoArrangeLayout={workspace.autoArrangeLayout}
+                        onCreateTask={() => workspace.openTaskCreator(undefined, undefined, 'toolbar')}
+                        onTaskActions={() => {
+                          if (workspace.selectedTaskId) {
+                            workspace.openTaskActionsModal(workspace.selectedTaskId);
+                          }
+                        }}
+                        onDeleteTask={() => {
+                          if (workspace.selectedTaskId) {
+                            workspace.handleDeleteTask(workspace.selectedTaskId);
+                          }
+                        }}
+                        graphStats={workspace.graphStats}
+                        undo={workspace.undo}
+                        redo={workspace.redo}
+                        canUndo={workspace.canUndo}
+                        canRedo={workspace.canRedo}
+                        isTaskSidebarOpen={workspace.isTaskSidebarOpen}
+                        isTaskSelected={Boolean(workspace.selectedTaskId) && !workspace.statusMenu}
                       />
-                      {taskDraftPosition && projectId && (
+                      {workspace.taskDraftPosition && projectId && (
                         <TaskCreator
                           projectId={projectId}
-                          taskDraftPosition={taskDraftPosition}
-                          mode={taskCreatorMode}
-                          isClosing={isClosing}
-                          onClose={closeTaskCreator}
-                          onTaskCreated={handleTaskCreated}
-                          animationKey={taskCreatorAnimationKey}
+                          taskDraftPosition={workspace.taskDraftPosition}
+                          mode={workspace.taskCreatorMode}
+                          isClosing={workspace.isClosing}
+                          onClose={workspace.closeTaskCreator}
+                          onTaskCreated={workspace.handleTaskCreated}
+                          animationKey={workspace.taskCreatorAnimationKey}
                         />
                       )}
 
-                      {connectionHint && (
+                      {workspace.isTaskSidebarOpen && workspace.selectedTask && (
+                        <TaskDetailsSidebar
+                          task={workspace.selectedTask}
+                          onClose={workspace.closeSidebarOnly}
+                          onTaskUpdate={workspace.handleTaskUpdate}
+                          onInteract={() => workspace.setStatusMenu(null)}
+                          updating={workspace.statusUpdatingTaskId === workspace.selectedTask.id}
+                          isClosing={workspace.isTaskSidebarClosing}
+                        />
+                      )}
+
+                      {workspace.taskActionsModalTask && (
+                        <TaskActionsModal
+                          task={workspace.taskActionsModalTask}
+                          isClosing={workspace.isActionsModalClosing}
+                          onClose={workspace.closeTaskActionsModal}
+                          onStatusChange={workspace.handleTaskStatusChange}
+                          onLogTime={(data) => workspace.handleLogTaskTime(workspace.taskActionsModalTask!, data)}
+                          updating={workspace.statusUpdatingTaskId === workspace.taskActionsModalTask.id}
+                          animationKey={workspace.actionsModalAnimationKey}
+                        />
+                      )}
+
+                      {workspace.statusMenu && workspace.statusMenuTask && (
+                        <TaskStatusMenu
+                          task={workspace.statusMenuTask}
+                          screen={workspace.statusMenu.screen}
+                          onClose={() => workspace.setStatusMenu(null)}
+                          onStatusChange={workspace.handleTaskStatusChange}
+                          onLogTime={(data) => workspace.handleLogTaskTime(workspace.statusMenuTask!, data)}
+                          updating={workspace.statusUpdatingTaskId === workspace.statusMenuTask.id}
+                        />
+                      )}
+
+                      {workspace.connectionHint && (
                         <div
-                          className={`pointer-events-none fixed z-[85] max-w-[260px] rounded-2xl border px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-2xl transition-colors duration-200 ${connectionHint.closing ? 'connection-hint-exit' : 'connection-hint-enter'} ${connectionHint.variant === 'error'
+                          className={`pointer-events-none fixed z-[85] max-w-[260px] rounded-2xl border px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-2xl transition-colors duration-200 ${workspace.connectionHint.closing ? 'connection-hint-exit' : 'connection-hint-enter'} ${workspace.connectionHint.variant === 'error'
                             ? 'border-red-500/25 bg-red-500/15 text-red-100 shadow-red-950/15 light:bg-red-50/95 light:text-red-700 light:shadow-red-200/30'
-                            : connectionHint.variant === 'success'
+                            : workspace.connectionHint.variant === 'success'
                               ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-100 shadow-emerald-950/15 light:bg-emerald-50/95 light:text-emerald-700 light:shadow-emerald-200/30'
                               : 'border-brand-500/25 bg-[#020617]/80 text-brand-100 shadow-black/20 light:bg-white/90 light:text-brand-700 light:shadow-slate-300/25'
                             }`}
                           style={{
-                            left: Math.min(connectionHint.x + 14, window.innerWidth - 280),
-                            top: Math.min(connectionHint.y + 14, window.innerHeight - 90)
+                            left: Math.min(workspace.connectionHint.x + 14, window.innerWidth - 280),
+                            top: Math.min(workspace.connectionHint.y + 14, window.innerHeight - 90)
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            {connectionHint.variant === 'error' ? <AlertCircle className="h-4 w-4 shrink-0" /> : <GitBranch className="h-4 w-4 shrink-0" />}
-                            <span>{connectionHint.message}</span>
+                            {workspace.connectionHint.variant === 'error' ? <AlertCircle className="h-4 w-4 shrink-0" /> : <GitBranch className="h-4 w-4 shrink-0" />}
+                            <span>{workspace.connectionHint.message}</span>
                           </div>
                         </div>
                       )}
 
-                      {edgeToast && (
-                        <div className={`fixed right-4 top-28 z-[80] max-w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#020617]/85 p-3 pr-10 text-sm text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25 ${edgeToast.closing ? 'toast-exit' : 'animate-slide-down-fade'}`}>
+                      {workspace.edgeToast && (
+                        <div className={`fixed left-1/2 -translate-x-1/2 top-[108px] z-[80] max-w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#020617]/92 px-4 py-3 pr-11 text-sm text-slate-100 shadow-xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/95 light:text-slate-900 light:shadow-slate-300/30 ${workspace.edgeToast.closing ? 'toast-exit' : 'animate-slide-down-fade'}`}>
                           <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${edgeToast.variant === 'success'
+                            <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border ${workspace.edgeToast.variant === 'success'
                               ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 light:text-emerald-700'
                               : 'border-red-500/25 bg-red-500/10 text-red-300 light:text-red-700'
                               }`}>
-                              {edgeToast.variant === 'success' ? <GitBranch className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                              {workspace.edgeToast.variant === 'success' ? <GitBranch className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
                             </div>
-                            <div>
-                              <div className="text-xs font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
-                                {edgeToast.variant === 'success' ? 'Workspace updated' : 'Workspace error'}
+                            <div className="pr-1">
+                              <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
+                                {workspace.edgeToast.variant === 'success' ? 'Workspace updated' : 'Workspace error'}
                               </div>
-                              <p className="mt-0.5 leading-relaxed text-slate-200 light:text-slate-700">{edgeToast.message}</p>
+                              <p className="mt-0.5 text-[13px] leading-snug text-slate-200 light:text-slate-700">{workspace.edgeToast.message}</p>
                             </div>
                           </div>
                           <button
                             type="button"
-                            onClick={() => closeEdgeToast(edgeToast.id)}
-                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
+                            onClick={() => workspace.closeEdgeToast(workspace.edgeToast!.id)}
+                            className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
                             aria-label="Close notification"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       )}
 
                       <TopologicalLanesHeader
-                        show={showTopologicalLanes}
+                        show={workspace.showTopologicalLanes}
                         columnWidth={400}
-                        viewMode={viewMode}
-                        uniqueLayers={uniqueLayers}
-                        nodes={nodes}
+                        viewMode={workspace.viewMode}
+                        uniqueLayers={workspace.uniqueLayers}
+                        nodes={workspace.nodes}
                       />
                     </ReactFlow>
                   </ReactFlowProvider>
@@ -985,6 +338,24 @@ export default function ProjectWorkspacePage() {
           </>
         )}
       </main>
+
+      {workspace.confirmModal && (
+        <ConfirmModal
+          isOpen={true}
+          isClosing={workspace.isConfirmClosing}
+          title={workspace.confirmModal.title}
+          message={workspace.confirmModal.message}
+          isDestructive={workspace.confirmModal.isDestructive}
+          onConfirm={workspace.confirmModal.onConfirm}
+          onCancel={() => {
+            workspace.setIsConfirmClosing(true);
+            setTimeout(() => {
+              workspace.setConfirmModal(null);
+              workspace.setIsConfirmClosing(false);
+            }, 200);
+          }}
+        />
+      )}
     </div>
   );
 }
