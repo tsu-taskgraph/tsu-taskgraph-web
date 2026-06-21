@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
 import {
   type ReactFlowInstance,
   useEdgesState,
   useNodesState,
 } from '@xyflow/react';
 import {
-  projectsApi,
   type ProjectGraphResponse,
   type TaskNode,
-  type UpdateTaskRequest
 } from '../api/projects';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -18,16 +15,15 @@ import {
   type EdgeTypeMode,
   type WorkspaceNode,
   type TaskFlowEdge,
-  type TaskFlowNode,
-  type TaskCreatorMode,
-  type TaskDraftPosition
 } from '../utils/workspaceUtils';
-import { mapServerErrorToEnglish } from '../api/errors';
 import { useUndoRedo } from './useUndoRedo';
 import { useWorkspaceCopyPaste } from './useWorkspaceCopyPaste';
 import { useWorkspaceConnections } from './useWorkspaceConnections';
 import { useWorkspaceLoader } from './useWorkspaceLoader';
 import { useWorkspaceLayout } from './useWorkspaceLayout';
+import { useWorkspaceToast } from './useWorkspaceToast';
+import { useWorkspaceModals } from './useWorkspaceModals';
+import { useWorkspaceTaskOperations } from './useWorkspaceTaskOperations';
 
 const isEditableShortcutTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -45,31 +41,17 @@ export function useWorkspace(projectId: string | undefined) {
   const [edgesVisible, setEdgesVisible] = useState(true);
   const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<WorkspaceNode, TaskFlowEdge> | null>(null);
-  const [taskDraftPosition, setTaskDraftPosition] = useState<TaskDraftPosition | null>(null);
-  const [taskCreatorMode, setTaskCreatorMode] = useState<TaskCreatorMode>('context');
-  const [taskCreatorAnimationKey, setTaskCreatorAnimationKey] = useState(0);
-  const [isClosing, setIsClosing] = useState(false);
-  const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
+
+  const toast = useWorkspaceToast();
+
+  const modals = useWorkspaceModals({ flowInstance });
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isTaskSidebarOpen, setIsTaskSidebarOpen] = useState(false);
   const [isTaskSidebarClosing, setIsTaskSidebarClosing] = useState(false);
   const taskSidebarCloseTimerRef = useRef<number | null>(null);
   const suppressTaskSidebarSelectionRef = useRef(false);
   const lastTaskNodeClickAtRef = useRef(0);
-  const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null);
-  const [statusMenu, setStatusMenu] = useState<{ taskId: string; screen: { x: number; y: number } } | null>(null);
-
-  const [taskActionsModalTaskId, setTaskActionsModalTaskId] = useState<string | null>(null);
-  const [isActionsModalClosing, setIsActionsModalClosing] = useState(false);
-  const [actionsModalAnimationKey, setActionsModalAnimationKey] = useState(0);
-
-  const [confirmModal, setConfirmModal] = useState<{
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    isDestructive?: boolean;
-  } | null>(null);
-  const [isConfirmClosing, setIsConfirmClosing] = useState(false);
 
   const {
     takeSnapshot,
@@ -79,26 +61,6 @@ export function useWorkspace(projectId: string | undefined) {
     canRedo,
     updateCurrentState
   } = useUndoRedo<WorkspaceNode, TaskFlowEdge, ProjectGraphResponse>();
-
-  const closeEdgeToast = useCallback((id?: number) => {
-    setEdgeToast((current) => {
-      if (!current || (id && current.id !== id)) return current;
-      return { ...current, closing: true };
-    });
-
-    window.setTimeout(() => {
-      setEdgeToast((current) => {
-        if (!current || (id && current.id !== id)) return current;
-        return null;
-      });
-    }, 220);
-  }, []);
-
-  const showEdgeToast = useCallback((message: string, variant: 'error' | 'success' = 'error') => {
-    const id = Date.now();
-    setEdgeToast({ id, message, variant, closing: false });
-    window.setTimeout(() => closeEdgeToast(id), 4300);
-  }, [closeEdgeToast]);
 
   const {
     project,
@@ -143,7 +105,7 @@ export function useWorkspace(projectId: string | undefined) {
     graph,
     setGraph,
     takeSnapshot,
-    showEdgeToast,
+    showEdgeToast: toast.showEdgeToast,
     loadWorkspace
   });
 
@@ -160,7 +122,48 @@ export function useWorkspace(projectId: string | undefined) {
     viewMode,
     flowInstance,
     takeSnapshot,
-    showEdgeToast
+    showEdgeToast: toast.showEdgeToast
+  });
+
+  const operations = useWorkspaceTaskOperations({
+    selectedTask: useMemo(() => {
+      if (!selectedTaskId) return null;
+      return graph?.nodes.find((task) => task.id === selectedTaskId) ?? null;
+    }, [graph?.nodes, selectedTaskId]),
+    selectedTaskId,
+    takeSnapshot,
+    setGraph,
+    setNodes,
+    closeTaskDetailsSidebar: useCallback(() => {
+      if (!selectedTaskId || taskSidebarCloseTimerRef.current !== null) return;
+
+      suppressTaskSidebarSelectionRef.current = true;
+      setIsTaskSidebarClosing(true);
+      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => (
+        node.type === 'taskNode' && node.id === selectedTaskId
+          ? { ...node, selected: false }
+          : node
+      )));
+
+      taskSidebarCloseTimerRef.current = window.setTimeout(() => {
+        setSelectedTaskId(null);
+        setIsTaskSidebarOpen(false);
+        setIsTaskSidebarClosing(false);
+        taskSidebarCloseTimerRef.current = null;
+        suppressTaskSidebarSelectionRef.current = false;
+      }, 140);
+    }, [selectedTaskId, setNodes]),
+    showEdgeToast: toast.showEdgeToast,
+    setStatusMenu: modals.setStatusMenu,
+    taskDraftPosition: modals.taskDraftPosition,
+    setTaskDraftPosition: modals.setTaskDraftPosition,
+    viewMode,
+    graph,
+    nodes,
+    setProject,
+    setIsAligned,
+    setConfirmModal: modals.setConfirmModal,
+    setIsConfirmClosing: modals.setIsConfirmClosing,
   });
 
   useEffect(() => {
@@ -177,62 +180,10 @@ export function useWorkspace(projectId: string | undefined) {
     setIsAligned(false);
   }, [viewMode, setIsAligned]);
 
-  const openTaskCreator = useCallback((screenX?: number, screenY?: number, mode: TaskCreatorMode = 'context') => {
-    const fallbackScreen = {
-      x: Math.round(window.innerWidth / 2),
-      y: Math.round(window.innerHeight / 2)
-    };
-    const screen = {
-      x: screenX ?? fallbackScreen.x,
-      y: screenY ?? fallbackScreen.y
-    };
-    const flow = flowInstance?.screenToFlowPosition(screen) ?? { x: 0, y: 0 };
-
-    const maxPopoverX = Math.max(12, window.innerWidth - 372);
-    const maxPopoverY = Math.max(96, window.innerHeight - 432);
-
-    setStatusMenu(null);
-    setTaskCreatorMode(mode);
-    setTaskCreatorAnimationKey((key) => key + 1);
-    setTaskDraftPosition({
-      screen: {
-        x: Math.min(Math.max(screen.x, 12), maxPopoverX),
-        y: Math.min(Math.max(screen.y, 96), maxPopoverY)
-      },
-      flow: {
-        x: Math.round(flow.x),
-        y: Math.round(flow.y)
-      }
-    });
-  }, [flowInstance]);
-
-  const closeTaskCreator = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setTaskDraftPosition(null);
-      setIsClosing(false);
-    }, 200);
-  }, []);
-
-  const openTaskActionsModal = useCallback((taskId: string) => {
-    setStatusMenu(null);
-    setTaskDraftPosition(null);
-    setActionsModalAnimationKey((key) => key + 1);
-    setTaskActionsModalTaskId(taskId);
-  }, []);
-
-  const closeTaskActionsModal = useCallback(() => {
-    setIsActionsModalClosing(true);
-    setTimeout(() => {
-      setTaskActionsModalTaskId(null);
-      setIsActionsModalClosing(false);
-    }, 200);
-  }, []);
-
   const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
     event.preventDefault();
-    openTaskCreator(event.clientX, event.clientY);
-  }, [openTaskCreator]);
+    modals.openTaskCreator(event.clientX, event.clientY);
+  }, [modals]);
 
   const cancelTaskDetailsSidebarClose = useCallback(() => {
     if (taskSidebarCloseTimerRef.current !== null) {
@@ -300,8 +251,8 @@ export function useWorkspace(projectId: string | undefined) {
       closeSidebarOnly();
     }
 
-    setTaskDraftPosition(null);
-    setStatusMenu({
+    modals.setTaskDraftPosition(null);
+    modals.setStatusMenu({
       taskId: node.id,
       screen: {
         x: event.clientX,
@@ -312,14 +263,14 @@ export function useWorkspace(projectId: string | undefined) {
     setTimeout(() => {
       suppressTaskSidebarSelectionRef.current = false;
     }, 50);
-  }, [closeSidebarOnly, isTaskSidebarOpen, setNodes]);
+  }, [closeSidebarOnly, isTaskSidebarOpen, setNodes, modals]);
 
   const handlePaneClick = useCallback(() => {
-    closeTaskCreator();
+    modals.closeTaskCreator();
     closeTaskDetailsSidebar();
-    setStatusMenu(null);
-    closeTaskActionsModal();
-  }, [closeTaskCreator, closeTaskDetailsSidebar, closeTaskActionsModal]);
+    modals.setStatusMenu(null);
+    modals.closeTaskActionsModal();
+  }, [modals, closeTaskDetailsSidebar]);
 
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: WorkspaceNode[] }) => {
     const selectedTaskNode = selectedNodes.find((node) => node.type === 'taskNode');
@@ -355,278 +306,14 @@ export function useWorkspace(projectId: string | undefined) {
   }, [graph?.nodes, selectedTaskId]);
 
   const statusMenuTask = useMemo(() => {
-    if (!statusMenu?.taskId) return null;
-    return graph?.nodes.find((task) => task.id === statusMenu.taskId) ?? null;
-  }, [graph?.nodes, statusMenu?.taskId]);
+    if (!modals.statusMenu?.taskId) return null;
+    return graph?.nodes.find((task) => task.id === modals.statusMenu!.taskId) ?? null;
+  }, [graph?.nodes, modals.statusMenu]);
 
   const taskActionsModalTask = useMemo(() => {
-    if (!taskActionsModalTaskId) return null;
-    return graph?.nodes.find((task) => task.id === taskActionsModalTaskId) ?? null;
-  }, [graph?.nodes, taskActionsModalTaskId]);
-
-  const handleTaskCreated = useCallback((createdTask: TaskNode) => {
-    takeSnapshot();
-    if (!taskDraftPosition) return;
-    const createdNode: WorkspaceNode = {
-      id: createdTask.id,
-      type: 'taskNode',
-      position: {
-        x: createdTask.positionX ?? taskDraftPosition.flow.x,
-        y: createdTask.positionY ?? taskDraftPosition.flow.y
-      },
-      data: { task: createdTask, viewMode, index: graph?.nodes.length ?? nodes.length },
-      draggable: true,
-      selected: true
-    };
-
-    setNodes((currentNodes) => [
-      ...currentNodes.map((node) => ({ ...node, selected: false })),
-      createdNode
-    ]);
-    setGraph((currentGraph) => currentGraph ? {
-      ...currentGraph,
-      nodes: [...currentGraph.nodes, createdTask]
-    } : currentGraph);
-    setProject((currentProject) => currentProject ? {
-      ...currentProject,
-      totalEstimatedHours: (currentProject.totalEstimatedHours ?? 0) + (createdTask.estimatedHours ?? 0),
-      updatedAt: createdTask.updatedAt
-    } : currentProject);
-    setIsAligned(false);
-    setTaskDraftPosition(null);
-  }, [graph?.nodes.length, nodes.length, taskDraftPosition, viewMode, setNodes, takeSnapshot, setGraph, setProject, setIsAligned]);
-
-  const handleTaskUpdate = useCallback(async (data: {
-    title?: string;
-    description?: string | null;
-    category?: TaskNode['category'];
-    estimatedHours?: number | null;
-    completionPercent?: number | null;
-    status?: TaskNode['status'];
-    startDate?: string | null;
-    dueDate?: string | null;
-  }) => {
-    if (!selectedTask) return;
-
-    takeSnapshot();
-    setStatusUpdatingTaskId(selectedTask.id);
-
-    try {
-      let updatedTask = selectedTask;
-
-      if (data.status && data.status !== selectedTask.status && data.status !== 'LOCKED') {
-        const statusRes = await projectsApi.updateTaskStatus(selectedTask.id, {
-          status: data.status as 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
-          loggedHours: null
-        });
-        updatedTask = statusRes.updatedTask;
-
-        if (statusRes.unlockedTasks && statusRes.unlockedTasks.length > 0) {
-          const unlockedMap = new Map(statusRes.unlockedTasks.map((t) => [t.id, t]));
-          setGraph((currentGraph) => currentGraph ? {
-            ...currentGraph,
-            nodes: currentGraph.nodes.map((t) => unlockedMap.get(t.id) ?? (t.id === updatedTask.id ? updatedTask : t))
-          } : currentGraph);
-          setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-            if (node.type !== 'taskNode') return node;
-            const ut = unlockedMap.get(node.id) ?? (node.id === updatedTask.id ? updatedTask : null);
-            if (!ut) return node;
-            const taskNode = node as TaskFlowNode;
-            return {
-              ...taskNode,
-              data: {
-                ...taskNode.data,
-                task: ut
-              }
-            };
-          }));
-        }
-      }
-
-      const updateData: UpdateTaskRequest = {
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        estimatedHours: data.estimatedHours,
-        completionPercent: data.completionPercent,
-        startDate: data.startDate,
-        dueDate: data.dueDate
-      };
-
-      const finalTask = await projectsApi.updateTask(selectedTask.id, updateData);
-
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        nodes: currentGraph.nodes.map((task) => task.id === finalTask.id ? finalTask : task)
-      } : currentGraph);
-      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-        if (node.type !== 'taskNode' || node.id !== finalTask.id) return node;
-        const taskNode = node as TaskFlowNode;
-        return {
-          ...taskNode,
-          data: {
-            ...taskNode.data,
-            task: finalTask
-          }
-        };
-      }));
-      showEdgeToast('Task details updated.', 'success');
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(parsed.message);
-    } finally {
-      setStatusUpdatingTaskId(null);
-    }
-  }, [selectedTask, setNodes, setGraph, showEdgeToast, takeSnapshot]);
-
-  const handleLogTaskTime = useCallback(async (task: TaskNode, data: { hours?: number | null; comment?: string | null; completionPercent?: number | null }) => {
-    takeSnapshot();
-    setStatusUpdatingTaskId(task.id);
-
-    try {
-      let updatedTask: TaskNode = { ...task };
-
-      if (data.hours && data.hours > 0) {
-        await projectsApi.logTaskTime(task.id, { hours: data.hours, comment: data.comment || null });
-        updatedTask.loggedHours = (task.loggedHours ?? 0) + data.hours;
-      }
-
-      if (typeof data.completionPercent === 'number') {
-        const response = await projectsApi.updateTask(task.id, { completionPercent: data.completionPercent });
-        updatedTask = {
-          ...updatedTask,
-          ...response,
-          loggedHours: data.hours && data.hours > 0 ? (task.loggedHours ?? 0) + data.hours : response.loggedHours
-        };
-      }
-
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        nodes: currentGraph.nodes.map((item) => item.id === updatedTask.id ? updatedTask : item)
-      } : currentGraph);
-      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-        if (node.type !== 'taskNode' || node.id !== updatedTask.id) return node;
-        const taskNode = node as TaskFlowNode;
-        return {
-          ...taskNode,
-          data: {
-            ...taskNode.data,
-            task: updatedTask
-          }
-        };
-      }));
-      showEdgeToast('Task updated successfully.', 'success');
-      setStatusMenu(null);
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(parsed.message);
-    } finally {
-      setStatusUpdatingTaskId(null);
-    }
-  }, [setGraph, setNodes, showEdgeToast, takeSnapshot]);
-
-  const handleDeleteTask = useCallback((taskId: string) => {
-    if (!selectedTask) return;
-
-    setConfirmModal({
-      title: 'Delete task?',
-      message: `Are you sure you want to delete "${selectedTask.title}"?\nThis action cannot be undone.`,
-      isDestructive: true,
-      onConfirm: async () => {
-        setIsConfirmClosing(true);
-        setTimeout(() => {
-          setConfirmModal(null);
-          setIsConfirmClosing(false);
-        }, 200);
-        setStatusUpdatingTaskId(taskId);
-
-        try {
-          await projectsApi.deleteTask(taskId);
-
-          setGraph((currentGraph) => currentGraph ? {
-            ...currentGraph,
-            nodes: currentGraph.nodes.filter((t) => t.id !== taskId)
-          } : currentGraph);
-
-          setNodes((currentNodes) => currentNodes.filter((n) => n.id !== taskId));
-
-          if (selectedTaskId === taskId) {
-            closeTaskDetailsSidebar();
-          }
-
-          showEdgeToast('Task deleted successfully.', 'success');
-        } catch (err) {
-          const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-          const parsed = mapServerErrorToEnglish(err, statusCode);
-          showEdgeToast(parsed.message);
-        } finally {
-          setStatusUpdatingTaskId(null);
-        }
-      }
-    });
-  }, [selectedTask, selectedTaskId, takeSnapshot, setGraph, setNodes, closeTaskDetailsSidebar, showEdgeToast]);
-
-  const handleTaskStatusChange = useCallback(async (
-    status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
-    data?: { loggedHours?: number | null; comment?: string | null; completionPercent?: number | null }
-  ) => {
-    if (!selectedTask) return;
-
-    takeSnapshot();
-    setStatusUpdatingTaskId(selectedTask.id);
-
-    try {
-      const response = await projectsApi.updateTaskStatus(selectedTask.id, {
-        status,
-        loggedHours: data?.loggedHours ?? null,
-        comment: data?.comment ?? null
-      });
-
-      const updatedMainTask = typeof data?.completionPercent === 'number'
-        ? await projectsApi.updateTask(response.updatedTask.id, { completionPercent: data.completionPercent })
-        : response.updatedTask;
-      const updatedTasks = [updatedMainTask, ...(response.unlockedTasks ?? [])];
-      const updatedTaskById = new Map(updatedTasks.map((task) => [task.id, task]));
-
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        nodes: currentGraph.nodes.map((task) => updatedTaskById.get(task.id) ?? task)
-      } : currentGraph);
-
-      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-        if (node.type !== 'taskNode') return node;
-        const updatedTask = updatedTaskById.get(node.id);
-        if (!updatedTask) return node;
-
-        const taskNode = node as TaskFlowNode;
-        const updatedNode: TaskFlowNode = {
-          ...taskNode,
-          data: {
-            ...taskNode.data,
-            task: updatedTask
-          }
-        };
-
-        return updatedNode;
-      }));
-
-      showEdgeToast(
-        response.unlockedTasks?.length
-          ? `Task updated. ${response.unlockedTasks.length} task${response.unlockedTasks.length === 1 ? '' : 's'} unlocked.`
-          : 'Task status updated.',
-        'success'
-      );
-      setStatusMenu(null);
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(parsed.message);
-    } finally {
-      setStatusUpdatingTaskId(null);
-    }
-  }, [selectedTask, setNodes, showEdgeToast, takeSnapshot, setGraph]);
+    if (!modals.taskActionsModalTaskId) return null;
+    return graph?.nodes.find((task) => task.id === modals.taskActionsModalTaskId) ?? null;
+  }, [graph?.nodes, modals.taskActionsModalTaskId]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -711,7 +398,7 @@ export function useWorkspace(projectId: string | undefined) {
 
       if ((key === 'delete' || key === 'backspace') && selectedTaskId && !isModifierPressed) {
         event.preventDefault();
-        handleDeleteTask(selectedTaskId);
+        operations.handleDeleteTask(selectedTaskId);
         return;
       }
 
@@ -741,7 +428,7 @@ export function useWorkspace(projectId: string | undefined) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelectedTasks, pasteCopiedTasks, handleUndo, handleRedo, selectedTaskId, handleDeleteTask]);
+  }, [copySelectedTasks, pasteCopiedTasks, handleUndo, handleRedo, selectedTaskId, operations.handleDeleteTask]);
 
   return {
     theme,
@@ -763,36 +450,43 @@ export function useWorkspace(projectId: string | undefined) {
     setShowTopologicalLanes,
     flowInstance,
     setFlowInstance,
-    taskDraftPosition,
-    setTaskDraftPosition,
-    taskCreatorMode,
-    setTaskCreatorMode,
-    taskCreatorAnimationKey,
-    setTaskCreatorAnimationKey,
-    isClosing,
-    setIsClosing,
-    edgeToast,
-    setEdgeToast,
+
+    edgeToast: toast.edgeToast,
+    setEdgeToast: toast.setEdgeToast,
+    closeEdgeToast: toast.closeEdgeToast,
+    showEdgeToast: toast.showEdgeToast,
+
+    taskDraftPosition: modals.taskDraftPosition,
+    setTaskDraftPosition: modals.setTaskDraftPosition,
+    taskCreatorMode: modals.taskCreatorMode,
+    setTaskCreatorMode: modals.setTaskCreatorMode,
+    taskCreatorAnimationKey: modals.taskCreatorAnimationKey,
+    setTaskCreatorAnimationKey: modals.setTaskCreatorAnimationKey,
+    isClosing: modals.isClosing,
+    setIsClosing: modals.setIsClosing,
+    taskActionsModalTaskId: modals.taskActionsModalTaskId,
+    setTaskActionsModalTaskId: modals.setTaskActionsModalTaskId,
+    isActionsModalClosing: modals.isActionsModalClosing,
+    setIsActionsModalClosing: modals.setIsActionsModalClosing,
+    actionsModalAnimationKey: modals.actionsModalAnimationKey,
+    setActionsModalAnimationKey: modals.setActionsModalAnimationKey,
+    confirmModal: modals.confirmModal,
+    setConfirmModal: modals.setConfirmModal,
+    isConfirmClosing: modals.isConfirmClosing,
+    setIsConfirmClosing: modals.setIsConfirmClosing,
+    statusMenu: modals.statusMenu,
+    setStatusMenu: modals.setStatusMenu,
+    openTaskCreator: modals.openTaskCreator,
+    closeTaskCreator: modals.closeTaskCreator,
+    openTaskActionsModal: modals.openTaskActionsModal,
+    closeTaskActionsModal: modals.closeTaskActionsModal,
+
     selectedTaskId,
     setSelectedTaskId,
     isTaskSidebarOpen,
     setIsTaskSidebarOpen,
     isTaskSidebarClosing,
     setIsTaskSidebarClosing,
-    statusUpdatingTaskId,
-    setStatusUpdatingTaskId,
-    statusMenu,
-    setStatusMenu,
-    taskActionsModalTaskId,
-    setTaskActionsModalTaskId,
-    isActionsModalClosing,
-    setIsActionsModalClosing,
-    actionsModalAnimationKey,
-    setActionsModalAnimationKey,
-    confirmModal,
-    setConfirmModal,
-    isConfirmClosing,
-    setIsConfirmClosing,
     selectedTask,
     statusMenuTask,
     taskActionsModalTask,
@@ -823,12 +517,7 @@ export function useWorkspace(projectId: string | undefined) {
     redo: handleRedo,
     canUndo,
     canRedo,
-    closeEdgeToast,
-    showEdgeToast,
-    openTaskCreator,
-    closeTaskCreator,
-    openTaskActionsModal,
-    closeTaskActionsModal,
+
     handlePaneContextMenu,
     cancelTaskDetailsSidebarClose,
     closeSidebarOnly,
@@ -837,10 +526,12 @@ export function useWorkspace(projectId: string | undefined) {
     handleNodeContextMenu,
     handlePaneClick,
     handleSelectionChange,
-    handleTaskCreated,
-    handleTaskUpdate,
-    handleLogTaskTime,
-    handleDeleteTask,
-    handleTaskStatusChange
+
+    statusUpdatingTaskId: operations.statusUpdatingTaskId,
+    handleTaskCreated: operations.handleTaskCreated,
+    handleTaskUpdate: operations.handleTaskUpdate,
+    handleLogTaskTime: operations.handleLogTaskTime,
+    handleDeleteTask: operations.handleDeleteTask,
+    handleTaskStatusChange: operations.handleTaskStatusChange
   };
 }
