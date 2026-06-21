@@ -159,7 +159,7 @@ export function mapGraphToFlow(
       source: edge.sourceTaskId,
       target: edge.targetTaskId,
       type: 'gradient',
-      data: { shape: edgeType, from: visual.from, to: visual.to },
+      data: { shape: edgeType, from: visual.from, to: visual.to, sourceStatus },
       animated: false,
       reconnectable: true,
       className: `edge-status-${sourceStatus.toLowerCase()}`,

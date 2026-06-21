@@ -752,15 +752,33 @@
     }
 
     .react-flow__edge-path {
-      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease, stroke-width 0.3s ease !important;
+      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease, stroke-width 0.3s ease, opacity 0.3s ease !important;
     }
 
     .react-flow__edge:hover .react-flow__edge-path {
       stroke: #f43f5e !important;
+      opacity: 1 !important;
+      stroke-width: 2.4 !important;
     }
 
     .react-flow__edge[data-highlighted="true"] .react-flow__edge-path {
       stroke: #f43f5e !important;
+      opacity: 1 !important;
+      stroke-width: 2.4 !important;
+    }
+
+    .react-flow__edge:hover .tg-edge-glow {
+      stroke: #f43f5e !important;
+      opacity: 0.45 !important;
+    }
+
+    .react-flow__edge[data-highlighted="true"] .tg-edge-glow {
+      stroke: #f43f5e !important;
+      opacity: 0.45 !important;
+    }
+
+    .react-flow__edge .tg-edge-glow--pulse {
+      animation: edge-glow-pulse var(--tg-pulse-dur, 4s) ease-in-out infinite;
     }
   }
 }
@@ -768,6 +786,18 @@
 @keyframes flow-dash {
   to {
     stroke-dashoffset: -12;
+  }
+}
+
+@keyframes edge-glow-pulse {
+
+  0%,
+  100% {
+    opacity: var(--tg-glow-opacity);
+  }
+
+  50% {
+    opacity: calc(var(--tg-glow-opacity) * var(--tg-pulse-mult, 1));
   }
 }
 
