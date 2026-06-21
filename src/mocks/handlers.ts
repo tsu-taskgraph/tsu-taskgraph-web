@@ -636,6 +636,56 @@ const projectGraphs: Record<string, {
   }
 };
 
+function recalculateTaskStatuses(graph: typeof projectGraphs[string]) {
+  const now = new Date().toISOString();
+  const completedIds = new Set(
+    graph.nodes
+      .filter((node: any) => node.status === 'COMPLETED' || node.status === 'SKIPPED')
+      .map((node: any) => node.id as string)
+  );
+
+  graph.nodes = graph.nodes.map((node: any) => {
+    if (node.status === 'COMPLETED' || node.status === 'SKIPPED') {
+      return node;
+    }
+
+    const incomingEdges = graph.edges.filter((edge: any) => edge.targetTaskId === node.id);
+
+    if (incomingEdges.length === 0) {
+      if (node.status === 'LOCKED') {
+        return {
+          ...node,
+          status: 'AVAILABLE',
+          updatedAt: now
+        };
+      }
+      return node;
+    }
+
+    const allCompleted = incomingEdges.every((edge: any) => completedIds.has(edge.sourceTaskId as string));
+
+    if (allCompleted) {
+      if (node.status === 'LOCKED') {
+        return {
+          ...node,
+          status: 'AVAILABLE',
+          updatedAt: now
+        };
+      }
+    } else {
+      if (node.status !== 'LOCKED') {
+        return {
+          ...node,
+          status: 'LOCKED',
+          updatedAt: now
+        };
+      }
+    }
+
+    return node;
+  });
+}
+
 export const handlers = [
   http.post('*/api/v1/auth/login', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
@@ -1284,6 +1334,30 @@ export const handlers = [
     };
 
     graph.edges.push(createdEdge);
+    recalculateTaskStatuses(graph);
     return HttpResponse.json(createdEdge, { status: 201 });
+  }),
+
+  http.delete('*/api/v1/edges/:edgeId', ({ params }) => {
+    const edgeId = params.edgeId as string;
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let foundEdge: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const edge = graph.edges.find((e) => e.id === edgeId);
+      if (edge) {
+        targetGraph = graph;
+        foundEdge = edge;
+        break;
+      }
+    }
+
+    if (!targetGraph || !foundEdge) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    targetGraph.edges = targetGraph.edges.filter((e) => e.id !== edgeId);
+    recalculateTaskStatuses(targetGraph);
+    return HttpResponse.json(targetGraph);
   })
 ];

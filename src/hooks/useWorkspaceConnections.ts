@@ -18,6 +18,7 @@ interface UseWorkspaceConnectionsProps {
   setGraph: React.Dispatch<React.SetStateAction<ProjectGraphResponse | null>>;
   takeSnapshot: () => void;
   showEdgeToast: (message: string, variant?: 'error' | 'success') => void;
+  loadWorkspace: (showRefresh?: boolean) => Promise<void>;
 }
 
 export function useWorkspaceConnections({
@@ -25,10 +26,12 @@ export function useWorkspaceConnections({
   graph,
   setGraph,
   takeSnapshot,
-  showEdgeToast
+  showEdgeToast,
+  loadWorkspace
 }: UseWorkspaceConnectionsProps) {
   const [connectionHint, setConnectionHint] = useState<ConnectionHintState | null>(null);
   const connectionSourceRef = useRef<string | null>(null);
+  const reconnectSuccessRef = useRef<boolean>(false);
 
   const wouldCreateCycle = useCallback((sourceTaskId: string, targetTaskId: string) => {
     if (sourceTaskId === targetTaskId) return true;
@@ -178,18 +181,108 @@ export function useWorkspaceConnections({
         edges: [...currentGraph.edges, createdEdge]
       } : currentGraph);
       showEdgeToast('Dependency created.', 'success');
+      void loadWorkspace(true);
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
       showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
     }
-  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph]);
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph, loadWorkspace]);
+
+  const handleReconnectStart = useCallback((event: any, edge: Edge) => {
+    reconnectSuccessRef.current = false;
+    connectionSourceRef.current = edge.source;
+    const point = getConnectionClientPoint(event);
+    setConnectionHint({
+      x: point.x,
+      y: point.y,
+      message: 'Drag to a new target task.',
+      variant: 'info',
+      closing: false
+    });
+  }, [getConnectionClientPoint]);
+
+  const handleReconnect = useCallback(async (oldEdge: Edge, newConnection: Connection) => {
+    if (!projectId || !newConnection.source || !newConnection.target) return;
+    
+    if (oldEdge.source === newConnection.source && oldEdge.target === newConnection.target) {
+      reconnectSuccessRef.current = true;
+      return;
+    }
+
+    const blockReason = getConnectionBlockReason(newConnection.source, newConnection.target);
+    if (blockReason) {
+      showEdgeToast(blockReason);
+      return;
+    }
+
+    reconnectSuccessRef.current = true;
+    takeSnapshot();
+
+    try {
+      await projectsApi.deleteEdge(oldEdge.id);
+      
+      const createdEdge = await projectsApi.createEdge(projectId, {
+        sourceTaskId: newConnection.source,
+        targetTaskId: newConnection.target
+      });
+
+      setGraph((currentGraph) => {
+        if (!currentGraph) return null;
+        const filtered = currentGraph.edges.filter((e) => e.id !== oldEdge.id);
+        return {
+          ...currentGraph,
+          edges: [...filtered, createdEdge]
+        };
+      });
+
+      showEdgeToast('Dependency updated.', 'success');
+      void loadWorkspace(true);
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot update dependency: cycle detected.' : parsed.message);
+    }
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph, loadWorkspace]);
+
+  const handleReconnectEnd = useCallback(async (_event: any, edge: Edge) => {
+    const linger = connectionHint?.variant === 'error';
+    connectionSourceRef.current = null;
+
+    window.setTimeout(() => {
+      setConnectionHint((current) => current ? { ...current, closing: true } : current);
+      window.setTimeout(() => setConnectionHint(null), 100);
+    }, linger ? 450 : 0);
+
+    if (!reconnectSuccessRef.current && projectId) {
+      takeSnapshot();
+      try {
+        await projectsApi.deleteEdge(edge.id);
+        setGraph((currentGraph) => {
+          if (!currentGraph) return null;
+          return {
+            ...currentGraph,
+            edges: currentGraph.edges.filter((e) => e.id !== edge.id)
+          };
+        });
+        showEdgeToast('Dependency deleted.', 'success');
+        void loadWorkspace(true);
+      } catch (err) {
+        const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+        const parsed = mapServerErrorToEnglish(err, statusCode);
+        showEdgeToast(parsed.message);
+      }
+    }
+  }, [connectionHint?.variant, projectId, takeSnapshot, setGraph, showEdgeToast, loadWorkspace]);
 
   return {
     connectionHint,
     handleConnect,
     handleConnectStart,
     handleConnectEnd,
-    isValidConnection
+    isValidConnection,
+    handleReconnectStart,
+    handleReconnect,
+    handleReconnectEnd
   };
 }

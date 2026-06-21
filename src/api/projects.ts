@@ -192,5 +192,10 @@ export const projectsApi = {
       data
     );
     return response.data;
+  },
+
+  async deleteEdge(edgeId: string): Promise<ProjectGraphResponse> {
+    const response = await apiClient.delete<ProjectGraphResponse>(`/api/v1/edges/${edgeId}`);
+    return response.data;
   }
 };

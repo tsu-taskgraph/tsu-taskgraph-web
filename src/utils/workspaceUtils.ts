@@ -183,6 +183,7 @@ export function mapGraphToFlow(
       target: edge.targetTaskId,
       type: edgeType,
       animated: visual.animated,
+      reconnectable: true,
       className: `edge-status-${sourceStatus.toLowerCase()}`,
       markerEnd: {
         type: MarkerType.ArrowClosed,

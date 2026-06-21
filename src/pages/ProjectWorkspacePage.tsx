@@ -141,13 +141,17 @@ export default function ProjectWorkspacePage() {
     handleConnect,
     handleConnectStart,
     handleConnectEnd,
-    isValidConnection
+    isValidConnection,
+    handleReconnectStart,
+    handleReconnect,
+    handleReconnectEnd
   } = useWorkspaceConnections({
     projectId,
     graph,
     setGraph,
     takeSnapshot,
-    showEdgeToast
+    showEdgeToast,
+    loadWorkspace
   });
 
   const {
@@ -799,6 +803,9 @@ export default function ProjectWorkspacePage() {
                       onConnect={handleConnect}
                       onConnectStart={handleConnectStart}
                       onConnectEnd={handleConnectEnd}
+                      onReconnect={handleReconnect}
+                      onReconnectStart={handleReconnectStart}
+                      onReconnectEnd={handleReconnectEnd}
                       isValidConnection={isValidConnection}
                       connectionLineStyle={connectionHint?.variant === 'error'
                         ? { stroke: '#ef4444', strokeWidth: 2.6, strokeDasharray: '6 6' }
