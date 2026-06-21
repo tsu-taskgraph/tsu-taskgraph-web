@@ -17,16 +17,16 @@ import {
   Moon,
   Menu
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../features/auth/context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import axios from 'axios';
 import { projectsApi } from '../api/projects';
 import type { ProjectResponse } from '../api/projects';
 import { mapServerErrorToEnglish } from '../api/errors';
 import logo from '../assets/logo.png';
-import { SafariTopBar } from '../components/SafariTopBar';
-import { SafariBottomBar } from '../components/SafariBottomBar';
-import UserProfileOverlay from '../components/UserProfileOverlay';
+import { SafariTopBar } from '../components/common/SafariTopBar';
+import { SafariBottomBar } from '../components/common/SafariBottomBar';
+import UserProfileOverlay from '../components/common/UserProfileOverlay';
 
 export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme();

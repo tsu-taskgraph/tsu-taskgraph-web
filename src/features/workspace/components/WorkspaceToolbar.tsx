@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Panel } from '@xyflow/react';
 import {
   Circle,
@@ -12,9 +13,13 @@ import {
   GitBranch,
   Zap,
   Clock,
-  Plus
+  Plus,
+  Hourglass,
+  Trash2,
+  Undo2,
+  Redo2
 } from 'lucide-react';
-import type { ViewMode, EdgeTypeMode } from '../../utils/workspaceUtils';
+import type { ViewMode, EdgeTypeMode } from '../utils/workspaceUtils';
 
 const viewModes = [
   { key: 'dot' as const, label: 'Dots', icon: Circle },
@@ -39,6 +44,8 @@ interface WorkspaceToolbarProps {
   isAligned: boolean;
   autoArrangeLayout: () => void;
   onCreateTask: () => void;
+  onTaskActions?: () => void;
+  onDeleteTask?: () => void;
   graphStats: {
     tasks: number;
     dependencies: number;
@@ -48,6 +55,12 @@ interface WorkspaceToolbarProps {
     loggedHours: number;
     completion: number;
   };
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  isTaskSidebarOpen?: boolean;
+  isTaskSelected?: boolean;
 }
 
 export function WorkspaceToolbar({
@@ -60,8 +73,32 @@ export function WorkspaceToolbar({
   isAligned,
   autoArrangeLayout,
   onCreateTask,
-  graphStats
+  onTaskActions,
+  onDeleteTask,
+  graphStats,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+  isTaskSidebarOpen = false,
+  isTaskSelected = false
 }: WorkspaceToolbarProps) {
+  const [showActionButtons, setShowActionButtons] = useState(false);
+  const [isClosingActions, setIsClosingActions] = useState(false);
+
+  useEffect(() => {
+    if (isTaskSelected) {
+      setIsClosingActions(false);
+      setShowActionButtons(true);
+    } else if (showActionButtons) {
+      setIsClosingActions(true);
+      const timer = setTimeout(() => {
+        setShowActionButtons(false);
+        setIsClosingActions(false);
+      }, 160);
+      return () => clearTimeout(timer);
+    }
+  }, [isTaskSelected, showActionButtons]);
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
   const activeEdgeTypeIndex = edgeTypeModes.findIndex((mode) => mode.key === edgeType);
@@ -69,7 +106,7 @@ export function WorkspaceToolbar({
 
   return (
     <>
-      <Panel position="bottom-center" className="!mb-6 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:!w-auto sm:!max-w-[calc(100vw-2rem)]">
+      <Panel position="bottom-center" className="!mb-6 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:!w-auto sm:!max-w-[calc(100vw-2rem)] !z-[60]">
         <div className="max-h-[42dvh] max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/70 p-1.5 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10 animate-slide-up-fade [animation-delay:250ms] 2xl:rounded-full flex flex-col">
           <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-fade-mask min-[2200px]:scroll-fade-none px-3">
 
@@ -163,6 +200,34 @@ export function WorkspaceToolbar({
               <span className="hidden 2xl:inline">Align</span>
             </button>
 
+            <div className="h-6 w-px shrink-0 bg-white/10 light:bg-slate-200 mx-0.5 sm:mx-1" />
+
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${canUndo
+                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
+                }`}
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo"
+            >
+              <Undo2 className="h-4 w-4 shrink-0" />
+            </button>
+
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${canRedo
+                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
+                }`}
+              title="Redo (Ctrl+Y)"
+              aria-label="Redo"
+            >
+              <Redo2 className="h-4 w-4 shrink-0" />
+            </button>
+
           </div>
 
           <div className="mt-1.5 flex w-full items-center gap-2 overflow-x-auto overscroll-x-contain border-t border-white/10 px-3 pt-1.5 pb-0.5 text-[11px] font-semibold whitespace-nowrap text-slate-300 [scrollbar-width:none] light:border-slate-200/70 light:text-slate-600 min-[2200px]:!hidden scroll-fade-mask [&::-webkit-scrollbar]:hidden sm:gap-3 lg:grid lg:grid-cols-5 lg:gap-0 lg:overflow-hidden lg:px-0 lg:scroll-fade-none">
@@ -190,11 +255,42 @@ export function WorkspaceToolbar({
         </div>
       </Panel>
 
-      <Panel position="bottom-right" className="!mb-[145px] lg:!mb-6 !mr-6 z-40 flex flex-col items-end gap-3">
+      {showActionButtons && (
+        <Panel position="bottom-center" className="!mb-[138px] min-[2200px]:!mb-[100px] !z-[57]">
+          <div className="flex items-center gap-2">
+            {/* Log Work Button */}
+            <button
+              type="button"
+              onClick={onTaskActions}
+              disabled={!isTaskSelected}
+              className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#020617]/75 px-3 lg:px-4 py-1.5 text-[12px] font-semibold text-slate-300 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-200 hover:bg-white/5 hover:text-slate-100 active:scale-[0.985] light:border-slate-200/60 light:bg-white/80 light:text-slate-600 light:shadow-slate-200/10 light:hover:bg-slate-100 light:hover:text-slate-900 ${isTaskSelected && !isClosingActions ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
+            >
+              <Hourglass className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Log Work</span>
+            </button>
+
+            {/* Delete Button */}
+            {onDeleteTask && (
+              <button
+                type="button"
+                onClick={onDeleteTask}
+                disabled={!isTaskSelected}
+                className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 lg:px-4 py-1.5 text-[12px] font-semibold text-red-400 backdrop-blur-xl transition-all duration-200 hover:bg-red-500/20 hover:text-red-300 active:scale-[0.985] light:border-red-500/30 light:bg-red-500/10 light:text-red-600 light:hover:bg-red-600/20 light:hover:text-red-700 ${isTaskSelected && !isClosingActions ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Delete</span>
+              </button>
+            )}
+          </div>
+        </Panel>
+      )}
+
+      <Panel position="bottom-right" className="!mb-[145px] lg:!mb-6 !mr-6 !z-40 flex flex-col items-end gap-3">
         <button
           type="button"
           onClick={onCreateTask}
-          className="group relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer animate-slide-up-fade [animation-delay:300ms]"
+          disabled={isTaskSidebarOpen}
+          className={`group relative flex h-12 w-12 lg:w-auto shrink-0 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-r from-brand-500 to-orange-500 p-3 lg:px-5 lg:py-3 text-[13px] font-extrabold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.06] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer ${isTaskSidebarOpen ? 'task-create-button-exit pointer-events-none' : 'task-create-button-enter'}`}
           title="Create a new task in the center of the viewport"
           aria-label="Create a new task"
         >

@@ -104,6 +104,32 @@ export interface CreateTaskRequest {
   positionY: number;
 }
 
+export interface CreateEdgeRequest {
+  sourceTaskId: string;
+  targetTaskId: string;
+}
+
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string | null;
+  category?: TaskNode['category'];
+  estimatedHours?: number | null;
+  completionPercent?: number | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  positionX?: number;
+  positionY?: number;
+}
+
+export interface TimeLogResponse {
+  id: string;
+  taskId: string;
+  userId: string;
+  hours: number;
+  comment: string | null;
+  loggedAt: string;
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -132,5 +158,48 @@ export const projectsApi = {
   async createTask(projectId: string, data: CreateTaskRequest): Promise<TaskNode> {
     const response = await apiClient.post<TaskNode>(`/api/v1/projects/${projectId}/tasks`, data);
     return response.data;
+  },
+
+  async createEdge(projectId: string, data: CreateEdgeRequest): Promise<EdgeResponse> {
+    const response = await apiClient.post<EdgeResponse>(`/api/v1/projects/${projectId}/edges`, data, {
+      headers: {
+        'X-Enable-Smart-Recovery': 'false'
+      }
+    });
+    return response.data;
+  },
+
+  async updateTask(taskId: string, data: UpdateTaskRequest): Promise<TaskNode> {
+    const response = await apiClient.patch<TaskNode>(`/api/v1/tasks/${taskId}`, data);
+    return response.data;
+  },
+
+  async logTaskTime(taskId: string, data: { hours: number; comment?: string | null }): Promise<TimeLogResponse> {
+    const response = await apiClient.post<TimeLogResponse>(`/api/v1/tasks/${taskId}/time-logs`, data);
+    return response.data;
+  },
+
+  async updateTaskStatus(
+    taskId: string,
+    data: {
+      status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
+      loggedHours: number | null;
+      comment?: string | null;
+    }
+  ): Promise<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }> {
+    const response = await apiClient.patch<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }>(
+      `/api/v1/tasks/${taskId}/status`,
+      data
+    );
+    return response.data;
+  },
+
+  async deleteEdge(edgeId: string): Promise<ProjectGraphResponse> {
+    const response = await apiClient.delete<ProjectGraphResponse>(`/api/v1/edges/${edgeId}`);
+    return response.data;
+  },
+
+  async deleteTask(taskId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/tasks/${taskId}`);
   }
 };
