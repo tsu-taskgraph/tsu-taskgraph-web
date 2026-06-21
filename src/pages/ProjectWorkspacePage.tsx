@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { projectsApi, type ProjectGraphResponse, type TaskNode } from '../api/projects';
+import { projectsApi, type ProjectGraphResponse, type TaskNode, type UpdateTaskRequest } from '../api/projects';
 import { useTheme } from '../context/ThemeContext';
 import { SafariTopBar } from '../components/SafariTopBar';
 import { SafariBottomBar } from '../components/SafariBottomBar';
@@ -412,6 +412,8 @@ export default function ProjectWorkspacePage() {
     description?: string | null;
     category?: TaskNode['category'];
     estimatedHours?: number | null;
+    completionPercent?: number | null;
+    status?: TaskNode['status'];
     startDate?: string | null;
     dueDate?: string | null;
   }) => {
@@ -421,19 +423,61 @@ export default function ProjectWorkspacePage() {
     setStatusUpdatingTaskId(selectedTask.id);
 
     try {
-      const updatedTask = await projectsApi.updateTask(selectedTask.id, data);
+      let updatedTask = selectedTask;
+
+      if (data.status && data.status !== selectedTask.status && data.status !== 'LOCKED') {
+        const statusRes = await projectsApi.updateTaskStatus(selectedTask.id, {
+          status: data.status as 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
+          loggedHours: null
+        });
+        updatedTask = statusRes.updatedTask;
+
+        if (statusRes.unlockedTasks && statusRes.unlockedTasks.length > 0) {
+          const unlockedMap = new Map(statusRes.unlockedTasks.map((t) => [t.id, t]));
+          setGraph((currentGraph) => currentGraph ? {
+            ...currentGraph,
+            nodes: currentGraph.nodes.map((t) => unlockedMap.get(t.id) ?? (t.id === updatedTask.id ? updatedTask : t))
+          } : currentGraph);
+          setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+            if (node.type !== 'taskNode') return node;
+            const ut = unlockedMap.get(node.id) ?? (node.id === updatedTask.id ? updatedTask : null);
+            if (!ut) return node;
+            const taskNode = node as TaskFlowNode;
+            return {
+              ...taskNode,
+              data: {
+                ...taskNode.data,
+                task: ut
+              }
+            };
+          }));
+        }
+      }
+
+      const updateData: UpdateTaskRequest = {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        estimatedHours: data.estimatedHours,
+        completionPercent: data.completionPercent,
+        startDate: data.startDate,
+        dueDate: data.dueDate
+      };
+
+      const finalTask = await projectsApi.updateTask(selectedTask.id, updateData);
+      
       setGraph((currentGraph) => currentGraph ? {
         ...currentGraph,
-        nodes: currentGraph.nodes.map((task) => task.id === updatedTask.id ? updatedTask : task)
+        nodes: currentGraph.nodes.map((task) => task.id === finalTask.id ? finalTask : task)
       } : currentGraph);
       setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
-        if (node.type !== 'taskNode' || node.id !== updatedTask.id) return node;
+        if (node.type !== 'taskNode' || node.id !== finalTask.id) return node;
         const taskNode = node as TaskFlowNode;
         return {
           ...taskNode,
           data: {
             ...taskNode.data,
-            task: updatedTask
+            task: finalTask
           }
         };
       }));
@@ -447,21 +491,25 @@ export default function ProjectWorkspacePage() {
     }
   }, [selectedTask, setNodes, setGraph, showEdgeToast, takeSnapshot]);
 
-  const handleLogTaskTime = useCallback(async (task: TaskNode, data: { hours: number; comment?: string | null; completionPercent?: number | null }) => {
+  const handleLogTaskTime = useCallback(async (task: TaskNode, data: { hours?: number | null; comment?: string | null; completionPercent?: number | null }) => {
     takeSnapshot();
     setStatusUpdatingTaskId(task.id);
 
     try {
-      await projectsApi.logTaskTime(task.id, data);
-      const updatedTask: TaskNode = {
-        ...task,
-        loggedHours: (task.loggedHours ?? 0) + data.hours,
-        completionPercent: typeof data.completionPercent === 'number' ? data.completionPercent : task.completionPercent,
-        updatedAt: new Date().toISOString()
-      };
+      let updatedTask: TaskNode = { ...task };
+
+      if (data.hours && data.hours > 0) {
+        await projectsApi.logTaskTime(task.id, { hours: data.hours, comment: data.comment || null });
+        updatedTask.loggedHours = (task.loggedHours ?? 0) + data.hours;
+      }
 
       if (typeof data.completionPercent === 'number') {
-        await projectsApi.updateTask(task.id, { completionPercent: data.completionPercent });
+        const response = await projectsApi.updateTask(task.id, { completionPercent: data.completionPercent });
+        updatedTask = {
+          ...updatedTask,
+          ...response,
+          loggedHours: data.hours && data.hours > 0 ? (task.loggedHours ?? 0) + data.hours : response.loggedHours
+        };
       }
 
       setGraph((currentGraph) => currentGraph ? {
@@ -479,7 +527,7 @@ export default function ProjectWorkspacePage() {
           }
         };
       }));
-      showEdgeToast('Time logged.', 'success');
+      showEdgeToast('Task updated successfully.', 'success');
       setStatusMenu(null);
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;

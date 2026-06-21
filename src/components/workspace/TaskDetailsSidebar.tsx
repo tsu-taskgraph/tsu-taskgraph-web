@@ -30,6 +30,7 @@ interface TaskDetailsSidebarProps {
         category?: TaskNode['category'];
         estimatedHours?: number | null;
         completionPercent?: number | null;
+        status?: TaskNode['status'];
         startDate?: string | null;
         dueDate?: string | null;
     }) => Promise<void>;
@@ -255,8 +256,10 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
     const [draftProgress, setDraftProgress] = useState(String(task.completionPercent ?? 0));
     const [draftStartDate, setDraftStartDate] = useState(task.startDate ?? '');
     const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '');
+    const [draftStatus, setDraftStatus] = useState<TaskStatus>(task.status);
     const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
     const [progressDropdownOpen, setProgressDropdownOpen] = useState(false);
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
     const titleRef = useRef<HTMLHeadingElement | null>(null);
 
     const status = statusMeta[task.status];
@@ -277,10 +280,12 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
         setDraftProgress(String(task.completionPercent ?? 0));
         setDraftStartDate(task.startDate ?? '');
         setDraftDueDate(task.dueDate ?? '');
+        setDraftStatus(task.status);
         setIsEditing(false);
         setCategoryDropdownOpen(false);
         setProgressDropdownOpen(false);
-    }, [task.id, task.title, task.description, task.category, task.estimatedHours, task.completionPercent, task.startDate, task.dueDate]);
+        setStatusDropdownOpen(false);
+    }, [task.id, task.title, task.description, task.category, task.estimatedHours, task.completionPercent, task.startDate, task.dueDate, task.status]);
 
     const startEditing = () => setIsEditing(true);
     const cancelEditing = () => {
@@ -291,8 +296,10 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
         setDraftProgress(String(task.completionPercent ?? 0));
         setDraftStartDate(task.startDate ?? '');
         setDraftDueDate(task.dueDate ?? '');
+        setDraftStatus(task.status);
         setCategoryDropdownOpen(false);
         setProgressDropdownOpen(false);
+        setStatusDropdownOpen(false);
         setIsEditing(false);
     };
 
@@ -305,6 +312,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
             category: draftCategory,
             estimatedHours: Number.isFinite(estimatedHours) && estimatedHours !== null && estimatedHours >= 0 ? estimatedHours : null,
             completionPercent: Number.isFinite(completionPercent) ? Math.min(100, Math.max(0, completionPercent)) : 0,
+            status: draftStatus !== task.status ? draftStatus : undefined,
             startDate: draftStartDate || null,
             dueDate: draftDueDate || null
         }).then(() => setIsEditing(false));
@@ -321,10 +329,56 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
             <div className="flex items-start justify-between gap-4 border-b border-white/10 p-4 light:border-slate-200/70">
                 <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${status.className}`}>
-                            <StatusIcon className="h-3.5 w-3.5" />
-                            {status.label}
-                        </span>
+                        {isEditing && task.status !== 'LOCKED' ? (
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setStatusDropdownOpen((open) => !open)}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 ${statusMeta[draftStatus].className}`}
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        {(() => {
+                                            const DraftIcon = statusMeta[draftStatus].icon;
+                                            return <DraftIcon className="h-3.5 w-3.5" />;
+                                        })()}
+                                        {statusMeta[draftStatus].label}
+                                    </span>
+                                    <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                                </button>
+                                {statusDropdownOpen && (
+                                    <div className="absolute left-0 top-full z-[90] mt-2 w-48 origin-top overflow-hidden rounded-xl border border-white/10 bg-slate-950/90 p-1.5 shadow-xl backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95">
+                                        {([task.status, 'AVAILABLE', 'IN_PROGRESS', 'COMPLETED', 'SKIPPED'] as const)
+                                            .filter((val, idx, self) => self.indexOf(val) === idx)
+                                            .map((item) => {
+                                                const meta = statusMeta[item];
+                                                const Icon = meta.icon;
+                                                return (
+                                                    <button
+                                                        key={item}
+                                                        type="button"
+                                                        onMouseDown={(event) => {
+                                                            event.preventDefault();
+                                                            setDraftStatus(item);
+                                                            setStatusDropdownOpen(false);
+                                                        }}
+                                                        className="flex w-full items-center rounded-lg px-2.5 py-2 transition hover:bg-white/5 light:hover:bg-slate-50"
+                                                    >
+                                                        <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${meta.className}`}>
+                                                            <Icon className="h-3 w-3" />
+                                                            {meta.label}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${status.className}`}>
+                                <StatusIcon className="h-3.5 w-3.5" />
+                                {status.label}
+                            </span>
+                        )}
                         {isEditing ? (
                             <div className="relative">
                                 <button

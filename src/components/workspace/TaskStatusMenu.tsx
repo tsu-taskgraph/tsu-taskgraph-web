@@ -9,7 +9,7 @@ interface TaskStatusMenuProps {
     screen: { x: number; y: number };
     onClose: () => void;
     onStatusChange: (status: StatusAction, data?: { loggedHours?: number | null; comment?: string | null; completionPercent?: number | null }) => Promise<void>;
-    onLogTime: (data: { hours: number; comment?: string | null; completionPercent?: number | null }) => Promise<void>;
+    onLogTime: (data: { hours?: number | null; comment?: string | null; completionPercent?: number | null }) => Promise<void>;
     updating: boolean;
 }
 
@@ -17,16 +17,36 @@ const actionConfig: Array<{
     status: StatusAction;
     label: string;
     icon: typeof Play;
-    className: string;
+    activeClass: string;
+    inactiveClass: string;
 }> = [
-        { status: 'IN_PROGRESS', label: 'Start', icon: Play, className: 'border-sky-500/25 bg-sky-500/10 text-sky-300 hover:bg-sky-500/15 light:text-sky-700' },
-        { status: 'COMPLETED', label: 'Complete', icon: CheckCircle2, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15 light:text-emerald-700' },
-        { status: 'SKIPPED', label: 'Skip', icon: SkipForward, className: 'border-violet-500/25 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15 light:text-violet-700' }
-    ];
+    {
+        status: 'IN_PROGRESS',
+        label: 'Start',
+        icon: Play,
+        activeClass: 'border-sky-500 bg-sky-500/25 text-sky-200 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500/30 light:bg-sky-500/20 light:text-sky-800 light:border-sky-500',
+        inactiveClass: 'border-sky-500/25 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 light:bg-sky-500/5 light:text-sky-700 light:border-sky-500/20'
+    },
+    {
+        status: 'COMPLETED',
+        label: 'Complete',
+        icon: CheckCircle2,
+        activeClass: 'border-emerald-500 bg-emerald-500/25 text-emerald-200 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30 light:bg-emerald-50/20 light:text-emerald-800 light:border-emerald-500',
+        inactiveClass: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 light:bg-emerald-500/5 light:text-emerald-700 light:border-emerald-500/20'
+    },
+    {
+        status: 'SKIPPED',
+        label: 'Skip',
+        icon: SkipForward,
+        activeClass: 'border-violet-500 bg-violet-500/25 text-violet-200 shadow-lg shadow-violet-500/10 ring-1 ring-violet-500/30 light:bg-violet-50/20 light:text-violet-800 light:border-violet-500',
+        inactiveClass: 'border-violet-500/25 bg-violet-500/5 text-violet-400 hover:bg-violet-500/10 light:bg-violet-500/5 light:text-violet-700 light:border-violet-500/20'
+    }
+];
 
 const fieldClass = 'w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm font-medium text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900 light:placeholder:text-slate-400 light:focus:border-brand-500 light:focus:ring-brand-500';
 
 export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updating }: TaskStatusMenuProps) {
+    const [selectedStatus, setSelectedStatus] = useState<TaskNode['status']>(task.status);
     const [loggedHours, setLoggedHours] = useState('0.0');
     const [progress, setProgress] = useState(String(task.completionPercent ?? 0));
     const [comment, setComment] = useState('');
@@ -100,18 +120,32 @@ export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updati
         return Number.isFinite(parsed) ? Math.min(100, Math.max(0, parsed)) : null;
     };
 
-    const submitStatus = (status: StatusAction) => {
-        void onStatusChange(status, {
-            loggedHours: status === 'COMPLETED' ? currentHours() : null,
-            comment: comment.trim() || null,
-            completionPercent: currentProgress()
-        });
-    };
+    const currentHoursValue = currentHours();
+    const currentProgressValue = currentProgress();
+    const hasChanges = selectedStatus !== task.status ||
+        (currentHoursValue !== null && currentHoursValue > 0) ||
+        currentProgressValue !== task.completionPercent;
 
-    const submitTime = () => {
-        const hours = currentHours();
-        if (!hours) return;
-        void onLogTime({ hours, comment: comment.trim() || null, completionPercent: currentProgress() });
+    const handleSave = () => {
+        if (!hasChanges) return;
+        const hours = currentHoursValue;
+        const completionPercent = currentProgressValue;
+
+        if (selectedStatus !== task.status) {
+            if (selectedStatus === 'IN_PROGRESS' || selectedStatus === 'COMPLETED' || selectedStatus === 'SKIPPED') {
+                void onStatusChange(selectedStatus, {
+                    loggedHours: hours,
+                    comment: comment.trim() || null,
+                    completionPercent
+                });
+            }
+        } else {
+            void onLogTime({
+                hours,
+                comment: comment.trim() || null,
+                completionPercent
+            });
+        }
     };
 
     return (
@@ -126,7 +160,7 @@ export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updati
                     <Hourglass className="h-3 w-3" />
                     Task actions
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-slate-400 light:text-slate-600">Change lifecycle status or log time without changing status.</p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-400 light:text-slate-600">Change lifecycle status, log time, or update progress.</p>
             </div>
 
             {disabledReason && (
@@ -137,18 +171,27 @@ export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updati
             )}
 
             <div className="grid grid-cols-3 gap-2">
-                {actionConfig.map(({ status, label, icon: Icon, className }) => (
-                    <button
-                        key={status}
-                        type="button"
-                        onClick={() => submitStatus(status)}
-                        disabled={updating || Boolean(disabledReason) || task.status === status}
-                        className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-                    >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                    </button>
-                ))}
+                {actionConfig.map(({ status, label, icon: Icon, activeClass, inactiveClass }) => {
+                    const isSelected = selectedStatus === status;
+                    return (
+                        <button
+                            key={status}
+                            type="button"
+                            onClick={() => {
+                                if (isSelected) {
+                                    setSelectedStatus(task.status);
+                                } else {
+                                    setSelectedStatus(status);
+                                }
+                            }}
+                            disabled={updating || Boolean(disabledReason)}
+                            className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-xs font-bold transition duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${isSelected ? activeClass : inactiveClass}`}
+                        >
+                            <Icon className="h-4 w-4" />
+                            {label}
+                        </button>
+                    );
+                })}
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -216,11 +259,11 @@ export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updati
 
             <button
                 type="button"
-                onClick={submitTime}
-                disabled={updating || task.status === 'LOCKED' || !currentHours()}
-                className="mt-3 w-full rounded-xl border border-brand-500/25 bg-brand-500/10 px-3 py-2 text-xs font-bold text-brand-300 transition hover:bg-brand-500/15 disabled:cursor-not-allowed disabled:opacity-50 light:text-brand-700"
+                onClick={handleSave}
+                disabled={updating || task.status === 'LOCKED' || !hasChanges}
+                className="mt-3 w-full rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-3 py-2.5 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition duration-300 hover:shadow-brand-500/35 disabled:cursor-not-allowed disabled:from-brand-500/10 disabled:to-brand-500/10 disabled:border disabled:border-brand-500/20 disabled:text-brand-300/50 disabled:shadow-none"
             >
-                Log time
+                {updating ? 'Saving...' : 'Save changes'}
             </button>
 
             {updating && <p className="mt-2 text-xs font-medium text-slate-400 light:text-slate-500">Updating task...</p>}
