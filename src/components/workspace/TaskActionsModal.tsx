@@ -317,12 +317,12 @@ export function TaskActionsModal({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-1 border-t border-white/10 light:border-slate-200/60">
+                <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={updating}
-                        className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-200 disabled:opacity-50 light:text-slate-600 light:hover:bg-slate-950/5"
+                        className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-200 disabled:opacity-50 light:text-slate-600 light:hover:bg-slate-950/5 light:hover:text-slate-900"
                     >
                         Cancel
                     </button>
@@ -330,7 +330,7 @@ export function TaskActionsModal({
                         type="button"
                         onClick={handleSave}
                         disabled={updating || task.status === 'LOCKED' || !hasChanges}
-                        className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-5 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition hover:shadow-brand-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition hover:shadow-brand-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                         {updating ? 'Saving...' : 'Save changes'}
                     </button>

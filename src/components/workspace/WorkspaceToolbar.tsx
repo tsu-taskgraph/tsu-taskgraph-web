@@ -14,7 +14,7 @@ import {
   Zap,
   Clock,
   Plus,
-  Edit3,
+  Hourglass,
   Undo2,
   Redo2
 } from 'lucide-react';
@@ -260,8 +260,8 @@ export function WorkspaceToolbar({
             disabled={!isTaskSelected}
             className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#020617]/70 px-4 py-1.5 text-[12px] font-semibold text-slate-400 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-200 hover:bg-white/5 hover:text-slate-200 active:scale-[0.985] light:border-slate-200/60 light:bg-white/80 light:text-slate-600 light:shadow-slate-200/10 light:hover:bg-slate-100 light:hover:text-slate-900 ${isTaskSelected && !isClosingEdit ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
           >
-            <Edit3 className="h-3.5 w-3.5" />
-            <span>Edit Task</span>
+            <Hourglass className="h-3.5 w-3.5" />
+            <span>Task actions</span>
           </button>
         </Panel>
       )}
