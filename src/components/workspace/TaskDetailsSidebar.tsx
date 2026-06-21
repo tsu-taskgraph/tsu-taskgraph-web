@@ -132,11 +132,21 @@ function CustomDateField({ label, value, onChange }: {
     const offset = firstDay === 0 ? 6 : firstDay - 1;
     const days = Array.from({ length: offset + daysInMonth }, (_, index) => index < offset ? null : index - offset + 1);
 
+    const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
+    const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+
+    const currentYear = new Date().getFullYear();
+    const yearsRange = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index);
+
     return (
         <div className="relative mt-1">
             <button
                 type="button"
-                onClick={() => setOpen((current) => !current)}
+                onClick={() => {
+                    setOpen((current) => !current);
+                    setMonthDropdownOpen(false);
+                    setYearDropdownOpen(false);
+                }}
                 className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-left text-sm font-bold text-slate-100 transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
                 aria-label={`Select ${label.toLowerCase()} date`}
             >
@@ -144,20 +154,69 @@ function CustomDateField({ label, value, onChange }: {
                 <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
-                <div className="absolute left-1/2 top-[calc(100%+0.5rem)] z-[90] w-[272px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-2xl border border-white/10 bg-slate-950/95 p-3 shadow-xl shadow-black/25 backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95 light:shadow-slate-300/25">
-                    <div className="mb-3 grid grid-cols-[1fr_82px] gap-2">
-                        <select
-                            value={month}
-                            onChange={(event) => setViewDate(new Date(year, Number(event.target.value), 1))}
-                            className="min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-2 py-1.5 text-xs font-bold text-slate-100 outline-none focus:border-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
-                        >
-                            {monthNames.map((name, index) => <option key={name} value={index}>{name}</option>)}
-                        </select>
-                        <input
-                            value={year}
-                            onChange={(event) => setViewDate(new Date(Number(event.target.value) || year, month, 1))}
-                            className="min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-2 py-1.5 text-xs font-bold text-slate-100 outline-none focus:border-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
-                        />
+                <div className={`absolute top-[calc(100%+0.5rem)] z-[90] w-[272px] max-w-[calc(100vw-2rem)] origin-top rounded-2xl border border-white/10 bg-slate-950/95 p-3 shadow-xl shadow-black/25 backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95 light:shadow-slate-300/25 ${label === 'Start' ? 'left-0' : 'right-0'}`}>
+                    <div className="mb-3 flex justify-center items-center gap-2">
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMonthDropdownOpen((current) => !current);
+                                    setYearDropdownOpen(false);
+                                }}
+                                className="flex min-w-[90px] items-center justify-between gap-1.5 rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-bold text-slate-100 transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                            >
+                                <span className="truncate">{monthNames[month]}</span>
+                                <ChevronDown className={`h-3 w-3 text-slate-500 transition-transform ${monthDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {monthDropdownOpen && (
+                                <div className="absolute left-0 top-[calc(100%+0.25rem)] z-[95] max-h-48 w-32 origin-top overflow-y-auto rounded-xl border border-white/10 bg-slate-950/90 p-1 shadow-lg backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95">
+                                    {monthNames.map((name, index) => (
+                                        <button
+                                            key={name}
+                                            type="button"
+                                            onClick={() => {
+                                                setViewDate(new Date(year, index, 1));
+                                                setMonthDropdownOpen(false);
+                                            }}
+                                            className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${index === month ? 'bg-brand-500 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white light:text-slate-700 light:hover:bg-slate-50 light:hover:text-slate-950'}`}
+                                        >
+                                            {name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setYearDropdownOpen((current) => !current);
+                                    setMonthDropdownOpen(false);
+                                }}
+                                className="flex min-w-[70px] items-center justify-between gap-1.5 rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-bold text-slate-100 transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                            >
+                                <span>{year}</span>
+                                <ChevronDown className={`h-3 w-3 text-slate-500 transition-transform ${yearDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {yearDropdownOpen && (
+                                <div className="absolute right-0 top-[calc(100%+0.25rem)] z-[95] max-h-48 w-24 origin-top overflow-y-auto rounded-xl border border-white/10 bg-slate-950/90 p-1 shadow-lg backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95">
+                                    {yearsRange.map((y) => (
+                                        <button
+                                            key={y}
+                                            type="button"
+                                            onClick={() => {
+                                                setViewDate(new Date(y, month, 1));
+                                                setYearDropdownOpen(false);
+                                            }}
+                                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${y === year ? 'bg-brand-500 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white light:text-slate-700 light:hover:bg-slate-50 light:hover:text-slate-950'}`}
+                                        >
+                                            {y}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-500">
                         {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day) => <span key={day} className="flex h-6 items-center justify-center">{day}</span>)}
@@ -197,6 +256,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
     const [draftStartDate, setDraftStartDate] = useState(task.startDate ?? '');
     const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '');
     const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+    const [progressDropdownOpen, setProgressDropdownOpen] = useState(false);
     const titleRef = useRef<HTMLHeadingElement | null>(null);
 
     const status = statusMeta[task.status];
@@ -219,6 +279,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
         setDraftDueDate(task.dueDate ?? '');
         setIsEditing(false);
         setCategoryDropdownOpen(false);
+        setProgressDropdownOpen(false);
     }, [task.id, task.title, task.description, task.category, task.estimatedHours, task.completionPercent, task.startDate, task.dueDate]);
 
     const startEditing = () => setIsEditing(true);
@@ -231,6 +292,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
         setDraftStartDate(task.startDate ?? '');
         setDraftDueDate(task.dueDate ?? '');
         setCategoryDropdownOpen(false);
+        setProgressDropdownOpen(false);
         setIsEditing(false);
     };
 
@@ -335,17 +397,39 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
                 </button>
             </div>
 
-            <div key={task.id} className="workspace-sidebar-scroll min-h-0 flex-1 overflow-y-auto p-4 task-sidebar-content-enter">
+            <div key={`${task.id}-${progress}`} className="workspace-sidebar-scroll min-h-0 flex-1 overflow-y-auto p-4 task-sidebar-content-enter">
                 <section className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-400 light:text-slate-500">
                         <span>Progress</span>
                         {isEditing ? (
-                            <input
-                                value={draftProgress}
-                                onChange={(event) => setDraftProgress(event.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
-                                onBlur={() => setDraftProgress((current) => String(Math.min(100, Math.max(0, Number(current) || 0))))}
-                                className="w-16 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-right text-xs font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
-                            />
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setProgressDropdownOpen((open) => !open)}
+                                    className="flex items-center justify-between gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-right text-xs font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
+                                >
+                                    <span>{draftProgress}%</span>
+                                    <ChevronDown className={`h-3 w-3 text-slate-500 transition-transform ${progressDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {progressDropdownOpen && (
+                                    <div className="absolute right-0 top-full z-[95] mt-2 max-h-48 w-24 origin-top overflow-y-auto rounded-xl border border-white/10 bg-slate-950/90 p-1 shadow-xl backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95">
+                                        {Array.from({ length: 11 }, (_, i) => i * 10).map((val) => (
+                                            <button
+                                                key={val}
+                                                type="button"
+                                                onMouseDown={(event) => {
+                                                    event.preventDefault();
+                                                    setDraftProgress(String(val));
+                                                    setProgressDropdownOpen(false);
+                                                }}
+                                                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${String(val) === draftProgress ? 'bg-brand-500 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white light:text-slate-700 light:hover:bg-slate-50 light:hover:text-slate-950'}`}
+                                            >
+                                                {val}%
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <div className="group/progress flex items-center gap-2">
                                 <span className="font-bold text-slate-100 light:text-slate-900">{progress}%</span>
@@ -354,7 +438,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
                         )}
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-white/[0.07] light:bg-slate-200/70">
-                        <div key={`${task.id}-${task.status}-${progress}`} className="h-full rounded-full task-sidebar-progress-reveal" style={{ width: `${isEditing ? Math.min(100, Math.max(0, Number(draftProgress) || 0)) : progress}%` }}>
+                        <div key={`${task.id}-${task.status}-${isEditing ? draftProgress : progress}`} className="h-full rounded-full task-sidebar-progress-reveal" style={{ width: `${isEditing ? Math.min(100, Math.max(0, Number(draftProgress) || 0)) : progress}%` }}>
                             <div className={`h-full w-full rounded-full bg-gradient-to-r from-brand-500 via-orange-400 to-brand-500 ${task.status === 'IN_PROGRESS' ? 'animate-progress-flow' : ''}`} />
                         </div>
                     </div>

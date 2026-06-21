@@ -30,6 +30,7 @@ export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updati
     const [loggedHours, setLoggedHours] = useState('0.0');
     const [progress, setProgress] = useState(String(task.completionPercent ?? 0));
     const [comment, setComment] = useState('');
+    const [progressDropdownOpen, setProgressDropdownOpen] = useState(false);
     const disabledReason = task.status === 'LOCKED'
         ? 'Locked tasks cannot be changed until dependencies are completed.'
         : null;
@@ -179,25 +180,38 @@ export function TaskStatusMenu({ task, screen, onStatusChange, onLogTime, updati
             </div>
 
             <div className="mt-3 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
-                <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-slate-500">
                     <span>Progress</span>
-                    <input
-                        value={progress}
-                        onChange={(event) => setProgress(event.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
-                        onBlur={() => setProgress((current) => String(Math.min(100, Math.max(0, Number(current) || 0))))}
-                        className="w-16 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-right text-xs font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900"
-                        disabled={updating || task.status === 'LOCKED'}
-                    />
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setProgressDropdownOpen((open) => !open)}
+                            disabled={updating || task.status === 'LOCKED'}
+                            className="flex items-center justify-between gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-right text-xs font-bold text-slate-100 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span>{progress}%</span>
+                            <ChevronDown className={`h-3 w-3 text-slate-500 transition-transform ${progressDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {progressDropdownOpen && (
+                            <div className="absolute right-0 top-full z-[95] mt-2 max-h-48 w-24 origin-top overflow-y-auto rounded-xl border border-white/10 bg-slate-950/90 p-1 shadow-xl backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95">
+                                {Array.from({ length: 11 }, (_, i) => i * 10).map((val) => (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        onMouseDown={(event) => {
+                                            event.preventDefault();
+                                            setProgress(String(val));
+                                            setProgressDropdownOpen(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${String(val) === progress ? 'bg-brand-500 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white light:text-slate-700 light:hover:bg-slate-50 light:hover:text-slate-950'}`}
+                                    >
+                                        {val}%
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={Math.min(100, Math.max(0, Number(progress) || 0))}
-                    onChange={(event) => setProgress(event.target.value)}
-                    className="w-full accent-brand-500"
-                    disabled={updating || task.status === 'LOCKED'}
-                />
             </div>
 
             <button
