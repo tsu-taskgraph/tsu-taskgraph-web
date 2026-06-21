@@ -130,7 +130,7 @@ export default function ProjectWorkspacePage() {
                   <ReactFlowProvider>
                     <ReactFlow<WorkspaceNode, TaskFlowEdge>
                       nodes={workspace.nodes}
-                      edges={workspace.edges}
+                      edges={workspace.displayEdges}
                       nodeTypes={nodeTypes}
                       onNodesChange={workspace.onNodesChange}
                       onEdgesChange={workspace.onEdgesChange}
@@ -156,6 +156,9 @@ export default function ProjectWorkspacePage() {
                       onInit={workspace.setFlowInstance}
                       onPaneContextMenu={workspace.handlePaneContextMenu}
                       onPaneClick={workspace.handlePaneClick}
+                      onEdgeClick={workspace.handleEdgeClick}
+                      onEdgeMouseEnter={workspace.handleEdgeMouseEnter}
+                      onEdgeMouseLeave={workspace.handleEdgeMouseLeave}
                       fitView
                       fitViewOptions={{ padding: 0.2 }}
                       minZoom={0.2}

@@ -752,7 +752,15 @@
     }
 
     .react-flow__edge-path {
-      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.15s ease, stroke-width 0.15s ease !important;
+    }
+
+    .react-flow__edge:hover .react-flow__edge-path {
+      stroke: #f59e0b !important;
+    }
+
+    .react-flow__edge[data-highlighted="true"] .react-flow__edge-path {
+      stroke: #f59e0b !important;
     }
 
     .react-flow__edge.edge-status-in_progress path.react-flow__edge-path {

@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
 import {
   type ReactFlowInstance,
   useEdgesState,
   useNodesState,
+  MarkerType,
 } from '@xyflow/react';
 import {
   type ProjectGraphResponse,
   type TaskNode,
+  projectsApi,
 } from '../../../api/projects';
+import { mapServerErrorToEnglish } from '../../../api/errors';
 import { useTheme } from '../../../context/ThemeContext';
 import {
   mapGraphToFlow,
@@ -52,6 +56,8 @@ export function useWorkspace(projectId: string | undefined) {
   const taskSidebarCloseTimerRef = useRef<number | null>(null);
   const suppressTaskSidebarSelectionRef = useRef(false);
   const lastTaskNodeClickAtRef = useRef(0);
+
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
 
   const {
     takeSnapshot,
@@ -272,6 +278,50 @@ export function useWorkspace(projectId: string | undefined) {
     modals.closeTaskActionsModal();
   }, [modals, closeTaskDetailsSidebar]);
 
+  const handleEdgeClick = useCallback((event: React.MouseEvent, edge: TaskFlowEdge) => {
+    event.stopPropagation();
+    const sourceTask = graph?.nodes.find(n => n.id === edge.source);
+    const targetTask = graph?.nodes.find(n => n.id === edge.target);
+
+    if (sourceTask && targetTask) {
+      modals.setConfirmModal({
+        title: 'Delete dependency?',
+        message: `Remove connection from "${sourceTask.title}" to "${targetTask.title}"?`,
+        isDestructive: true,
+        onConfirm: async () => {
+          modals.setIsConfirmClosing(true);
+          setTimeout(() => {
+            modals.setConfirmModal(null);
+            modals.setIsConfirmClosing(false);
+          }, 200);
+
+          takeSnapshot();
+          try {
+            await projectsApi.deleteEdge(edge.id);
+            setEdges((currentEdges) => currentEdges.filter(e => e.id !== edge.id));
+            setGraph((currentGraph) => currentGraph ? {
+              ...currentGraph,
+              edges: currentGraph.edges.filter(e => e.id !== edge.id)
+            } : currentGraph);
+            toast.showEdgeToast('Dependency deleted.', 'success');
+          } catch (err) {
+            const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+            const parsed = mapServerErrorToEnglish(err, statusCode);
+            toast.showEdgeToast(parsed.message);
+          }
+        }
+      });
+    }
+  }, [graph, takeSnapshot, setEdges, setGraph, modals, toast]);
+
+  const handleEdgeMouseEnter = useCallback((_event: React.MouseEvent, edge: TaskFlowEdge) => {
+    setHoveredEdgeId(edge.id);
+  }, []);
+
+  const handleEdgeMouseLeave = useCallback(() => {
+    setHoveredEdgeId(null);
+  }, []);
+
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: WorkspaceNode[] }) => {
     const selectedTaskNode = selectedNodes.find((node) => node.type === 'taskNode');
 
@@ -359,6 +409,31 @@ export function useWorkspace(projectId: string | undefined) {
     const layers = Array.from(new Set(graph.nodes.map((n: TaskNode) => n.layer).filter((l): l is number => typeof l === 'number'))) as number[];
     return layers.sort((a, b) => a - b);
   }, [graph]);
+
+  const displayEdges = useMemo(() => {
+    return edges.map(edge => {
+      if (edge.id === hoveredEdgeId) {
+        const currentMarker = edge.markerEnd as any;
+        return {
+          ...edge,
+          style: {
+            ...edge.style,
+            stroke: '#f59e0b',
+          },
+          markerEnd: currentMarker
+            ? {
+              type: currentMarker.type,
+              width: currentMarker.width,
+              height: currentMarker.height,
+              color: '#f59e0b',
+            }
+            : undefined,
+          animated: true,
+        };
+      }
+      return edge;
+    });
+  }, [edges, hoveredEdgeId]);
 
   const graphStats = useMemo(() => {
     const allNodes = graph?.nodes ?? [];
@@ -526,6 +601,10 @@ export function useWorkspace(projectId: string | undefined) {
     handleNodeContextMenu,
     handlePaneClick,
     handleSelectionChange,
+    handleEdgeClick,
+    handleEdgeMouseEnter,
+    handleEdgeMouseLeave,
+    displayEdges,
 
     statusUpdatingTaskId: operations.statusUpdatingTaskId,
     handleTaskCreated: operations.handleTaskCreated,
