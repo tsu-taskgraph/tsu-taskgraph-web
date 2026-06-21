@@ -20,28 +20,28 @@ const actionConfig: Array<{
     activeClass: string;
     inactiveClass: string;
 }> = [
-    {
-        status: 'IN_PROGRESS',
-        label: 'Start',
-        icon: Play,
-        activeClass: 'border-sky-500 bg-sky-500/25 text-sky-200 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500/30 light:bg-sky-500/20 light:text-sky-800 light:border-sky-500',
-        inactiveClass: 'border-sky-500/25 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 light:bg-sky-500/5 light:text-sky-700 light:border-sky-500/20'
-    },
-    {
-        status: 'COMPLETED',
-        label: 'Complete',
-        icon: CheckCircle2,
-        activeClass: 'border-emerald-500 bg-emerald-500/25 text-emerald-200 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30 light:bg-emerald-50/20 light:text-emerald-800 light:border-emerald-500',
-        inactiveClass: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 light:bg-emerald-500/5 light:text-emerald-700 light:border-emerald-500/20'
-    },
-    {
-        status: 'SKIPPED',
-        label: 'Skip',
-        icon: SkipForward,
-        activeClass: 'border-violet-500 bg-violet-500/25 text-violet-200 shadow-lg shadow-violet-500/10 ring-1 ring-violet-500/30 light:bg-violet-50/20 light:text-violet-800 light:border-violet-500',
-        inactiveClass: 'border-violet-500/25 bg-violet-500/5 text-violet-400 hover:bg-violet-500/10 light:bg-violet-500/5 light:text-violet-700 light:border-violet-500/20'
-    }
-];
+        {
+            status: 'IN_PROGRESS',
+            label: 'Start',
+            icon: Play,
+            activeClass: 'border-sky-500 bg-sky-500/25 text-sky-200 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500/30 light:bg-sky-500/20 light:text-sky-800 light:border-sky-500',
+            inactiveClass: 'border-sky-500/25 bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 light:bg-sky-500/5 light:text-sky-700 light:border-sky-500/20'
+        },
+        {
+            status: 'COMPLETED',
+            label: 'Complete',
+            icon: CheckCircle2,
+            activeClass: 'border-emerald-500 bg-emerald-500/25 text-emerald-200 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30 light:bg-emerald-50/20 light:text-emerald-800 light:border-emerald-500',
+            inactiveClass: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 light:bg-emerald-500/5 light:text-emerald-700 light:border-emerald-500/20'
+        },
+        {
+            status: 'SKIPPED',
+            label: 'Skip',
+            icon: SkipForward,
+            activeClass: 'border-violet-500 bg-violet-500/25 text-violet-200 shadow-lg shadow-violet-500/10 ring-1 ring-violet-500/30 light:bg-violet-50/20 light:text-violet-800 light:border-violet-500',
+            inactiveClass: 'border-violet-500/25 bg-violet-500/5 text-violet-400 hover:bg-violet-500/10 light:bg-violet-500/5 light:text-violet-700 light:border-violet-500/20'
+        }
+    ];
 
 const fieldClass = 'w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm font-medium text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 light:border-slate-200 light:bg-white light:text-slate-900 light:placeholder:text-slate-400 light:focus:border-brand-500 light:focus:ring-brand-500';
 

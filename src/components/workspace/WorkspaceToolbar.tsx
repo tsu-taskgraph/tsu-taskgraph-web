@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Panel } from '@xyflow/react';
 import {
   Circle,
@@ -13,6 +14,7 @@ import {
   Zap,
   Clock,
   Plus,
+  Edit3,
   Undo2,
   Redo2
 } from 'lucide-react';
@@ -41,6 +43,7 @@ interface WorkspaceToolbarProps {
   isAligned: boolean;
   autoArrangeLayout: () => void;
   onCreateTask: () => void;
+  onEditTask?: () => void;
   graphStats: {
     tasks: number;
     dependencies: number;
@@ -55,6 +58,7 @@ interface WorkspaceToolbarProps {
   canUndo: boolean;
   canRedo: boolean;
   isTaskSidebarOpen?: boolean;
+  isTaskSelected?: boolean;
 }
 
 export function WorkspaceToolbar({
@@ -67,13 +71,31 @@ export function WorkspaceToolbar({
   isAligned,
   autoArrangeLayout,
   onCreateTask,
+  onEditTask,
   graphStats,
   undo,
   redo,
   canUndo,
   canRedo,
-  isTaskSidebarOpen = false
+  isTaskSidebarOpen = false,
+  isTaskSelected = false
 }: WorkspaceToolbarProps) {
+  const [showEditTaskButton, setShowEditTaskButton] = useState(false);
+  const [isClosingEdit, setIsClosingEdit] = useState(false);
+
+  useEffect(() => {
+    if (isTaskSelected) {
+      setIsClosingEdit(false);
+      setShowEditTaskButton(true);
+    } else if (showEditTaskButton) {
+      setIsClosingEdit(true);
+      const timer = setTimeout(() => {
+        setShowEditTaskButton(false);
+        setIsClosingEdit(false);
+      }, 160);
+      return () => clearTimeout(timer);
+    }
+  }, [isTaskSelected, showEditTaskButton]);
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
   const activeEdgeTypeIndex = edgeTypeModes.findIndex((mode) => mode.key === edgeType);
@@ -181,8 +203,8 @@ export function WorkspaceToolbar({
               onClick={undo}
               disabled={!canUndo}
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${canUndo
-                  ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
-                  : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
+                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
                 }`}
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
@@ -194,8 +216,8 @@ export function WorkspaceToolbar({
               onClick={redo}
               disabled={!canRedo}
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent transition-all cursor-pointer ${canRedo
-                  ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
-                  : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
+                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-950/5'
+                : 'text-slate-600/40 light:text-slate-300/40 cursor-not-allowed'
                 }`}
               title="Redo (Ctrl+Y)"
               aria-label="Redo"
@@ -229,6 +251,20 @@ export function WorkspaceToolbar({
           </div>
         </div>
       </Panel>
+
+      {showEditTaskButton && (
+        <Panel position="bottom-center" className="!mb-[102px] z-10">
+          <button
+            type="button"
+            onClick={onEditTask}
+            disabled={!isTaskSelected}
+            className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#020617]/70 px-4 py-1.5 text-[12px] font-semibold text-slate-400 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-200 hover:bg-white/5 hover:text-slate-200 active:scale-[0.985] light:border-slate-200/60 light:bg-white/80 light:text-slate-600 light:shadow-slate-200/10 light:hover:bg-slate-100 light:hover:text-slate-900 ${isTaskSelected && !isClosingEdit ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+            <span>Edit Task</span>
+          </button>
+        </Panel>
+      )}
 
       <Panel position="bottom-right" className="!mb-[145px] lg:!mb-6 !mr-6 z-40 flex flex-col items-end gap-3">
         <button

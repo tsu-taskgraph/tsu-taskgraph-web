@@ -35,6 +35,7 @@ import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
 import { TaskCreator } from '../components/workspace/TaskCreator';
 import { TaskDetailsSidebar } from '../components/workspace/TaskDetailsSidebar';
 import { TaskStatusMenu } from '../components/workspace/TaskStatusMenu';
+import { TaskActionsModal } from '../components/workspace/TaskActionsModal';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from '../hooks/useWorkspaceCopyPaste';
@@ -71,6 +72,10 @@ export default function ProjectWorkspacePage() {
   const lastTaskNodeClickAtRef = useRef(0);
   const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null);
   const [statusMenu, setStatusMenu] = useState<{ taskId: string; screen: { x: number; y: number } } | null>(null);
+
+  const [taskActionsModalTaskId, setTaskActionsModalTaskId] = useState<string | null>(null);
+  const [isActionsModalClosing, setIsActionsModalClosing] = useState(false);
+  const [actionsModalAnimationKey, setActionsModalAnimationKey] = useState(0);
 
   const {
     takeSnapshot,
@@ -218,6 +223,21 @@ export default function ProjectWorkspacePage() {
     }, 200);
   }, []);
 
+  const openTaskActionsModal = useCallback((taskId: string) => {
+    setStatusMenu(null);
+    setTaskDraftPosition(null);
+    setActionsModalAnimationKey((key) => key + 1);
+    setTaskActionsModalTaskId(taskId);
+  }, []);
+
+  const closeTaskActionsModal = useCallback(() => {
+    setIsActionsModalClosing(true);
+    setTimeout(() => {
+      setTaskActionsModalTaskId(null);
+      setIsActionsModalClosing(false);
+    }, 200);
+  }, []);
+
   const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
     event.preventDefault();
     openTaskCreator(event.clientX, event.clientY);
@@ -280,7 +300,8 @@ export default function ProjectWorkspacePage() {
     closeTaskCreator();
     closeTaskDetailsSidebar();
     setStatusMenu(null);
-  }, [closeTaskCreator, closeTaskDetailsSidebar]);
+    closeTaskActionsModal();
+  }, [closeTaskCreator, closeTaskDetailsSidebar, closeTaskActionsModal]);
 
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: WorkspaceNode[] }) => {
     const selectedTaskNode = selectedNodes.find((node) => node.type === 'taskNode');
@@ -407,6 +428,11 @@ export default function ProjectWorkspacePage() {
     return graph?.nodes.find((task) => task.id === statusMenu.taskId) ?? null;
   }, [graph?.nodes, statusMenu?.taskId]);
 
+  const taskActionsModalTask = useMemo(() => {
+    if (!taskActionsModalTaskId) return null;
+    return graph?.nodes.find((task) => task.id === taskActionsModalTaskId) ?? null;
+  }, [graph?.nodes, taskActionsModalTaskId]);
+
   const handleTaskUpdate = useCallback(async (data: {
     title?: string;
     description?: string | null;
@@ -465,7 +491,7 @@ export default function ProjectWorkspacePage() {
       };
 
       const finalTask = await projectsApi.updateTask(selectedTask.id, updateData);
-      
+
       setGraph((currentGraph) => currentGraph ? {
         ...currentGraph,
         nodes: currentGraph.nodes.map((task) => task.id === finalTask.id ? finalTask : task)
@@ -810,12 +836,18 @@ export default function ProjectWorkspacePage() {
                         isAligned={isAligned}
                         autoArrangeLayout={autoArrangeLayout}
                         onCreateTask={() => openTaskCreator(undefined, undefined, 'toolbar')}
+                        onEditTask={() => {
+                          if (selectedTaskId) {
+                            openTaskActionsModal(selectedTaskId);
+                          }
+                        }}
                         graphStats={graphStats}
                         undo={() => undo(setNodes, setEdges, setGraph)}
                         redo={() => redo(setNodes, setEdges, setGraph)}
                         canUndo={canUndo}
                         canRedo={canRedo}
                         isTaskSidebarOpen={Boolean(selectedTask)}
+                        isTaskSelected={Boolean(selectedTaskId)}
                       />
                       {taskDraftPosition && projectId && (
                         <TaskCreator
@@ -837,6 +869,18 @@ export default function ProjectWorkspacePage() {
                           onInteract={() => setStatusMenu(null)}
                           updating={statusUpdatingTaskId === selectedTask.id}
                           isClosing={isTaskSidebarClosing}
+                        />
+                      )}
+
+                      {taskActionsModalTask && (
+                        <TaskActionsModal
+                          task={taskActionsModalTask}
+                          isClosing={isActionsModalClosing}
+                          onClose={closeTaskActionsModal}
+                          onStatusChange={handleTaskStatusChange}
+                          onLogTime={(data) => handleLogTaskTime(taskActionsModalTask, data)}
+                          updating={statusUpdatingTaskId === taskActionsModalTask.id}
+                          animationKey={actionsModalAnimationKey}
                         />
                       )}
 
