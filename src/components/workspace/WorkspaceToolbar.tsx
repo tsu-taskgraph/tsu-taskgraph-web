@@ -15,6 +15,7 @@ import {
   Clock,
   Plus,
   Hourglass,
+  Trash2,
   Undo2,
   Redo2
 } from 'lucide-react';
@@ -43,7 +44,8 @@ interface WorkspaceToolbarProps {
   isAligned: boolean;
   autoArrangeLayout: () => void;
   onCreateTask: () => void;
-  onEditTask?: () => void;
+  onTaskActions?: () => void;
+  onDeleteTask?: () => void;
   graphStats: {
     tasks: number;
     dependencies: number;
@@ -71,7 +73,8 @@ export function WorkspaceToolbar({
   isAligned,
   autoArrangeLayout,
   onCreateTask,
-  onEditTask,
+  onTaskActions,
+  onDeleteTask,
   graphStats,
   undo,
   redo,
@@ -80,22 +83,22 @@ export function WorkspaceToolbar({
   isTaskSidebarOpen = false,
   isTaskSelected = false
 }: WorkspaceToolbarProps) {
-  const [showEditTaskButton, setShowEditTaskButton] = useState(false);
-  const [isClosingEdit, setIsClosingEdit] = useState(false);
+  const [showActionButtons, setShowActionButtons] = useState(false);
+  const [isClosingActions, setIsClosingActions] = useState(false);
 
   useEffect(() => {
     if (isTaskSelected) {
-      setIsClosingEdit(false);
-      setShowEditTaskButton(true);
-    } else if (showEditTaskButton) {
-      setIsClosingEdit(true);
+      setIsClosingActions(false);
+      setShowActionButtons(true);
+    } else if (showActionButtons) {
+      setIsClosingActions(true);
       const timer = setTimeout(() => {
-        setShowEditTaskButton(false);
-        setIsClosingEdit(false);
+        setShowActionButtons(false);
+        setIsClosingActions(false);
       }, 160);
       return () => clearTimeout(timer);
     }
-  }, [isTaskSelected, showEditTaskButton]);
+  }, [isTaskSelected, showActionButtons]);
   const activeViewIndex = viewModes.findIndex((mode) => mode.key === viewMode);
   const activeViewOffset = activeViewIndex < 0 ? 0 : activeViewIndex;
   const activeEdgeTypeIndex = edgeTypeModes.findIndex((mode) => mode.key === edgeType);
@@ -252,17 +255,33 @@ export function WorkspaceToolbar({
         </div>
       </Panel>
 
-      {showEditTaskButton && (
+      {showActionButtons && (
         <Panel position="bottom-center" className="!mb-[138px] min-[2200px]:!mb-[100px] !z-[57]">
-          <button
-            type="button"
-            onClick={onEditTask}
-            disabled={!isTaskSelected}
-            className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#020617]/75 px-3 lg:px-4 py-1.5 text-[12px] font-semibold text-slate-300 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-200 hover:bg-white/5 hover:text-slate-100 active:scale-[0.985] light:border-slate-200/60 light:bg-white/80 light:text-slate-600 light:shadow-slate-200/10 light:hover:bg-slate-100 light:hover:text-slate-900 ${isTaskSelected && !isClosingEdit ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
-          >
-            <Hourglass className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline">Log Work</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Log Work Button */}
+            <button
+              type="button"
+              onClick={onTaskActions}
+              disabled={!isTaskSelected}
+              className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#020617]/75 px-3 lg:px-4 py-1.5 text-[12px] font-semibold text-slate-300 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-200 hover:bg-white/5 hover:text-slate-100 active:scale-[0.985] light:border-slate-200/60 light:bg-white/80 light:text-slate-600 light:shadow-slate-200/10 light:hover:bg-slate-100 light:hover:text-slate-900 ${isTaskSelected && !isClosingActions ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
+            >
+              <Hourglass className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Log Work</span>
+            </button>
+
+            {/* Delete Button */}
+            {onDeleteTask && (
+              <button
+                type="button"
+                onClick={onDeleteTask}
+                disabled={!isTaskSelected}
+                className={`group flex h-9 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 lg:px-4 py-1.5 text-[12px] font-semibold text-red-400 backdrop-blur-xl transition-all duration-200 hover:bg-red-500/20 hover:text-red-300 active:scale-[0.985] light:border-red-500/30 light:bg-red-500/10 light:text-red-600 light:hover:bg-red-600/20 light:hover:text-red-700 ${isTaskSelected && !isClosingActions ? 'edit-task-button-enter' : 'edit-task-button-exit pointer-events-none'}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Delete</span>
+              </button>
+            )}
+          </div>
         </Panel>
       )}
 

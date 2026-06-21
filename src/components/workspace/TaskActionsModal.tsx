@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Hourglass, Play, SkipForward, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Hourglass, Play, SkipForward, Trash2, X } from 'lucide-react';
 import type { TaskNode } from '../../api/projects';
 
 type StatusAction = Extract<TaskNode['status'], 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED'>;
@@ -10,6 +10,7 @@ interface TaskActionsModalProps {
     onClose: () => void;
     onStatusChange: (status: StatusAction, data?: { loggedHours?: number | null; comment?: string | null; completionPercent?: number | null }) => Promise<void>;
     onLogTime: (data: { hours?: number | null; comment?: string | null; completionPercent?: number | null }) => Promise<void>;
+    onDeleteTask?: (taskId: string) => Promise<void>;
     updating: boolean;
     animationKey: number;
 }
@@ -52,6 +53,7 @@ export function TaskActionsModal({
     onClose,
     onStatusChange,
     onLogTime,
+    onDeleteTask,
     updating,
     animationKey
 }: TaskActionsModalProps) {
@@ -317,23 +319,37 @@ export function TaskActionsModal({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={updating}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-200 disabled:opacity-50 light:text-slate-600 light:hover:bg-slate-950/5 light:hover:text-slate-900"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={updating || task.status === 'LOCKED' || !hasChanges}
-                        className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition hover:shadow-brand-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                        {updating ? 'Saving...' : 'Save changes'}
-                    </button>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                    {onDeleteTask && (
+                        <button
+                            type="button"
+                            onClick={() => onDeleteTask(task.id)}
+                            disabled={updating}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50 light:border-red-500/30 light:bg-red-500/10 light:text-red-600 light:hover:bg-red-500/20"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete task
+                        </button>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={updating}
+                            className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-200 disabled:opacity-50 light:text-slate-600 light:hover:bg-slate-950/5 light:hover:text-slate-900"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={updating || task.status === 'LOCKED' || !hasChanges}
+                            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/20 transition hover:shadow-brand-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                            {updating ? 'Saving...' : 'Save changes'}
+                        </button>
+                    </div>
                 </div>
 
                 {updating && (

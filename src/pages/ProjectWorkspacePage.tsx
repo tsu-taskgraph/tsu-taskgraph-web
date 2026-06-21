@@ -596,6 +596,39 @@ export default function ProjectWorkspacePage() {
     }
   }, [setGraph, setNodes, showEdgeToast, takeSnapshot]);
 
+  const handleDeleteTask = useCallback(async (taskId: string) => {
+    if (!selectedTask) return;
+
+    const confirmed = window.confirm(`Delete task "${selectedTask.title}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    takeSnapshot();
+    setStatusUpdatingTaskId(taskId);
+
+    try {
+      await projectsApi.deleteTask(taskId);
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: currentGraph.nodes.filter((t) => t.id !== taskId)
+      } : currentGraph);
+
+      setNodes((currentNodes) => currentNodes.filter((n) => n.id !== taskId));
+
+      if (selectedTaskId === taskId) {
+        closeTaskDetailsSidebar();
+      }
+
+      showEdgeToast('Task deleted successfully.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    } finally {
+      setStatusUpdatingTaskId(null);
+    }
+  }, [selectedTask, selectedTaskId, takeSnapshot, setGraph, setNodes, closeTaskDetailsSidebar, showEdgeToast]);
+
   const handleTaskStatusChange = useCallback(async (
     status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
     data?: { loggedHours?: number | null; comment?: string | null; completionPercent?: number | null }
@@ -871,9 +904,14 @@ export default function ProjectWorkspacePage() {
                         isAligned={isAligned}
                         autoArrangeLayout={autoArrangeLayout}
                         onCreateTask={() => openTaskCreator(undefined, undefined, 'toolbar')}
-                        onEditTask={() => {
+                        onTaskActions={() => {
                           if (selectedTaskId) {
                             openTaskActionsModal(selectedTaskId);
+                          }
+                        }}
+                        onDeleteTask={() => {
+                          if (selectedTaskId) {
+                            handleDeleteTask(selectedTaskId);
                           }
                         }}
                         graphStats={graphStats}
@@ -914,6 +952,7 @@ export default function ProjectWorkspacePage() {
                           onClose={closeTaskActionsModal}
                           onStatusChange={handleTaskStatusChange}
                           onLogTime={(data) => handleLogTaskTime(taskActionsModalTask, data)}
+                          onDeleteTask={handleDeleteTask}
                           updating={statusUpdatingTaskId === taskActionsModalTask.id}
                           animationKey={actionsModalAnimationKey}
                         />
