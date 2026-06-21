@@ -372,39 +372,6 @@ export default function ProjectWorkspacePage() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableShortcutTarget(event.target)) return;
-      const isModifierPressed = event.metaKey || event.ctrlKey;
-      if (!isModifierPressed) return;
-
-      const key = event.key.toLowerCase();
-      if (key === 'c') {
-        event.preventDefault();
-        copySelectedTasks();
-      }
-      if (key === 'v') {
-        event.preventDefault();
-        void pasteCopiedTasks();
-      }
-      if (key === 'z') {
-        event.preventDefault();
-        if (event.shiftKey) {
-          redo(setNodes, setEdges, setGraph);
-        } else {
-          undo(setNodes, setEdges, setGraph);
-        }
-      }
-      if (key === 'y') {
-        event.preventDefault();
-        redo(setNodes, setEdges, setGraph);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelectedTasks, pasteCopiedTasks, undo, redo, setNodes, setEdges, setGraph]);
-
   const handleTaskCreated = useCallback((createdTask: TaskNode) => {
     if (!taskDraftPosition) return;
     takeSnapshot();
@@ -645,6 +612,47 @@ export default function ProjectWorkspacePage() {
       }
     });
   }, [selectedTask, selectedTaskId, takeSnapshot, setGraph, setNodes, closeTaskDetailsSidebar, showEdgeToast]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableShortcutTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const isModifierPressed = event.metaKey || event.ctrlKey;
+
+      if ((key === 'delete' || key === 'backspace') && selectedTaskId && !isModifierPressed) {
+        event.preventDefault();
+        handleDeleteTask(selectedTaskId);
+        return;
+      }
+
+      if (!isModifierPressed) return;
+
+      if (key === 'c') {
+        event.preventDefault();
+        copySelectedTasks();
+      }
+      if (key === 'v') {
+        event.preventDefault();
+        void pasteCopiedTasks();
+      }
+      if (key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          redo(setNodes, setEdges, setGraph);
+        } else {
+          undo(setNodes, setEdges, setGraph);
+        }
+      }
+      if (key === 'y') {
+        event.preventDefault();
+        redo(setNodes, setEdges, setGraph);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [copySelectedTasks, pasteCopiedTasks, undo, redo, setNodes, setEdges, setGraph, selectedTaskId, handleDeleteTask]);
 
   const handleTaskStatusChange = useCallback(async (
     status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
@@ -1006,28 +1014,28 @@ export default function ProjectWorkspacePage() {
                       )}
 
                       {edgeToast && (
-                        <div className={`fixed right-4 top-28 z-[80] max-w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#020617]/85 p-3 pr-10 text-sm text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/90 light:text-slate-900 light:shadow-slate-300/25 ${edgeToast.closing ? 'toast-exit' : 'animate-slide-down-fade'}`}>
+                        <div className={`fixed left-1/2 -translate-x-1/2 top-[108px] z-[80] max-w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#020617]/92 px-4 py-3 pr-11 text-sm text-slate-100 shadow-xl shadow-black/20 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/95 light:text-slate-900 light:shadow-slate-300/30 ${edgeToast.closing ? 'toast-exit' : 'animate-slide-down-fade'}`}>
                           <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${edgeToast.variant === 'success'
+                            <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border ${edgeToast.variant === 'success'
                               ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 light:text-emerald-700'
                               : 'border-red-500/25 bg-red-500/10 text-red-300 light:text-red-700'
                               }`}>
-                              {edgeToast.variant === 'success' ? <GitBranch className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                              {edgeToast.variant === 'success' ? <GitBranch className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
                             </div>
-                            <div>
-                              <div className="text-xs font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
+                            <div className="pr-1">
+                              <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 light:text-slate-500">
                                 {edgeToast.variant === 'success' ? 'Workspace updated' : 'Workspace error'}
                               </div>
-                              <p className="mt-0.5 leading-relaxed text-slate-200 light:text-slate-700">{edgeToast.message}</p>
+                              <p className="mt-0.5 text-[13px] leading-snug text-slate-200 light:text-slate-700">{edgeToast.message}</p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => closeEdgeToast(edgeToast.id)}
-                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
+                            className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-slate-200 light:hover:bg-slate-950/5 light:hover:text-slate-900"
                             aria-label="Close notification"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       )}
