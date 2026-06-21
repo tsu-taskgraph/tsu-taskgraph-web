@@ -178,7 +178,7 @@ export function TaskActionsModal({
                     <div>
                         <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/25 bg-brand-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-300 light:text-brand-700">
                             <Hourglass className="h-3 w-3" />
-                            Task actions
+                            Log Work
                         </div>
                         <p className="mt-2 text-xs text-slate-400 light:text-slate-600">
                             Change status, log time or update progress for <span className="font-semibold text-slate-200 light:text-slate-800">"{task.title}"</span>

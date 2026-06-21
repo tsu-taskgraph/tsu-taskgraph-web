@@ -66,6 +66,7 @@ export default function ProjectWorkspacePage() {
   const [isClosing, setIsClosing] = useState(false);
   const [edgeToast, setEdgeToast] = useState<{ id: number; message: string; variant: 'error' | 'success'; closing: boolean } | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isTaskSidebarOpen, setIsTaskSidebarOpen] = useState(false);
   const [isTaskSidebarClosing, setIsTaskSidebarClosing] = useState(false);
   const taskSidebarCloseTimerRef = useRef<number | null>(null);
   const suppressTaskSidebarSelectionRef = useRef(false);
@@ -250,7 +251,19 @@ export default function ProjectWorkspacePage() {
     }
     suppressTaskSidebarSelectionRef.current = false;
     setIsTaskSidebarClosing(false);
+    setIsTaskSidebarOpen(true);
   }, []);
+
+  const closeSidebarOnly = useCallback(() => {
+    if (!isTaskSidebarOpen || taskSidebarCloseTimerRef.current !== null) return;
+
+    setIsTaskSidebarClosing(true);
+    taskSidebarCloseTimerRef.current = window.setTimeout(() => {
+      setIsTaskSidebarOpen(false);
+      setIsTaskSidebarClosing(false);
+      taskSidebarCloseTimerRef.current = null;
+    }, 140);
+  }, [isTaskSidebarOpen]);
 
   const closeTaskDetailsSidebar = useCallback(() => {
     if (!selectedTaskId || taskSidebarCloseTimerRef.current !== null) return;
@@ -265,6 +278,7 @@ export default function ProjectWorkspacePage() {
 
     taskSidebarCloseTimerRef.current = window.setTimeout(() => {
       setSelectedTaskId(null);
+      setIsTaskSidebarOpen(false);
       setIsTaskSidebarClosing(false);
       taskSidebarCloseTimerRef.current = null;
       suppressTaskSidebarSelectionRef.current = false;
@@ -284,8 +298,18 @@ export default function ProjectWorkspacePage() {
     event.preventDefault();
     event.stopPropagation();
     lastTaskNodeClickAtRef.current = Date.now();
-    cancelTaskDetailsSidebarClose();
+
+    suppressTaskSidebarSelectionRef.current = true;
     setSelectedTaskId(node.id);
+    setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((n) => ({
+      ...n,
+      selected: n.type === 'taskNode' && n.id === node.id
+    })));
+
+    if (isTaskSidebarOpen) {
+      closeSidebarOnly();
+    }
+
     setTaskDraftPosition(null);
     setStatusMenu({
       taskId: node.id,
@@ -294,7 +318,11 @@ export default function ProjectWorkspacePage() {
         y: event.clientY
       }
     });
-  }, [cancelTaskDetailsSidebarClose]);
+
+    setTimeout(() => {
+      suppressTaskSidebarSelectionRef.current = false;
+    }, 50);
+  }, [closeSidebarOnly, isTaskSidebarOpen, setNodes]);
 
   const handlePaneClick = useCallback(() => {
     closeTaskCreator();
@@ -846,8 +874,8 @@ export default function ProjectWorkspacePage() {
                         redo={() => redo(setNodes, setEdges, setGraph)}
                         canUndo={canUndo}
                         canRedo={canRedo}
-                        isTaskSidebarOpen={Boolean(selectedTask)}
-                        isTaskSelected={Boolean(selectedTaskId)}
+                        isTaskSidebarOpen={isTaskSidebarOpen}
+                        isTaskSelected={Boolean(selectedTaskId) && !statusMenu}
                       />
                       {taskDraftPosition && projectId && (
                         <TaskCreator
@@ -861,10 +889,10 @@ export default function ProjectWorkspacePage() {
                         />
                       )}
 
-                      {selectedTask && (
+                      {isTaskSidebarOpen && selectedTask && (
                         <TaskDetailsSidebar
                           task={selectedTask}
-                          onClose={closeTaskDetailsSidebar}
+                          onClose={closeSidebarOnly}
                           onTaskUpdate={handleTaskUpdate}
                           onInteract={() => setStatusMenu(null)}
                           updating={statusUpdatingTaskId === selectedTask.id}
