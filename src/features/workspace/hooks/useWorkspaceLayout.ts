@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { type ProjectGraphResponse } from '../api/projects';
+import { type ProjectGraphResponse } from '../../../api/projects';
 import {
   mapGraphToFlow,
   type ViewMode,

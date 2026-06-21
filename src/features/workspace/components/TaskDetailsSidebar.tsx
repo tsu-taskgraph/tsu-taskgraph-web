@@ -16,7 +16,7 @@ import {
     X,
     Zap
 } from 'lucide-react';
-import type { TaskNode } from '../../api/projects';
+import type { TaskNode } from '../../../api/projects';
 
 type TaskStatus = TaskNode['status'];
 type TaskCategory = NonNullable<TaskNode['category']>;

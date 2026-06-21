@@ -5,14 +5,14 @@ import {
   type TaskNode,
   type UpdateTaskRequest,
   type ProjectGraphResponse,
-} from '../api/projects';
+} from '../../../api/projects';
 import {
   type WorkspaceNode,
   type TaskFlowNode,
   type TaskDraftPosition,
   type ViewMode,
 } from '../utils/workspaceUtils';
-import { mapServerErrorToEnglish } from '../api/errors';
+import { mapServerErrorToEnglish } from '../../../api/errors';
 
 interface UseWorkspaceTaskOperationsProps {
   selectedTask: TaskNode | null;

@@ -9,24 +9,24 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
-import { SafariTopBar } from '../components/SafariTopBar';
-import { SafariBottomBar } from '../components/SafariBottomBar';
+import { SafariTopBar } from '../components/common/SafariTopBar';
+import { SafariBottomBar } from '../components/common/SafariBottomBar';
 import {
   type WorkspaceNode,
   type TaskFlowEdge,
   type TaskFlowNode,
-} from '../utils/workspaceUtils';
-import { TaskNodeCard } from '../components/workspace/TaskNodeCard';
-import { LayerHeaderNode } from '../components/workspace/LayerHeaderNode';
-import { TopologicalLanesHeader } from '../components/workspace/TopologicalLanesHeader';
-import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
-import { WorkspaceHeader } from '../components/workspace/WorkspaceHeader';
-import { TaskCreator } from '../components/workspace/TaskCreator';
-import { TaskDetailsSidebar } from '../components/workspace/TaskDetailsSidebar';
-import { TaskStatusMenu } from '../components/workspace/TaskStatusMenu';
-import { TaskActionsModal } from '../components/workspace/TaskActionsModal';
-import { ConfirmModal } from '../components/workspace/ConfirmModal';
-import { useWorkspace } from '../hooks/useWorkspace';
+} from '../features/workspace/utils/workspaceUtils';
+import { TaskNodeCard } from '../features/workspace/components/TaskNodeCard';
+import { LayerHeaderNode } from '../features/workspace/components/LayerHeaderNode';
+import { TopologicalLanesHeader } from '../features/workspace/components/TopologicalLanesHeader';
+import { WorkspaceToolbar } from '../features/workspace/components/WorkspaceToolbar';
+import { WorkspaceHeader } from '../features/workspace/components/WorkspaceHeader';
+import { TaskCreator } from '../features/workspace/components/TaskCreator';
+import { TaskDetailsSidebar } from '../features/workspace/components/TaskDetailsSidebar';
+import { TaskStatusMenu } from '../features/workspace/components/TaskStatusMenu';
+import { TaskActionsModal } from '../features/workspace/components/TaskActionsModal';
+import { ConfirmModal } from '../features/workspace/components/ConfirmModal';
+import { useWorkspace } from '../features/workspace/hooks/useWorkspace';
 
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();

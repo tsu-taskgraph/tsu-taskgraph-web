@@ -8,8 +8,8 @@ import {
   UserRound,
   Zap
 } from 'lucide-react';
-import type { TaskNode } from '../../api/projects';
-import type { TaskStatus, TaskFlowNode, ThemeMode } from '../../utils/workspaceUtils';
+import type { TaskNode } from '../../../api/projects';
+import type { TaskStatus, TaskFlowNode, ThemeMode } from '../utils/workspaceUtils';
 
 type TaskCategory = NonNullable<TaskNode['category']>;
 

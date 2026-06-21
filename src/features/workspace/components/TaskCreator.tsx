@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
 import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
-import { projectsApi, type TaskNode } from '../../api/projects';
-import { mapServerErrorToEnglish } from '../../api/errors';
-import type { TaskCreatorMode, TaskDraftPosition } from '../../utils/workspaceUtils';
+import { projectsApi, type TaskNode } from '../../../api/projects';
+import { mapServerErrorToEnglish } from '../../../api/errors';
+import type { TaskCreatorMode, TaskDraftPosition } from '../utils/workspaceUtils';
 
 type TaskCategory = NonNullable<TaskNode['category']>;
 

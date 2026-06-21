@@ -2,9 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectWorkspacePage from './pages/ProjectWorkspacePage';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { SafariTopBar } from './components/SafariTopBar';
+import { SafariTopBar } from './components/common/SafariTopBar';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

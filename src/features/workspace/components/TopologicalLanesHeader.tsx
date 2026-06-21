@@ -1,5 +1,5 @@
 import { useStore } from '@xyflow/react';
-import type { ViewMode, WorkspaceNode } from '../../utils/workspaceUtils';
+import type { ViewMode, WorkspaceNode } from '../utils/workspaceUtils';
 
 interface TopologicalLanesHeaderProps {
   show: boolean;

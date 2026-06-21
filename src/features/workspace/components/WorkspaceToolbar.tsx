@@ -19,7 +19,7 @@ import {
   Undo2,
   Redo2
 } from 'lucide-react';
-import type { ViewMode, EdgeTypeMode } from '../../utils/workspaceUtils';
+import type { ViewMode, EdgeTypeMode } from '../utils/workspaceUtils';
 
 const viewModes = [
   { key: 'dot' as const, label: 'Dots', icon: Circle },

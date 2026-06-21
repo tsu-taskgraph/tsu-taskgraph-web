@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
-import { projectsApi, type ProjectResponse, type ProjectGraphResponse } from '../api/projects';
-import { mapServerErrorToEnglish } from '../api/errors';
+import { projectsApi, type ProjectResponse, type ProjectGraphResponse } from '../../../api/projects';
+import { mapServerErrorToEnglish } from '../../../api/errors';
 
 interface UseWorkspaceLoaderProps {
   projectId: string | undefined;

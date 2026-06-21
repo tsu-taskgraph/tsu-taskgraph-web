@@ -1,5 +1,5 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import type { ProjectGraphResponse, TaskNode } from '../api/projects';
+import type { ProjectGraphResponse, TaskNode } from '../../../api/projects';
 
 export type ViewMode = 'dot' | 'label' | 'full';
 export type EdgeTypeMode = 'smoothstep' | 'default' | 'straight' | 'step';

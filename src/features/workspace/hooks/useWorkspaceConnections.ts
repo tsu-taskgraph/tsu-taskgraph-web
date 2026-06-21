@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { type Connection, type Edge } from '@xyflow/react';
-import { projectsApi, type ProjectGraphResponse } from '../api/projects';
-import { mapServerErrorToEnglish } from '../api/errors';
+import { projectsApi, type ProjectGraphResponse } from '../../../api/projects';
+import { mapServerErrorToEnglish } from '../../../api/errors';
 
 export type ConnectionHintState = {
   x: number;

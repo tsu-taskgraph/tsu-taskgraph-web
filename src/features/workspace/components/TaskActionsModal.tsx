@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Hourglass, Play, SkipForward, X } from 'lucide-react';
-import type { TaskNode } from '../../api/projects';
+import type { TaskNode } from '../../../api/projects';
 
 type StatusAction = Extract<TaskNode['status'], 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED'>;
 

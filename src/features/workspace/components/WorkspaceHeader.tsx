@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Moon, Sun, Sparkles } from 'lucide-react';
-import type { ProjectResponse, ProjectGraphResponse } from '../../api/projects';
+import type { ProjectResponse, ProjectGraphResponse } from '../../../api/projects';
 
 const projectStatusClass: Record<ProjectResponse['status'], string> = {
   ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30',

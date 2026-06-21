@@ -7,8 +7,8 @@ import {
 import {
   type ProjectGraphResponse,
   type TaskNode,
-} from '../api/projects';
-import { useTheme } from '../context/ThemeContext';
+} from '../../../api/projects';
+import { useTheme } from '../../../context/ThemeContext';
 import {
   mapGraphToFlow,
   type ViewMode,
@@ -16,7 +16,7 @@ import {
   type WorkspaceNode,
   type TaskFlowEdge,
 } from '../utils/workspaceUtils';
-import { useUndoRedo } from './useUndoRedo';
+import { useUndoRedo } from '../../../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from './useWorkspaceCopyPaste';
 import { useWorkspaceConnections } from './useWorkspaceConnections';
 import { useWorkspaceLoader } from './useWorkspaceLoader';

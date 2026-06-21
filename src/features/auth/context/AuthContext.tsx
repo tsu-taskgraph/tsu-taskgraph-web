@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi, type UserProfile } from '../api/auth';
-import { getAccessToken, clearTokens } from '../api/client';
+import { authApi, type UserProfile } from '../../../api/auth';
+import { getAccessToken, clearTokens } from '../../../api/client';
 
 interface AuthContextType {
   user: UserProfile | null;

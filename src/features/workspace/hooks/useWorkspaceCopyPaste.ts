@@ -7,8 +7,8 @@ import {
   type ProjectResponse,
   type TaskNode,
   type EdgeResponse
-} from '../api/projects';
-import { mapServerErrorToEnglish } from '../api/errors';
+} from '../../../api/projects';
+import { mapServerErrorToEnglish } from '../../../api/errors';
 import {
   type WorkspaceNode,
   type TaskFlowNode,
