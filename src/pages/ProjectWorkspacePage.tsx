@@ -319,24 +319,6 @@ export default function ProjectWorkspacePage() {
                         </div>
                       )}
 
-                      {workspace.confirmModal && (
-                        <ConfirmModal
-                          isOpen={true}
-                          isClosing={workspace.isConfirmClosing}
-                          title={workspace.confirmModal.title}
-                          message={workspace.confirmModal.message}
-                          isDestructive={workspace.confirmModal.isDestructive}
-                          onConfirm={workspace.confirmModal.onConfirm}
-                          onCancel={() => {
-                            workspace.setIsConfirmClosing(true);
-                            setTimeout(() => {
-                              workspace.setConfirmModal(null);
-                              workspace.setIsConfirmClosing(false);
-                            }, 200);
-                          }}
-                        />
-                      )}
-
                       <TopologicalLanesHeader
                         show={workspace.showTopologicalLanes}
                         columnWidth={400}
@@ -352,6 +334,24 @@ export default function ProjectWorkspacePage() {
           </>
         )}
       </main>
+
+      {workspace.confirmModal && (
+        <ConfirmModal
+          isOpen={true}
+          isClosing={workspace.isConfirmClosing}
+          title={workspace.confirmModal.title}
+          message={workspace.confirmModal.message}
+          isDestructive={workspace.confirmModal.isDestructive}
+          onConfirm={workspace.confirmModal.onConfirm}
+          onCancel={() => {
+            workspace.setIsConfirmClosing(true);
+            setTimeout(() => {
+              workspace.setConfirmModal(null);
+              workspace.setIsConfirmClosing(false);
+            }, 200);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -24,77 +24,43 @@ export type LayerHeaderNode = Node<{ label: string }, 'layerHeader'>;
 export type WorkspaceNode = TaskFlowNode | LayerHeaderNode;
 export type TaskFlowEdge = Edge;
 
-export function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus, targetStatus?: TaskStatus) {
+export function buildEdgeMarker(color: string, width = 30, height = 30) {
+  return {
+    type: MarkerType.ArrowClosed,
+    width,
+    height,
+    color,
+    markerUnits: 'userSpaceOnUse' as const,
+  };
+}
+
+export const EDGE_HOVER_COLOR = '#f43f5e';
+
+export function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus) {
   const palette = {
     brand: theme === 'light' ? '#d97706' : '#f59e0b',
     sky: theme === 'light' ? '#0284c7' : '#38bdf8',
     emerald: theme === 'light' ? '#059669' : '#34d399',
     violet: theme === 'light' ? '#7c3aed' : '#a78bfa',
-    slate: theme === 'light' ? 'rgba(100, 116, 139, 0.58)' : 'rgba(148, 163, 184, 0.46)',
-    neutral: theme === 'light' ? 'rgba(100, 116, 139, 0.48)' : 'rgba(148, 163, 184, 0.38)'
+    slate: theme === 'light' ? 'rgb(100, 116, 139)' : 'rgb(148, 163, 184)'
   };
 
-  if (sourceStatus === 'LOCKED' || targetStatus === 'LOCKED') {
-    return {
-      color: palette.slate,
-      strokeWidth: 1.55,
-      dashArray: '7 7',
-      animated: false,
-      opacity: 0.78,
-      filter: 'none'
-    };
-  }
+  const colorByStatus: Record<TaskStatus, string> = {
+    LOCKED: palette.slate,
+    AVAILABLE: palette.brand,
+    IN_PROGRESS: palette.sky,
+    COMPLETED: palette.emerald,
+    SKIPPED: palette.violet
+  };
 
-  if (sourceStatus === 'SKIPPED' || targetStatus === 'SKIPPED') {
-    return {
-      color: palette.violet,
-      strokeWidth: 1.8,
-      dashArray: '8 6',
-      animated: false,
-      opacity: 0.82,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(124, 58, 237, 0.14))' : 'drop-shadow(0 2px 7px rgba(167, 139, 250, 0.18))'
-    };
-  }
-
-  if (sourceStatus === 'IN_PROGRESS') {
-    return {
-      color: palette.sky,
-      strokeWidth: 2.6,
-      dashArray: undefined,
-      animated: true,
-      opacity: 0.95,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 7px rgba(2, 132, 199, 0.16))' : 'drop-shadow(0 2px 8px rgba(56, 189, 248, 0.22))'
-    };
-  }
-
-  if (sourceStatus === 'COMPLETED') {
-    return {
-      color: palette.emerald,
-      strokeWidth: 2.15,
-      dashArray: undefined,
-      animated: false,
-      opacity: 0.92,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(5, 150, 105, 0.12))' : 'drop-shadow(0 2px 7px rgba(52, 211, 153, 0.18))'
-    };
-  }
-
-  if (sourceStatus === 'AVAILABLE') {
-    return {
-      color: palette.brand,
-      strokeWidth: 2,
-      dashArray: undefined,
-      animated: false,
-      opacity: 0.9,
-      filter: theme === 'light' ? 'drop-shadow(0 2px 6px rgba(217, 119, 6, 0.14))' : 'drop-shadow(0 2px 7px rgba(245, 158, 11, 0.20))'
-    };
-  }
+  const color = colorByStatus[sourceStatus ?? 'AVAILABLE'] ?? palette.brand;
 
   return {
-    color: palette.neutral,
+    color,
     strokeWidth: 1.8,
-    dashArray: undefined,
+    dashArray: '6 6',
     animated: false,
-    opacity: 0.72,
+    opacity: 0.9,
     filter: 'none'
   };
 }
@@ -173,9 +139,8 @@ export function mapGraphToFlow(
   }
 
   const edges: TaskFlowEdge[] = graph.edges.map((edge) => {
-    const targetStatus = nodeStatus.get(edge.targetTaskId) ?? 'AVAILABLE';
     const sourceStatus = nodeStatus.get(edge.sourceTaskId) ?? 'AVAILABLE';
-    const visual = getEdgeVisual(theme, sourceStatus, targetStatus);
+    const visual = getEdgeVisual(theme, sourceStatus);
 
     return {
       id: edge.id,
@@ -185,12 +150,7 @@ export function mapGraphToFlow(
       animated: visual.animated,
       reconnectable: true,
       className: `edge-status-${sourceStatus.toLowerCase()}`,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 18,
-        height: 18,
-        color: visual.color
-      },
+      markerEnd: buildEdgeMarker(visual.color),
       style: {
         stroke: visual.color,
         strokeWidth: visual.strokeWidth,
@@ -200,7 +160,7 @@ export function mapGraphToFlow(
         opacity: edgesVisible ? visual.opacity : 0,
         filter: visual.filter,
         transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s, d 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        animation: edgesVisible ? 'edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' : 'none'
+        animation: edgesVisible ? 'edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both, flow-dash 0.8s linear infinite' : 'none'
       } as React.CSSProperties
     };
   });

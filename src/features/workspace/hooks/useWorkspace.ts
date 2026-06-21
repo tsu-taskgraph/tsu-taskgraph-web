@@ -14,6 +14,8 @@ import { mapServerErrorToEnglish } from '../../../api/errors';
 import { useTheme } from '../../../context/ThemeContext';
 import {
   mapGraphToFlow,
+  buildEdgeMarker,
+  EDGE_HOVER_COLOR,
   type ViewMode,
   type EdgeTypeMode,
   type WorkspaceNode,
@@ -412,22 +414,9 @@ export function useWorkspace(projectId: string | undefined) {
   const displayEdges = useMemo(() => {
     return edges.map(edge => {
       if (edge.id === hoveredEdgeId) {
-        const currentMarker = edge.markerEnd as any;
         return {
           ...edge,
-          style: {
-            ...edge.style,
-            stroke: '#f59e0b',
-          },
-          markerEnd: currentMarker
-            ? {
-              type: currentMarker.type,
-              width: currentMarker.width,
-              height: currentMarker.height,
-              color: '#f59e0b',
-            }
-            : undefined,
-          animated: true,
+          markerEnd: buildEdgeMarker(EDGE_HOVER_COLOR),
         };
       }
       return edge;

@@ -752,61 +752,22 @@
     }
 
     .react-flow__edge-path {
-      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.15s ease, stroke-width 0.15s ease !important;
+      transition: d 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease, stroke-width 0.3s ease !important;
     }
 
     .react-flow__edge:hover .react-flow__edge-path {
-      stroke: #f59e0b !important;
+      stroke: #f43f5e !important;
     }
 
     .react-flow__edge[data-highlighted="true"] .react-flow__edge-path {
-      stroke: #f59e0b !important;
-    }
-
-    .react-flow__edge.edge-status-in_progress path.react-flow__edge-path {
-      stroke-dasharray: 8 8 !important;
-      animation: flow-active 0.8s linear infinite !important;
-    }
-
-    .react-flow__edge.edge-status-completed path.react-flow__edge-path {
-      stroke-dasharray: 12 12 !important;
-      animation: flow-completed 4s linear infinite !important;
-    }
-
-    .react-flow__edge.edge-status-available path.react-flow__edge-path {
-      stroke-dasharray: 5 10 !important;
-      animation: flow-available 6s linear infinite !important;
+      stroke: #f43f5e !important;
     }
   }
 }
 
-@keyframes flow-active {
-  from {
-    stroke-dashoffset: 16;
-  }
-
+@keyframes flow-dash {
   to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes flow-completed {
-  from {
-    stroke-dashoffset: 24;
-  }
-
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes flow-available {
-  from {
-    stroke-dashoffset: 30;
-  }
-
-  to {
-    stroke-dashoffset: 0;
+    stroke-dashoffset: -12;
   }
 }
 
