@@ -1359,5 +1359,30 @@ export const handlers = [
     targetGraph.edges = targetGraph.edges.filter((e) => e.id !== edgeId);
     recalculateTaskStatuses(targetGraph);
     return HttpResponse.json(targetGraph);
+  }),
+
+  http.delete('*/api/v1/tasks/:taskId', ({ params }) => {
+    const taskId = params.taskId as string;
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let found = false;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const idx = graph.nodes.findIndex((n: any) => n.id === taskId);
+      if (idx !== -1) {
+        targetGraph = graph;
+        graph.nodes.splice(idx, 1);
+        graph.edges = graph.edges.filter((e: any) => e.sourceTaskId !== taskId && e.targetTaskId !== taskId);
+        found = true;
+        break;
+      }
+    }
+
+    if (!targetGraph || !found) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    recalculateTaskStatuses(targetGraph);
+    return new HttpResponse(null, { status: 204 });
   })
 ];

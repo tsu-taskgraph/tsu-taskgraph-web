@@ -36,6 +36,7 @@ import { TaskCreator } from '../components/workspace/TaskCreator';
 import { TaskDetailsSidebar } from '../components/workspace/TaskDetailsSidebar';
 import { TaskStatusMenu } from '../components/workspace/TaskStatusMenu';
 import { TaskActionsModal } from '../components/workspace/TaskActionsModal';
+import { ConfirmModal } from '../components/workspace/ConfirmModal';
 import { mapServerErrorToEnglish } from '../api/errors';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from '../hooks/useWorkspaceCopyPaste';
@@ -77,6 +78,14 @@ export default function ProjectWorkspacePage() {
   const [taskActionsModalTaskId, setTaskActionsModalTaskId] = useState<string | null>(null);
   const [isActionsModalClosing, setIsActionsModalClosing] = useState(false);
   const [actionsModalAnimationKey, setActionsModalAnimationKey] = useState(0);
+
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+  } | null>(null);
+  const [isConfirmClosing, setIsConfirmClosing] = useState(false);
 
   const {
     takeSnapshot,
@@ -596,37 +605,45 @@ export default function ProjectWorkspacePage() {
     }
   }, [setGraph, setNodes, showEdgeToast, takeSnapshot]);
 
-  const handleDeleteTask = useCallback(async (taskId: string) => {
+  const handleDeleteTask = useCallback((taskId: string) => {
     if (!selectedTask) return;
 
-    const confirmed = window.confirm(`Delete task "${selectedTask.title}"? This action cannot be undone.`);
-    if (!confirmed) return;
+    setConfirmModal({
+      title: 'Delete task?',
+      message: `Are you sure you want to delete "${selectedTask.title}"?\nThis action cannot be undone.`,
+      isDestructive: true,
+      onConfirm: async () => {
+        setIsConfirmClosing(true);
+        setTimeout(() => {
+          setConfirmModal(null);
+          setIsConfirmClosing(false);
+        }, 200);
+        setStatusUpdatingTaskId(taskId);
 
-    takeSnapshot();
-    setStatusUpdatingTaskId(taskId);
+        try {
+          await projectsApi.deleteTask(taskId);
 
-    try {
-      await projectsApi.deleteTask(taskId);
+          setGraph((currentGraph) => currentGraph ? {
+            ...currentGraph,
+            nodes: currentGraph.nodes.filter((t) => t.id !== taskId)
+          } : currentGraph);
 
-      setGraph((currentGraph) => currentGraph ? {
-        ...currentGraph,
-        nodes: currentGraph.nodes.filter((t) => t.id !== taskId)
-      } : currentGraph);
+          setNodes((currentNodes) => currentNodes.filter((n) => n.id !== taskId));
 
-      setNodes((currentNodes) => currentNodes.filter((n) => n.id !== taskId));
+          if (selectedTaskId === taskId) {
+            closeTaskDetailsSidebar();
+          }
 
-      if (selectedTaskId === taskId) {
-        closeTaskDetailsSidebar();
+          showEdgeToast('Task deleted successfully.', 'success');
+        } catch (err) {
+          const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+          const parsed = mapServerErrorToEnglish(err, statusCode);
+          showEdgeToast(parsed.message);
+        } finally {
+          setStatusUpdatingTaskId(null);
+        }
       }
-
-      showEdgeToast('Task deleted successfully.', 'success');
-    } catch (err) {
-      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(parsed.message);
-    } finally {
-      setStatusUpdatingTaskId(null);
-    }
+    });
   }, [selectedTask, selectedTaskId, takeSnapshot, setGraph, setNodes, closeTaskDetailsSidebar, showEdgeToast]);
 
   const handleTaskStatusChange = useCallback(async (
@@ -952,7 +969,6 @@ export default function ProjectWorkspacePage() {
                           onClose={closeTaskActionsModal}
                           onStatusChange={handleTaskStatusChange}
                           onLogTime={(data) => handleLogTaskTime(taskActionsModalTask, data)}
-                          onDeleteTask={handleDeleteTask}
                           updating={statusUpdatingTaskId === taskActionsModalTask.id}
                           animationKey={actionsModalAnimationKey}
                         />
@@ -1014,6 +1030,24 @@ export default function ProjectWorkspacePage() {
                             <X className="h-4 w-4" />
                           </button>
                         </div>
+                      )}
+
+                      {confirmModal && (
+                        <ConfirmModal
+                          isOpen={true}
+                          isClosing={isConfirmClosing}
+                          title={confirmModal.title}
+                          message={confirmModal.message}
+                          isDestructive={confirmModal.isDestructive}
+                          onConfirm={confirmModal.onConfirm}
+                          onCancel={() => {
+                            setIsConfirmClosing(true);
+                            setTimeout(() => {
+                              setConfirmModal(null);
+                              setIsConfirmClosing(false);
+                            }, 200);
+                          }}
+                        />
                       )}
 
                       <TopologicalLanesHeader
