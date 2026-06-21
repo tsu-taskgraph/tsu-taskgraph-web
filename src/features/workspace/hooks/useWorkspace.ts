@@ -4,7 +4,6 @@ import {
   type ReactFlowInstance,
   useEdgesState,
   useNodesState,
-  MarkerType,
 } from '@xyflow/react';
 import {
   type ProjectGraphResponse,
