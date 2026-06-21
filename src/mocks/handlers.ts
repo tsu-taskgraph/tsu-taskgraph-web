@@ -1096,6 +1096,48 @@ export const handlers = [
     return HttpResponse.json(updatedTask);
   }),
 
+  http.post('*/api/v1/tasks/:taskId/time-logs', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as { hours?: number; comment?: string | null };
+
+    if (!Number.isFinite(body.hours) || !body.hours || body.hours <= 0) {
+      return HttpResponse.json({ message: 'Logged hours must be positive.' }, { status: 400 });
+    }
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const now = new Date().toISOString();
+    const updatedTask = {
+      ...targetTask,
+      loggedHours: Number(targetTask.loggedHours ?? 0) + Number(body.hours),
+      updatedAt: now
+    };
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+
+    return HttpResponse.json({
+      id: `time-log-${Date.now()}`,
+      taskId,
+      userId: '00000000-0000-0000-0000-000000000000',
+      hours: body.hours,
+      comment: body.comment ?? null,
+      loggedAt: now
+    }, { status: 201 });
+  }),
+
   http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {
     const taskId = params.taskId as string;
     const body = await request.json() as {
@@ -1132,7 +1174,7 @@ export const handlers = [
     const updatedTask = {
       ...targetTask,
       status: body.status,
-      completionPercent: body.status === 'COMPLETED' ? 100 : body.status === 'IN_PROGRESS' ? 50 : targetTask.completionPercent ?? 0,
+      completionPercent: targetTask.completionPercent ?? 0,
       loggedHours: typeof body.loggedHours === 'number' ? body.loggedHours : targetTask.loggedHours ?? 0,
       updatedAt: now
     };

@@ -131,10 +131,7 @@ function getInitials(displayName: string) {
 }
 
 function getTaskProgress(task: TaskNode) {
-  if (typeof task.completionPercent === 'number') return task.completionPercent;
-  if (task.status === 'COMPLETED') return 100;
-  if (task.status === 'IN_PROGRESS') return 50;
-  return 0;
+  return typeof task.completionPercent === 'number' ? task.completionPercent : 0;
 }
 
 function formatHours(hours: number | null | undefined) {

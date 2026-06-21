@@ -195,6 +195,7 @@ export default function ProjectWorkspacePage() {
     const maxPopoverX = Math.max(12, window.innerWidth - 372);
     const maxPopoverY = Math.max(96, window.innerHeight - 432);
 
+    setStatusMenu(null);
     setTaskCreatorMode(mode);
     setTaskCreatorAnimationKey((key) => key + 1);
     setTaskDraftPosition({
@@ -265,6 +266,7 @@ export default function ProjectWorkspacePage() {
     lastTaskNodeClickAtRef.current = Date.now();
     cancelTaskDetailsSidebarClose();
     setSelectedTaskId(node.id);
+    setTaskDraftPosition(null);
     setStatusMenu({
       taskId: node.id,
       screen: {
@@ -380,6 +382,9 @@ export default function ProjectWorkspacePage() {
     const available = allNodes.filter((node: TaskNode) => node.status === 'AVAILABLE' || node.status === 'IN_PROGRESS').length;
     const estimatedHours = allNodes.reduce((sum: number, node: TaskNode) => sum + (node.estimatedHours ?? 0), 0);
     const loggedHours = allNodes.reduce((sum: number, node: TaskNode) => sum + (node.loggedHours ?? 0), 0);
+    const averageCompletion = allNodes.length
+      ? Math.round(allNodes.reduce((sum: number, node: TaskNode) => sum + (node.completionPercent ?? 0), 0) / allNodes.length)
+      : 0;
 
     return {
       tasks: allNodes.length,
@@ -388,7 +393,7 @@ export default function ProjectWorkspacePage() {
       available,
       estimatedHours,
       loggedHours,
-      completion: allNodes.length ? Math.round((completed / allNodes.length) * 100) : 0
+      completion: averageCompletion
     };
   }, [graph]);
 
@@ -442,9 +447,52 @@ export default function ProjectWorkspacePage() {
     }
   }, [selectedTask, setNodes, setGraph, showEdgeToast, takeSnapshot]);
 
+  const handleLogTaskTime = useCallback(async (task: TaskNode, data: { hours: number; comment?: string | null; completionPercent?: number | null }) => {
+    takeSnapshot();
+    setStatusUpdatingTaskId(task.id);
+
+    try {
+      await projectsApi.logTaskTime(task.id, data);
+      const updatedTask: TaskNode = {
+        ...task,
+        loggedHours: (task.loggedHours ?? 0) + data.hours,
+        completionPercent: typeof data.completionPercent === 'number' ? data.completionPercent : task.completionPercent,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (typeof data.completionPercent === 'number') {
+        await projectsApi.updateTask(task.id, { completionPercent: data.completionPercent });
+      }
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map((item) => item.id === updatedTask.id ? updatedTask : item)
+      } : currentGraph);
+      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+        if (node.type !== 'taskNode' || node.id !== updatedTask.id) return node;
+        const taskNode = node as TaskFlowNode;
+        return {
+          ...taskNode,
+          data: {
+            ...taskNode.data,
+            task: updatedTask
+          }
+        };
+      }));
+      showEdgeToast('Time logged.', 'success');
+      setStatusMenu(null);
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    } finally {
+      setStatusUpdatingTaskId(null);
+    }
+  }, [setGraph, setNodes, showEdgeToast, takeSnapshot]);
+
   const handleTaskStatusChange = useCallback(async (
     status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED',
-    data?: { loggedHours?: number | null; comment?: string | null }
+    data?: { loggedHours?: number | null; comment?: string | null; completionPercent?: number | null }
   ) => {
     if (!selectedTask) return;
 
@@ -458,7 +506,10 @@ export default function ProjectWorkspacePage() {
         comment: data?.comment ?? null
       });
 
-      const updatedTasks = [response.updatedTask, ...(response.unlockedTasks ?? [])];
+      const updatedMainTask = typeof data?.completionPercent === 'number'
+        ? await projectsApi.updateTask(response.updatedTask.id, { completionPercent: data.completionPercent })
+        : response.updatedTask;
+      const updatedTasks = [updatedMainTask, ...(response.unlockedTasks ?? [])];
       const updatedTaskById = new Map(updatedTasks.map((task) => [task.id, task]));
 
       setGraph((currentGraph) => currentGraph ? {
@@ -735,6 +786,7 @@ export default function ProjectWorkspacePage() {
                           task={selectedTask}
                           onClose={closeTaskDetailsSidebar}
                           onTaskUpdate={handleTaskUpdate}
+                          onInteract={() => setStatusMenu(null)}
                           updating={statusUpdatingTaskId === selectedTask.id}
                           isClosing={isTaskSidebarClosing}
                         />
@@ -746,6 +798,7 @@ export default function ProjectWorkspacePage() {
                           screen={statusMenu.screen}
                           onClose={() => setStatusMenu(null)}
                           onStatusChange={handleTaskStatusChange}
+                          onLogTime={(data) => handleLogTaskTime(statusMenuTask, data)}
                           updating={statusUpdatingTaskId === statusMenuTask.id}
                         />
                       )}
