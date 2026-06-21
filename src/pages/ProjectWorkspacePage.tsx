@@ -17,6 +17,7 @@ import {
   type TaskFlowNode,
 } from '../features/workspace/utils/workspaceUtils';
 import { TaskNodeCard } from '../features/workspace/components/TaskNodeCard';
+import { GradientEdge } from '../features/workspace/components/GradientEdge';
 import { LayerHeaderNode } from '../features/workspace/components/LayerHeaderNode';
 import { TopologicalLanesHeader } from '../features/workspace/components/TopologicalLanesHeader';
 import { WorkspaceToolbar } from '../features/workspace/components/WorkspaceToolbar';
@@ -36,6 +37,8 @@ export default function ProjectWorkspacePage() {
     taskNode: (props: any) => <TaskNodeCard {...props} theme={workspace.theme} />,
     layerHeader: LayerHeaderNode
   }), [workspace.theme]);
+
+  const edgeTypes = useMemo(() => ({ gradient: GradientEdge }), []);
 
   return (
     <div className="relative min-h-screen bg-slate-950 light:bg-[#f1f5f9] text-slate-100 light:text-slate-900 flex flex-col font-sans transition-colors duration-300">
@@ -132,6 +135,7 @@ export default function ProjectWorkspacePage() {
                       nodes={workspace.nodes}
                       edges={workspace.displayEdges}
                       nodeTypes={nodeTypes}
+                      edgeTypes={edgeTypes}
                       onNodesChange={workspace.onNodesChange}
                       onEdgesChange={workspace.onEdgesChange}
                       onConnect={workspace.handleConnect}

@@ -36,33 +36,42 @@ export function buildEdgeMarker(color: string, width = 30, height = 30) {
 
 export const EDGE_HOVER_COLOR = '#f43f5e';
 
-export function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus) {
-  const palette = {
-    brand: theme === 'light' ? '#d97706' : '#f59e0b',
-    sky: theme === 'light' ? '#0284c7' : '#38bdf8',
-    emerald: theme === 'light' ? '#059669' : '#34d399',
-    violet: theme === 'light' ? '#7c3aed' : '#a78bfa',
-    slate: theme === 'light' ? 'rgb(100, 116, 139)' : 'rgb(148, 163, 184)'
-  };
+const EDGE_GRADIENT_STOPS: Record<ThemeMode, Record<TaskStatus, [string, string]>> = {
+  dark: {
+    AVAILABLE: ['#f97316', '#fbbf24'],
+    IN_PROGRESS: ['#3b82f6', '#38bdf8'],
+    COMPLETED: ['#14b8a6', '#34d399'],
+    SKIPPED: ['#d946ef', '#a78bfa'],
+    LOCKED: ['#64748b', '#94a3b8']
+  },
+  light: {
+    AVAILABLE: ['#c2410c', '#d97706'],
+    IN_PROGRESS: ['#1d4ed8', '#0284c7'],
+    COMPLETED: ['#059669', '#0d9488'],
+    SKIPPED: ['#c026d3', '#7c3aed'],
+    LOCKED: ['#475569', '#64748b']
+  }
+};
 
-  const colorByStatus: Record<TaskStatus, string> = {
-    LOCKED: palette.slate,
-    AVAILABLE: palette.brand,
-    IN_PROGRESS: palette.sky,
-    COMPLETED: palette.emerald,
-    SKIPPED: palette.violet
-  };
+export type EdgeVisual = {
+  from: string;
+  to: string;
+  strokeWidth: number;
+  dashArray: string;
+  opacity: number;
+  flowDuration: string;
+};
 
-  const color = colorByStatus[sourceStatus ?? 'AVAILABLE'] ?? palette.brand;
+function edgeGradientColors(theme: ThemeMode, status: TaskStatus): [string, string] {
+  return EDGE_GRADIENT_STOPS[theme][status] ?? EDGE_GRADIENT_STOPS[theme].AVAILABLE;
+}
 
-  return {
-    color,
-    strokeWidth: 1.8,
-    dashArray: '6 6',
-    animated: false,
-    opacity: 0.9,
-    filter: 'none'
-  };
+export function getEdgeVisual(theme: ThemeMode, sourceStatus?: TaskStatus): EdgeVisual {
+  const status = sourceStatus ?? 'AVAILABLE';
+  const [from, to] = edgeGradientColors(theme, status);
+  const flowDuration = status === 'IN_PROGRESS' ? '0.5s' : '2.4s';
+
+  return { from, to, strokeWidth: 1.8, dashArray: '6 6', opacity: 0.9, flowDuration };
 }
 
 export function mapGraphToFlow(
@@ -141,26 +150,29 @@ export function mapGraphToFlow(
   const edges: TaskFlowEdge[] = graph.edges.map((edge) => {
     const sourceStatus = nodeStatus.get(edge.sourceTaskId) ?? 'AVAILABLE';
     const visual = getEdgeVisual(theme, sourceStatus);
+    const animation = edgesVisible
+      ? `edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both, flow-dash ${visual.flowDuration} linear infinite`
+      : 'none';
 
     return {
       id: edge.id,
       source: edge.sourceTaskId,
       target: edge.targetTaskId,
-      type: edgeType,
-      animated: visual.animated,
+      type: 'gradient',
+      data: { shape: edgeType, from: visual.from, to: visual.to },
+      animated: false,
       reconnectable: true,
       className: `edge-status-${sourceStatus.toLowerCase()}`,
-      markerEnd: buildEdgeMarker(visual.color),
+      markerEnd: buildEdgeMarker(visual.to),
       style: {
-        stroke: visual.color,
+        stroke: visual.to,
         strokeWidth: visual.strokeWidth,
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         strokeDasharray: visual.dashArray,
         opacity: edgesVisible ? visual.opacity : 0,
-        filter: visual.filter,
-        transition: 'stroke 0.3s, stroke-width 0.3s, opacity 0.3s, filter 0.3s, d 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        animation: edgesVisible ? 'edge-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both, flow-dash 0.8s linear infinite' : 'none'
+        transition: 'stroke 0.3s ease, stroke-width 0.3s ease, opacity 0.3s ease, d 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        animation
       } as React.CSSProperties
     };
   });
