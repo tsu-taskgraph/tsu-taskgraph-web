@@ -253,7 +253,7 @@ export function WorkspaceToolbar({
       </Panel>
 
       {showEditTaskButton && (
-        <Panel position="bottom-center" className="!mb-[138px] z-30">
+        <Panel position="bottom-center" className="!mb-[138px] min-[2200px]:!mb-[100px] z-30">
           <button
             type="button"
             onClick={onEditTask}

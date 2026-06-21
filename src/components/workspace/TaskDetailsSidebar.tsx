@@ -321,7 +321,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
     return (
         <aside
             onPointerDown={onInteract}
-            className={`fixed bottom-[154px] right-3 top-[104px] z-[55] flex w-[min(390px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-xl light:text-slate-900 light:shadow-slate-300/25 sm:right-4 lg:bottom-[96px] lg:right-6 min-[2200px]:bottom-[150px] ${isEditing
+            className={`fixed bottom-[154px] right-3 top-[104px] z-[55] flex w-[min(390px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl text-slate-100 shadow-2xl shadow-black/20 backdrop-blur-xl light:text-slate-900 light:shadow-slate-300/25 sm:right-4 lg:right-6 min-[2200px]:bottom-[88px] ${isEditing
                 ? 'border border-brand-500/30 bg-gradient-to-br from-[#020617]/88 via-[#020617]/82 to-brand-950/30 light:border-brand-500/25 light:from-white/95 light:via-white/90 light:to-amber-50/70'
                 : 'border border-white/10 bg-[#020617]/82 light:border-slate-200/70 light:bg-white/90'
                 } ${isClosing ? 'task-sidebar-exit' : 'task-sidebar-enter'}`}
