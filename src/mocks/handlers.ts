@@ -232,6 +232,21 @@ const projectsList: Project[] = [
     completionPercent: 0,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mock-workspace-empty-graph',
+    name: 'Mock: Empty Graph',
+    description: 'Технический мок для просмотра состояния пустого графа (ни одной задачи) на ProjectWorkspacePage.',
+    techStack: ['MSW', 'Empty State'],
+    status: 'PENDING_AI',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: true,
+    totalEstimatedHours: 0,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];
 
@@ -952,6 +967,15 @@ export const handlers = [
         { message: 'Мок: ошибка загрузки графа задач для проверки ProjectWorkspacePage.' },
         { status: 500 }
       );
+    }
+
+    if (projectId === 'mock-workspace-empty-graph') {
+      return HttpResponse.json({
+        projectId: projectId as string,
+        nodes: [],
+        edges: [],
+        enrichmentStatus: 'PENDING'
+      });
     }
 
     const graph = projectGraphs[projectId as string];
