@@ -49,6 +49,7 @@ export function useWorkspace(projectId: string | undefined) {
   const [edgesVisible, setEdgesVisible] = useState(true);
   const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<WorkspaceNode, TaskFlowEdge> | null>(null);
+  const forceAlignRef = useRef(false);
 
   const toast = useWorkspaceToast();
 
@@ -397,7 +398,7 @@ export function useWorkspace(projectId: string | undefined) {
     const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
     setNodes((currentNodes) => {
       const currentNodeById = new Map(currentNodes.map((node) => [node.id, node]));
-      const useNewPosition = (nodeType: string | undefined) => nodeType === 'layerHeader';
+      const useNewPosition = (nodeType: string | undefined) => nodeType === 'layerHeader' || forceAlignRef.current;
 
       return flow.nodes.map((node) => {
         const currentNode = currentNodeById.get(node.id);
@@ -485,6 +486,10 @@ export function useWorkspace(projectId: string | undefined) {
         return edge;
       });
     });
+
+    if (forceAlignRef.current) {
+      forceAlignRef.current = false;
+    }
   }, [edgeType, graph, setEdges, setNodes, theme, viewMode, edgesVisible, showTopologicalLanes]);
 
   const uniqueLayers = useMemo(() => {
@@ -533,6 +538,20 @@ export function useWorkspace(projectId: string | undefined) {
   const handleRedo = useCallback(() => {
     redo(setNodes, setEdges, setGraph);
   }, [redo, setNodes, setEdges, setGraph]);
+
+  const handleMutateGraph = useCallback(async (prompt: string) => {
+    if (!projectId) return;
+    try {
+      const updatedGraph = await projectsApi.mutateGraph(projectId, { prompt });
+      forceAlignRef.current = true;
+      setGraph(updatedGraph);
+      toast.showEdgeToast('Graph mutated successfully.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      toast.showEdgeToast(parsed.message);
+    }
+  }, [projectId, setGraph, toast]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -650,6 +669,7 @@ export function useWorkspace(projectId: string | undefined) {
     handleNodeDragStart,
     handleNodeDrag,
     autoArrangeLayout,
+    handleMutateGraph,
     connectionHint,
     handleConnect,
     handleConnectStart,

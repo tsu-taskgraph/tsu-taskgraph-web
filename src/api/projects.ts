@@ -109,6 +109,10 @@ export interface CreateEdgeRequest {
   targetTaskId: string;
 }
 
+export interface MutateGraphRequest {
+  prompt: string;
+}
+
 export interface UpdateTaskRequest {
   title?: string;
   description?: string | null;
@@ -168,6 +172,11 @@ export const projectsApi = {
         'X-Enable-Smart-Recovery': String(enableSmartRecovery)
       }
     });
+    return response.data;
+  },
+
+  async mutateGraph(projectId: string, data: MutateGraphRequest): Promise<ProjectGraphResponse> {
+    const response = await apiClient.post<ProjectGraphResponse>(`/api/v1/projects/${projectId}/mutate`, data);
     return response.data;
   },
 

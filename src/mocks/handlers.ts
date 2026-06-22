@@ -1590,6 +1590,176 @@ export const handlers = [
     return HttpResponse.json(createdEdge, { status: 201 });
   }),
 
+  http.post('*/api/v1/projects/:projectId/mutate', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const graph = projectGraphs[projectId];
+
+    if (!graph) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const body = await request.json() as { prompt: string };
+    const prompt = (body.prompt || '').toLowerCase();
+    const now = new Date().toISOString();
+
+    graph.nodes = graph.nodes.map((node: any) => ({
+      ...node,
+      positionY: (node.positionY ?? 0) + 120
+    }));
+
+    if (prompt.includes('redis')) {
+      const redis1Id = `redis-task-1-${Date.now()}`;
+      const redis2Id = `redis-task-2-${Date.now()}`;
+
+      const task1 = {
+        id: redis1Id,
+        projectId,
+        title: 'Configure Redis Cache Cluster',
+        description: 'Set up Redis cache instance and configure persistence options.',
+        status: 'AVAILABLE' as const,
+        category: 'DEVOPS' as const,
+        layer: 1,
+        positionX: 400,
+        positionY: -100,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 6,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const task2 = {
+        id: redis2Id,
+        projectId,
+        title: 'Integrate Redis Client & Caching Logic',
+        description: 'Implement caching decorators for user sessions and frequent DB queries.',
+        status: 'LOCKED' as const,
+        category: 'BACKEND' as const,
+        layer: 2,
+        positionX: 800,
+        positionY: -100,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 8,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      graph.nodes.push(task1, task2);
+      graph.edges.push(
+        { id: `edge-redis-1-${Date.now()}`, sourceTaskId: redis1Id, targetTaskId: redis2Id }
+      );
+
+      if (graph.nodes.length > 2) {
+        const firstTaskId = graph.nodes[0].id;
+        graph.edges.push({
+          id: `edge-redis-parent-${Date.now()}`,
+          sourceTaskId: firstTaskId,
+          targetTaskId: redis1Id
+        });
+      }
+    } else if (prompt.includes('test')) {
+      const test1Id = `test-task-1-${Date.now()}`;
+      const test2Id = `test-task-2-${Date.now()}`;
+
+      const task1 = {
+        id: test1Id,
+        projectId,
+        title: 'Write Auth Integration Tests',
+        description: 'Add test suite for user registration, token generation and route protection.',
+        status: 'AVAILABLE' as const,
+        category: 'TESTING' as const,
+        layer: 2,
+        positionX: 800,
+        positionY: -200,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 8,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const task2 = {
+        id: test2Id,
+        projectId,
+        title: 'Setup Automated CI Testing',
+        description: 'Configure GitHub Actions workflow to run the test suite on every pull request.',
+        status: 'LOCKED' as const,
+        category: 'DEVOPS' as const,
+        layer: 3,
+        positionX: 1200,
+        positionY: -200,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 4,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      graph.nodes.push(task1, task2);
+      graph.edges.push(
+        { id: `edge-test-1-${Date.now()}`, sourceTaskId: test1Id, targetTaskId: test2Id }
+      );
+
+      if (graph.nodes.length > 2) {
+        const sourceId = graph.nodes[1].id;
+        graph.edges.push({
+          id: `edge-test-parent-${Date.now()}`,
+          sourceTaskId: sourceId,
+          targetTaskId: test1Id
+        });
+      }
+    } else {
+      const gen1Id = `gen-task-1-${Date.now()}`;
+      const task1 = {
+        id: gen1Id,
+        projectId,
+        title: `AI Action: ${body.prompt || 'Optimise workspace logic'}`,
+        description: 'Automatically suggested improvement based on user workspace request.',
+        status: 'AVAILABLE' as const,
+        category: 'OTHER' as const,
+        layer: 1,
+        positionX: 400,
+        positionY: -150,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 4,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      graph.nodes.push(task1);
+    }
+
+    recalculateTaskStatuses(graph);
+    return HttpResponse.json(graph, { status: 200 });
+  }),
+
   http.delete('*/api/v1/edges/:edgeId', ({ params }) => {
     const edgeId = params.edgeId as string;
     let targetGraph: typeof projectGraphs[string] | null = null;
