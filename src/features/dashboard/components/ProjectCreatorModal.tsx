@@ -1,4 +1,4 @@
-import { BookOpen, X, Plus, Loader2 } from 'lucide-react';
+import { BookOpen, X, Plus, Loader2, Sparkles, Clock } from 'lucide-react';
 import { SafariTopBar } from '../../../components/common/SafariTopBar';
 import { SafariBottomBar } from '../../../components/common/SafariBottomBar';
 
@@ -12,6 +12,7 @@ interface ProjectCreatorModalProps {
     name: string;
     description: string;
     techStack: string[];
+    aiEstimate: boolean;
   };
   currentTechInput: string;
   submitting: boolean;
@@ -20,6 +21,12 @@ interface ProjectCreatorModalProps {
   setCurrentTechInput: (val: string) => void;
   addTag: (tagText: string) => void;
   removeTag: (index: number) => void;
+  setForm: React.Dispatch<React.SetStateAction<{
+    name: string;
+    description: string;
+    techStack: string[];
+    aiEstimate: boolean;
+  }>>;
   handleCreateProject: (e: React.FormEvent) => void;
 }
 
@@ -37,6 +44,7 @@ export function ProjectCreatorModal({
   setCurrentTechInput,
   addTag,
   removeTag,
+  setForm,
   handleCreateProject
 }: ProjectCreatorModalProps) {
   return (
@@ -49,13 +57,11 @@ export function ProjectCreatorModal({
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-950 light:from-[#616264] to-transparent pointer-events-none z-60" />
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-950 light:from-[#59585E] to-transparent pointer-events-none z-60" />
 
-      <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-200 ${
-        isClosing ? 'modal-overlay-exit' : 'animate-fade-in'
-      }`}>
+      <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-200 ${isClosing ? 'modal-overlay-exit' : 'animate-fade-in'
+        }`}>
         <div
-          className={`bg-slate-900/90 light:bg-white/95 backdrop-blur-2xl border border-white/10 rounded-2xl w-full max-w-lg p-6 ${
-            isClosing ? 'modal-content-exit' : 'animate-zoom-in-fade'
-          } ${shakeToggle && !fieldErrors.name && !fieldErrors.description ? 'animate-shake' : ''}`}
+          className={`bg-slate-900/90 light:bg-white/95 backdrop-blur-2xl border border-white/10 rounded-2xl w-full max-w-lg p-6 ${isClosing ? 'modal-content-exit' : 'animate-zoom-in-fade'
+            } ${shakeToggle && !fieldErrors.name && !fieldErrors.description ? 'animate-shake' : ''}`}
         >
           <div className="flex justify-between items-center mb-5 pb-3 border-b border-white/5 light:border-slate-200/80">
             <div className="flex items-center gap-2">
@@ -78,9 +84,8 @@ export function ProjectCreatorModal({
 
           <form onSubmit={handleCreateProject} className="flex flex-col gap-4">
 
-            <div className={`flex flex-col gap-1.5 transition-all ${
-              fieldErrors.name ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''
-            }`}>
+            <div className={`flex flex-col gap-1.5 transition-all ${fieldErrors.name ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''
+              }`}>
               <div className="flex justify-between items-baseline">
                 <label htmlFor="proj-name" className="text-xs font-semibold text-slate-400 light:text-slate-500">
                   Project Name <span className="text-brand-500">*</span>
@@ -95,17 +100,15 @@ export function ProjectCreatorModal({
                 placeholder="e.g. My Awesome Startup"
                 value={form.name}
                 onChange={e => handleNameChange(e.target.value)}
-                className={`w-full bg-slate-950 light:bg-slate-50 light:focus:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 focus:ring-1 ${
-                  fieldErrors.name
-                    ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
-                    : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
-                }`}
+                className={`w-full bg-slate-950 light:bg-slate-50 light:focus:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 focus:ring-1 ${fieldErrors.name
+                  ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                  : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
+                  }`}
               />
             </div>
 
-            <div className={`flex flex-col gap-1.5 transition-all ${
-              fieldErrors.description ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''
-            }`}>
+            <div className={`flex flex-col gap-1.5 transition-all ${fieldErrors.description ? (shakeToggle ? 'animate-shake' : 'animate-shake-alt') : ''
+              }`}>
               <div className="flex justify-between items-baseline">
                 <label htmlFor="proj-desc" className="text-xs font-semibold text-slate-400 light:text-slate-500">
                   Description <span className="text-brand-500">*</span>
@@ -120,11 +123,10 @@ export function ProjectCreatorModal({
                 placeholder="Describe the goals, stack, and scope of your project..."
                 value={form.description}
                 onChange={e => handleDescriptionChange(e.target.value)}
-                className={`w-full bg-slate-950 light:bg-slate-50 light:focus:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 resize-none focus:ring-1 ${
-                  fieldErrors.description
-                    ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
-                    : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
-                }`}
+                className={`w-full bg-slate-950 light:bg-slate-50 light:focus:bg-white border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 light:text-slate-900 placeholder-slate-600 light:placeholder-slate-400 focus:outline-none transition-all duration-300 resize-none focus:ring-1 ${fieldErrors.description
+                  ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
+                  : 'border-slate-800 focus:border-brand-500 focus:ring-brand-500 light:border-slate-200 light:focus:border-brand-500 light:focus:ring-brand-500'
+                  }`}
               />
             </div>
 
@@ -192,6 +194,45 @@ export function ProjectCreatorModal({
                   )}
                 </div>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-2.5 rounded-xl border border-white/5 light:border-slate-200/80 bg-slate-900/30 light:bg-slate-50/50 p-3.5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-brand-500 shrink-0" />
+                <span className="text-xs font-semibold text-slate-300 light:text-slate-700">AI Time Estimate</span>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Time Estimate
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, aiEstimate: !prev.aiEstimate }))}
+                    className={`flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2 text-left transition-all cursor-pointer ${form.aiEstimate
+                      ? 'border-brand-500/50 bg-brand-500/10 text-brand-400 light:text-brand-600'
+                      : 'border-slate-800 bg-slate-950 light:bg-white light:border-slate-200 text-slate-400'
+                      }`}
+                  >
+                    <span className="text-sm font-medium">{form.aiEstimate ? 'AI-generated' : 'Manual'}</span>
+                    <span
+                      className={`relative h-5 w-9 rounded-full transition-colors duration-300 shrink-0 ${form.aiEstimate ? 'bg-brand-500' : 'bg-slate-700 light:bg-slate-300'}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${form.aiEstimate ? 'translate-x-4' : 'translate-x-0.5'}`}
+                      />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                {form.aiEstimate
+                  ? 'AI will estimate hours for each task based on your tech stack and project description. Generation may take 10-15 seconds.'
+                  : 'You will fill in time estimates manually for each task after creation.'}
+              </p>
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-white/5 light:border-slate-200/80">

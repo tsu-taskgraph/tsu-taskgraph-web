@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { authApi, type SavedAiSettings } from '../../api/auth';
+import { setAiSettings as persistAiSettings } from '../../api/client';
 import { mapServerErrorToEnglish } from '../../api/errors';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import {
@@ -137,6 +138,14 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
 
             const updated = await authApi.updateAiSettings(payload);
             applySettings(updated);
+
+            persistAiSettings({
+                provider: provider,
+                model: model || providerInfo?.defaultModel,
+                apiKey: apiKey.trim() || undefined,
+                ollamaBaseUrl: provider === 'ollama' ? ollamaBaseUrl.trim() : undefined
+            });
+
             onSuccess('AI provider settings saved');
         } catch (err) {
             const status = axios.isAxiosError(err) ? err.response?.status : undefined;
@@ -266,6 +275,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
                     </div>
                 </div>
             )}
+
             {provider && !providerInfo?.isLocal && (
                 <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
