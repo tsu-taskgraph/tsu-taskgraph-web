@@ -37,6 +37,7 @@ interface TaskDetailsSidebarProps {
     onInteract?: () => void;
     updating: boolean;
     isClosing?: boolean;
+    isEnriching?: boolean;
 }
 
 const statusMeta: Record<TaskStatus, {
@@ -247,7 +248,7 @@ function CustomDateField({ label, value, onChange }: {
     );
 }
 
-export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, updating, isClosing = false }: TaskDetailsSidebarProps) {
+export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, updating, isClosing = false, isEnriching = false }: TaskDetailsSidebarProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [draftTitle, setDraftTitle] = useState(task.title);
     const [draftDescription, setDraftDescription] = useState(task.description ?? '');
@@ -559,12 +560,47 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
                     </div>
                 </section>
 
-                {hasEnrichmentDetails && (
+                {hasEnrichmentDetails ? (
                     <section className="mt-4 space-y-3">
                         {checklist.length > 0 && <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Checklist</h3><ul className="mt-2 space-y-1.5 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">{checklist.map((item, index) => <li key={`${item}-${index}`} className="flex gap-2 text-sm text-slate-300 light:text-slate-700"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400 light:text-emerald-600" /><span>{item}</span></li>)}</ul></div>}
                         {pitfalls.length > 0 && <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pitfalls</h3><ul className="mt-2 space-y-1.5 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">{pitfalls.map((item, index) => <li key={`${item}-${index}`} className="flex gap-2 text-sm text-slate-300 light:text-slate-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400 light:text-amber-600" /><span>{item}</span></li>)}</ul></div>}
                         {links.length > 0 && <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Links</h3><div className="mt-2 space-y-1.5">{links.map((link, index) => <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-2 text-sm font-semibold text-brand-300 transition hover:bg-white/5 hover:text-brand-200 light:border-slate-200/70 light:bg-white/55 light:text-brand-700 light:hover:bg-slate-50"><span className="line-clamp-1">{link.title}</span><ExternalLink className="h-4 w-4 shrink-0" /></a>)}</div></div>}
                     </section>
+                ) : (
+                    isEnriching && (
+                        <section className="mt-4 space-y-4 animate-pulse">
+                            <div>
+                                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Checklist</h3>
+                                <div className="mt-2 space-y-2.5 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-4 w-4 rounded-full bg-slate-800/60 light:bg-slate-200/80 shrink-0" />
+                                        <div className="h-3 w-3/4 rounded bg-slate-800/60 light:bg-slate-200/80" />
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-4 w-4 rounded-full bg-slate-800/60 light:bg-slate-200/80 shrink-0" />
+                                        <div className="h-3 w-1/2 rounded bg-slate-800/60 light:bg-slate-200/80" />
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-4 w-4 rounded-full bg-slate-800/60 light:bg-slate-200/80 shrink-0" />
+                                        <div className="h-3 w-5/6 rounded bg-slate-800/60 light:bg-slate-200/80" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pitfalls</h3>
+                                <div className="mt-2 space-y-2.5 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-4 w-4 rounded-full bg-slate-800/60 light:bg-slate-200/80 shrink-0" />
+                                        <div className="h-3 w-2/3 rounded bg-slate-800/60 light:bg-slate-200/80" />
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-4 w-4 rounded-full bg-slate-800/60 light:bg-slate-200/80 shrink-0" />
+                                        <div className="h-3 w-4/5 rounded bg-slate-800/60 light:bg-slate-200/80" />
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    )
                 )}
             </div>
 

@@ -80,4 +80,9 @@ export function useWorkspacePolling({ projectId, graph, setGraph, setProject }: 
             window.clearInterval(timer);
         };
     }, [projectId, shouldPoll]);
+
+    return {
+        isPolling: shouldPoll,
+        enrichmentStatus
+    };
 }

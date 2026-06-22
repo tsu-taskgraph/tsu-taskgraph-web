@@ -83,7 +83,7 @@ export function useWorkspace(projectId: string | undefined) {
     loadWorkspace
   } = useWorkspaceLoader({ projectId });
 
-  useWorkspacePolling({ projectId, graph, setGraph, setProject });
+  const { isPolling, enrichmentStatus } = useWorkspacePolling({ projectId, graph, setGraph, setProject });
 
   const {
     isAligned,
@@ -641,6 +641,8 @@ export function useWorkspace(projectId: string | undefined) {
     refreshing,
     error,
     loadWorkspace,
+    isPolling,
+    enrichmentStatus,
     isAligned,
     setIsAligned,
     handleNodeDragStart,

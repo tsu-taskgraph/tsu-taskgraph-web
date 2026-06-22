@@ -242,6 +242,7 @@ export default function ProjectWorkspacePage() {
                           onInteract={() => workspace.setStatusMenu(null)}
                           updating={workspace.statusUpdatingTaskId === workspace.selectedTask.id}
                           isClosing={workspace.isTaskSidebarClosing}
+                          isEnriching={workspace.isPolling}
                         />
                       )}
 
