@@ -232,6 +232,21 @@ const projectsList: Project[] = [
     completionPercent: 0,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mock-workspace-empty-graph',
+    name: 'Mock: Empty Graph',
+    description: 'Технический мок для просмотра состояния пустого графа (ни одной задачи) на ProjectWorkspacePage.',
+    techStack: ['MSW', 'Empty State'],
+    status: 'PENDING_AI',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: true,
+    totalEstimatedHours: 0,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];
 
@@ -832,6 +847,57 @@ export const handlers = [
     return HttpResponse.json(userProfile);
   }),
 
+  http.get('*/api/v1/users/me/ai-settings', () => {
+    return HttpResponse.json(userProfile.aiSettings);
+  }),
+
+  http.get('*/api/v1/ai-providers', () => {
+    return HttpResponse.json({
+      gemini: {
+        defaultModel: 'gemini-2.5-flash',
+        supportedModels: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+        supportsWebSearch: true,
+        supportsExtendedThinking: true,
+        supportsReasoningEffort: false
+      },
+      openai: {
+        defaultModel: 'gpt-4o',
+        supportedModels: ['gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3-mini', 'o3'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: true
+      },
+      anthropic: {
+        defaultModel: 'claude-sonnet-4-6',
+        supportedModels: ['claude-sonnet-4-6', 'claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: true,
+        supportsReasoningEffort: false
+      },
+      groq: {
+        defaultModel: 'llama-3.3-70b-versatile',
+        supportedModels: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: false
+      },
+      mistral: {
+        defaultModel: 'mistral-large-latest',
+        supportedModels: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-small-latest'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: false
+      },
+      ollama: {
+        defaultModel: 'llama3',
+        supportedModels: ['llama3', 'llama3.1', 'qwen2.5', 'phi3', 'gemma2'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: false
+      }
+    });
+  }),
+
   http.put('*/api/v1/users/me/ai-settings', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
     userProfile.aiSettings = {
@@ -952,6 +1018,15 @@ export const handlers = [
         { message: 'Мок: ошибка загрузки графа задач для проверки ProjectWorkspacePage.' },
         { status: 500 }
       );
+    }
+
+    if (projectId === 'mock-workspace-empty-graph') {
+      return HttpResponse.json({
+        projectId: projectId as string,
+        nodes: [],
+        edges: [],
+        enrichmentStatus: 'PENDING'
+      });
     }
 
     const graph = projectGraphs[projectId as string];

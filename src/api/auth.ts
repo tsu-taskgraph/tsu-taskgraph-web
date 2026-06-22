@@ -1,12 +1,21 @@
 import { apiClient, setTokens, clearTokens } from './client';
+import type { AiProviderType } from '../features/auth/aiProviders';
 
 export interface SavedAiSettings {
-  provider: 'gemini' | 'openai' | 'anthropic' | 'groq' | 'mistral' | 'ollama' | null;
+  provider: AiProviderType | null;
   model: string | null;
   apiKeyMasked: string | null;
   hasApiKey: boolean;
   ollamaBaseUrl: string | null;
   providerSettings: Record<string, unknown> | null;
+}
+
+export interface UpdateAiSettingsRequest {
+  provider?: AiProviderType;
+  model?: string | null;
+  apiKey?: string | null;
+  ollamaBaseUrl?: string | null;
+  providerSettings?: Record<string, unknown> | null;
 }
 
 export interface UserProfile {
@@ -61,7 +70,12 @@ export const authApi = {
     return response.data;
   },
 
-  async updateAiSettings(data: Record<string, unknown>): Promise<SavedAiSettings> {
+  async getAiSettings(): Promise<SavedAiSettings> {
+    const response = await apiClient.get<SavedAiSettings>('/api/v1/users/me/ai-settings');
+    return response.data;
+  },
+
+  async updateAiSettings(data: UpdateAiSettingsRequest): Promise<SavedAiSettings> {
     const response = await apiClient.put<SavedAiSettings>('/api/v1/users/me/ai-settings', data);
     return response.data;
   },
