@@ -446,7 +446,8 @@ export function useWorkspace(projectId: string | undefined) {
             taskA.estimatedHours === taskB.estimatedHours &&
             taskA.loggedHours === taskB.loggedHours &&
             taskA.completionPercent === taskB.completionPercent &&
-            JSON.stringify(taskA.enrichment) === JSON.stringify(taskB.enrichment);
+            JSON.stringify(taskA.enrichment) === JSON.stringify(taskB.enrichment) &&
+            JSON.stringify(taskA.assignees) === JSON.stringify(taskB.assignees);
 
           const positionUnchanged =
             currentNode.position.x === targetPosition.x &&
@@ -713,6 +714,7 @@ export function useWorkspace(projectId: string | undefined) {
     handleTaskCreated: operations.handleTaskCreated,
     handleTaskUpdate: operations.handleTaskUpdate,
     handleLogTaskTime: operations.handleLogTaskTime,
+    handleAssigneesChange: operations.handleAssigneesChange,
     handleDeleteTask: operations.handleDeleteTask,
     handleTaskStatusChange: operations.handleTaskStatusChange,
 

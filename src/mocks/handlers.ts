@@ -737,7 +737,7 @@ function getEnrichmentProgress(projectId: string): 'PENDING' | 'IN_PROGRESS' | '
   }
 
   graph.enrichmentStatus = 'COMPLETED';
-  
+
   if (projectId === '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e') {
     graph.nodes = [
       {
@@ -1549,6 +1549,45 @@ export const handlers = [
       unlockedTasks,
       graph: targetGraph
     });
+  }),
+
+  http.put('*/api/v1/tasks/:taskId/assignees', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as { userIds?: string[] };
+    const userIds = body.userIds ?? [];
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const project = projectsList.find((p) => p.id === targetTask.projectId);
+    const assignedMembers = (project?.members ?? []).filter((m) => userIds.includes(m.userId));
+    const now = new Date().toISOString();
+
+    const updatedTask = {
+      ...targetTask,
+      assignees: assignedMembers.map((member) => ({
+        userId: member.userId,
+        displayName: member.displayName,
+        avatarUrl: member.avatarUrl
+      })),
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+    return HttpResponse.json(updatedTask);
   }),
 
   http.post('*/api/v1/projects/:projectId/edges', async ({ params, request }) => {

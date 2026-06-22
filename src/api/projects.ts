@@ -143,6 +143,10 @@ export interface TimeLogResponse {
   loggedAt: string;
 }
 
+export interface AssignTaskRequest {
+  userIds: string[];
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -240,5 +244,10 @@ export const projectsApi = {
 
   async removeMember(projectId: string, userId: string): Promise<void> {
     await apiClient.delete(`/api/v1/projects/${projectId}/members/${userId}`);
+  },
+
+  async assignTask(taskId: string, data: AssignTaskRequest): Promise<TaskNode> {
+    const response = await apiClient.put<TaskNode>(`/api/v1/tasks/${taskId}/assignees`, data);
+    return response.data;
   }
 };
