@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -19,6 +19,15 @@ export const setTokens = (accessToken: string, refreshToken: string) => {
 export const clearTokens = () => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
+};
+
+export const resolveApiAssetUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  return `${API_BASE_URL}${normalizedPath}`;
 };
 
 

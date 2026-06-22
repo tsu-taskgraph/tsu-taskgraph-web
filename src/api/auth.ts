@@ -1,4 +1,4 @@
-import { apiClient, setTokens, clearTokens } from './client';
+import { apiClient, setTokens, clearTokens, resolveApiAssetUrl } from './client';
 import type { AiProviderType } from '../features/auth/aiProviders';
 
 export interface SavedAiSettings {
@@ -36,17 +36,27 @@ export interface AuthResponse {
   user: UserProfile;
 }
 
+const normalizeUserProfile = (user: UserProfile): UserProfile => ({
+  ...user,
+  avatarUrl: resolveApiAssetUrl(user.avatarUrl)
+});
+
+const normalizeAuthResponse = (data: AuthResponse): AuthResponse => ({
+  ...data,
+  user: normalizeUserProfile(data.user)
+});
+
 export const authApi = {
   async register(data: Record<string, unknown>): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/api/v1/auth/register', data);
-    const authData = response.data;
+    const authData = normalizeAuthResponse(response.data);
     setTokens(authData.accessToken, authData.refreshToken);
     return authData;
   },
 
   async login(data: Record<string, unknown>): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/api/v1/auth/login', data);
-    const authData = response.data;
+    const authData = normalizeAuthResponse(response.data);
     setTokens(authData.accessToken, authData.refreshToken);
     return authData;
   },
@@ -64,12 +74,12 @@ export const authApi = {
 
   async getProfile(): Promise<UserProfile> {
     const response = await apiClient.get<UserProfile>('/api/v1/users/me');
-    return response.data;
+    return normalizeUserProfile(response.data);
   },
 
   async updateProfile(data: { displayName: string }): Promise<UserProfile> {
     const response = await apiClient.patch<UserProfile>('/api/v1/users/me', data);
-    return response.data;
+    return normalizeUserProfile(response.data);
   },
 
   async getAiSettings(): Promise<SavedAiSettings> {
@@ -90,11 +100,11 @@ export const authApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return normalizeUserProfile(response.data);
   },
 
   async deleteAvatar(): Promise<UserProfile> {
     const response = await apiClient.delete<UserProfile>('/api/v1/users/me/avatar');
-    return response.data;
+    return normalizeUserProfile(response.data);
   },
 };

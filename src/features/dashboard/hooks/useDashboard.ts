@@ -46,6 +46,26 @@ export function useDashboard() {
   });
   const [currentTechInput, setCurrentTechInput] = useState('');
 
+  const [editingProject, setEditingProject] = useState<ProjectResponse | null>(null);
+  const [isProjectSettingsClosing, setIsProjectSettingsClosing] = useState(false);
+  const [projectSettingsSubmitting, setProjectSettingsSubmitting] = useState(false);
+  const [projectSettingsError, setProjectSettingsError] = useState<string | null>(null);
+  const [projectSettingsFieldErrors, setProjectSettingsFieldErrors] = useState<{ name?: string; description?: string }>({});
+  const [projectSettingsForm, setProjectSettingsForm] = useState<{
+    name: string;
+    description: string;
+    techStack: string[];
+    status: ProjectResponse['status'];
+    aiEstimate: boolean;
+  }>({
+    name: '',
+    description: '',
+    techStack: [],
+    status: 'ACTIVE',
+    aiEstimate: true
+  });
+  const [projectSettingsTechInput, setProjectSettingsTechInput] = useState('');
+
   const closeModal = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
@@ -263,6 +283,103 @@ export function useDashboard() {
     setFormError(null);
   }, []);
 
+  const openProjectSettings = useCallback((project: ProjectResponse) => {
+    setEditingProject(project);
+    setProjectSettingsForm({
+      name: project.name,
+      description: project.description ?? '',
+      techStack: [...(project.techStack ?? [])],
+      status: project.status,
+      aiEstimate: project.aiEstimate
+    });
+    setProjectSettingsTechInput('');
+    setProjectSettingsError(null);
+    setProjectSettingsFieldErrors({});
+    setIsProjectSettingsClosing(false);
+  }, []);
+
+  const closeProjectSettings = useCallback(() => {
+    setIsProjectSettingsClosing(true);
+    setTimeout(() => {
+      setEditingProject(null);
+      setIsProjectSettingsClosing(false);
+      setProjectSettingsError(null);
+      setProjectSettingsFieldErrors({});
+      setProjectSettingsTechInput('');
+    }, 200);
+  }, []);
+
+  const addProjectSettingsTag = useCallback((tagText: string) => {
+    const clean = tagText.replace(/,/g, '').trim();
+    if (!clean) return;
+    setProjectSettingsForm(prev => prev.techStack.includes(clean)
+      ? prev
+      : { ...prev, techStack: [...prev.techStack, clean] }
+    );
+    setProjectSettingsTechInput('');
+  }, []);
+
+  const removeProjectSettingsTag = useCallback((indexToRemove: number) => {
+    setProjectSettingsForm(prev => ({
+      ...prev,
+      techStack: prev.techStack.filter((_, idx) => idx !== indexToRemove)
+    }));
+  }, []);
+
+  const handleUpdateProject = useCallback(async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingProject) return;
+
+    setProjectSettingsError(null);
+    const errors: { name?: string; description?: string } = {};
+    if (!projectSettingsForm.name.trim()) errors.name = 'Project name is required.';
+    if (!projectSettingsForm.description.trim()) errors.description = 'Description is required.';
+
+    if (Object.keys(errors).length > 0) {
+      setProjectSettingsFieldErrors(errors);
+      return;
+    }
+
+    if (editingProject.version === undefined) {
+      setProjectSettingsError('Project version is missing. Please refresh the page and try again.');
+      return;
+    }
+
+    setProjectSettingsFieldErrors({});
+    setProjectSettingsSubmitting(true);
+    try {
+      const finalTechStack = [...projectSettingsForm.techStack];
+      const trimmedInput = projectSettingsTechInput.trim();
+      if (trimmedInput && !finalTechStack.includes(trimmedInput)) {
+        finalTechStack.push(trimmedInput);
+      }
+
+      const updated = await projectsApi.updateProject(editingProject.id, {
+        version: editingProject.version,
+        name: projectSettingsForm.name.trim(),
+        description: projectSettingsForm.description.trim(),
+        techStack: finalTechStack,
+        status: projectSettingsForm.status,
+        aiEstimate: projectSettingsForm.aiEstimate
+      });
+
+      setProjects(prev => prev.map(project => project.id === updated.id ? updated : project));
+      closeProjectSettings();
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      setProjectSettingsError(parsed.message);
+      if (parsed.fieldErrors) {
+        setProjectSettingsFieldErrors({
+          name: parsed.fieldErrors.name,
+          description: parsed.fieldErrors.description
+        });
+      }
+    } finally {
+      setProjectSettingsSubmitting(false);
+    }
+  }, [editingProject, projectSettingsForm, projectSettingsTechInput, closeProjectSettings]);
+
   const stats = useMemo(() => {
     return {
       total: totalElements,
@@ -294,11 +411,20 @@ export function useDashboard() {
     shakeToggle,
     form,
     currentTechInput,
+    editingProject,
+    isProjectSettingsClosing,
+    projectSettingsSubmitting,
+    projectSettingsError,
+    projectSettingsFieldErrors,
+    projectSettingsForm,
+    projectSettingsTechInput,
     stats,
     setIsProfileOpen,
     setIsMobileMenuOpen,
     setForm,
     setCurrentTechInput,
+    setProjectSettingsForm,
+    setProjectSettingsTechInput,
     setCurrentPage,
     closeModal,
     openModal,
@@ -309,6 +435,11 @@ export function useDashboard() {
     addTag,
     removeTag,
     handleCreateProject,
+    handleUpdateProject,
+    openProjectSettings,
+    closeProjectSettings,
+    addProjectSettingsTag,
+    removeProjectSettingsTag,
     fetchProjects,
     handleNameChange,
     handleDescriptionChange

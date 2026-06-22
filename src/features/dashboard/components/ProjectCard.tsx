@@ -1,13 +1,14 @@
-import { Clock, Users } from 'lucide-react';
+import { Clock, Settings, Users } from 'lucide-react';
 import { type ProjectResponse } from '../../../api/projects';
 
 interface ProjectCardProps {
   project: ProjectResponse;
   onClick: () => void;
+  onEdit: () => void;
   idx: number;
 }
 
-export function ProjectCard({ project, onClick, idx }: ProjectCardProps) {
+export function ProjectCard({ project, onClick, onEdit, idx }: ProjectCardProps) {
   return (
     <div
       onClick={onClick}
@@ -21,17 +22,29 @@ export function ProjectCard({ project, onClick, idx }: ProjectCardProps) {
           <h3 className="text-base font-bold text-slate-100 light:text-slate-900 group-hover:text-brand-400 light:group-hover:text-brand-600 transition-colors tracking-tight line-clamp-1">
             {project.name}
           </h3>
-          <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border shrink-0 ${
-            project.status === 'ACTIVE'
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30'
-              : project.status === 'COMPLETED'
-                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 light:bg-blue-500/15 light:text-blue-700 light:border-blue-500/30'
-                : project.status === 'ARCHIVED'
-                  ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200'
-                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20 light:bg-amber-500/15 light:text-amber-700 light:border-amber-500/30'
-          }`}>
-            {project.status.replace('_', ' ')}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border shrink-0 ${project.status === 'ACTIVE'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 light:bg-emerald-500/15 light:text-emerald-700 light:border-emerald-500/30'
+                : project.status === 'COMPLETED'
+                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 light:bg-blue-500/15 light:text-blue-700 light:border-blue-500/30'
+                  : project.status === 'ARCHIVED'
+                    ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 light:bg-slate-100 light:text-slate-600 light:border-slate-200'
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 light:bg-amber-500/15 light:text-amber-700 light:border-amber-500/30'
+              }`}>
+              {project.status.replace('_', ' ')}
+            </span>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+              className="rounded-lg border border-white/10 bg-slate-950/40 p-1.5 text-slate-400 opacity-100 transition hover:border-brand-500/30 hover:bg-brand-500/10 hover:text-brand-400 sm:opacity-0 sm:group-hover:opacity-100 light:border-slate-200 light:bg-white/60 light:text-slate-500 light:hover:text-brand-600"
+              title="Project settings"
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         <p className="text-xs text-slate-400 light:text-slate-600 line-clamp-2 mt-2.5 mb-5 leading-relaxed">

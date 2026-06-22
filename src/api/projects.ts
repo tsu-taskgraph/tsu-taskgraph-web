@@ -1,6 +1,7 @@
-import { apiClient } from './client';
+import { apiClient, resolveApiAssetUrl } from './client';
 
 export type TechStack = string[];
+export type HoursInput = string | number | null;
 
 export interface ProjectMember {
   id?: string;
@@ -100,7 +101,7 @@ export interface CreateTaskRequest {
   title: string;
   description?: string | null;
   category?: TaskNode['category'];
-  estimatedHours?: number | null;
+  estimatedHours?: HoursInput;
   startDate?: string | null;
   dueDate?: string | null;
   positionX: number;
@@ -130,7 +131,7 @@ export interface UpdateTaskRequest {
   title?: string;
   description?: string | null;
   category?: TaskNode['category'];
-  estimatedHours?: number | null;
+  estimatedHours?: HoursInput;
   completionPercent?: number | null;
   startDate?: string | null;
   dueDate?: string | null;
@@ -198,15 +199,29 @@ export interface ActionLogResponse {
   number?: number;
 }
 
+const normalizeTaskNode = (task: TaskNode): TaskNode => ({
+  ...task,
+  assignees: (task.assignees ?? []).map((assignee) => ({
+    ...assignee,
+    avatarUrl: resolveApiAssetUrl(assignee.avatarUrl)
+  }))
+});
+
 const normalizeProject = (project: ProjectResponse): ProjectResponse => ({
   ...project,
-  members: project.members ?? []
+  members: (project.members ?? []).map(normalizeProjectMember)
 });
 
 const normalizeProjectPage = (page: ProjectsListResponse): ProjectsListResponse => ({
   ...page,
   page: page.page ?? page.number ?? 0,
   content: (page.content ?? []).map(normalizeProject)
+});
+
+const normalizeProjectGraph = (graph: ProjectGraphResponse): ProjectGraphResponse => ({
+  ...graph,
+  nodes: (graph.nodes ?? []).map(normalizeTaskNode),
+  edges: graph.edges ?? []
 });
 
 const normalizeProjectMember = (member: Partial<ProjectMember> & { userId?: string; id?: string }): ProjectMember => {
@@ -216,11 +231,37 @@ const normalizeProjectMember = (member: Partial<ProjectMember> & { userId?: stri
     userId,
     displayName: member.displayName ?? (userId ? `User ${userId.slice(0, 8)}` : 'Project member'),
     email: member.email ?? '',
-    avatarUrl: member.avatarUrl ?? null,
+    avatarUrl: resolveApiAssetUrl(member.avatarUrl),
     role: member.role ?? 'MEMBER',
     joinedAt: member.joinedAt ?? ''
   };
 };
+
+const serializeHours = (value: HoursInput | undefined): string | null | undefined => {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : null;
+  return value.trim().replace(',', '.');
+};
+
+const serializeCreateTaskRequest = (data: CreateTaskRequest): CreateTaskRequest => ({
+  ...data,
+  estimatedHours: serializeHours(data.estimatedHours)
+});
+
+const serializeUpdateTaskRequest = (data: UpdateTaskRequest): UpdateTaskRequest => ({
+  ...data,
+  estimatedHours: serializeHours(data.estimatedHours)
+});
+
+export interface UpdateProjectRequest {
+  version: number;
+  name?: string;
+  description?: string | null;
+  techStack?: TechStack;
+  status?: ProjectResponse['status'];
+  aiEstimate?: boolean;
+}
 
 export const projectsApi = {
   async listProjects(params?: {
@@ -245,14 +286,23 @@ export const projectsApi = {
     return normalizeProject(response.data);
   },
 
+  async updateProject(projectId: string, data: UpdateProjectRequest): Promise<ProjectResponse> {
+    const response = await apiClient.patch<ProjectResponse>(`/api/v1/projects/${projectId}`, data);
+    return normalizeProject(response.data);
+  },
+
+  async deleteProject(projectId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/projects/${projectId}`);
+  },
+
   async getProjectGraph(projectId: string): Promise<ProjectGraphResponse> {
     const response = await apiClient.get<ProjectGraphResponse>(`/api/v1/projects/${projectId}/graph`);
-    return response.data;
+    return normalizeProjectGraph(response.data);
   },
 
   async createTask(projectId: string, data: CreateTaskRequest): Promise<TaskNode> {
-    const response = await apiClient.post<TaskNode>(`/api/v1/projects/${projectId}/tasks`, data);
-    return response.data;
+    const response = await apiClient.post<TaskNode>(`/api/v1/projects/${projectId}/tasks`, serializeCreateTaskRequest(data));
+    return normalizeTaskNode(response.data);
   },
 
   async createEdge(projectId: string, data: CreateEdgeRequest, enableSmartRecovery = false): Promise<EdgeResponse> {
@@ -266,16 +316,19 @@ export const projectsApi = {
 
   async mutateGraph(projectId: string, data: MutateGraphRequest): Promise<ProjectGraphResponse> {
     const response = await apiClient.post<ProjectGraphResponse>(`/api/v1/projects/${projectId}/mutate`, data);
-    return response.data;
+    return normalizeProjectGraph(response.data);
   },
 
   async updateTask(taskId: string, data: UpdateTaskRequest): Promise<TaskNode> {
-    const response = await apiClient.patch<TaskNode>(`/api/v1/tasks/${taskId}`, data);
-    return response.data;
+    const response = await apiClient.patch<TaskNode>(`/api/v1/tasks/${taskId}`, serializeUpdateTaskRequest(data));
+    return normalizeTaskNode(response.data);
   },
 
-  async logTaskTime(taskId: string, data: { hours: number; comment?: string | null }): Promise<TimeLogResponse> {
-    const response = await apiClient.post<TimeLogResponse>(`/api/v1/tasks/${taskId}/time-logs`, data);
+  async logTaskTime(taskId: string, data: { hours: HoursInput; comment?: string | null }): Promise<TimeLogResponse> {
+    const response = await apiClient.post<TimeLogResponse>(`/api/v1/tasks/${taskId}/time-logs`, {
+      ...data,
+      hours: serializeHours(data.hours)
+    });
     return response.data;
   },
 
@@ -292,15 +345,23 @@ export const projectsApi = {
     taskId: string,
     data: {
       status: 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
-      loggedHours: number | null;
+      loggedHours: HoursInput;
       comment?: string | null;
     }
-  ): Promise<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }> {
-    const response = await apiClient.patch<{ updatedTask: TaskNode; unlockedTasks: TaskNode[] }>(
+  ): Promise<{ updatedTask: TaskNode; unlockedTasks: TaskNode[]; graph?: ProjectGraphResponse }> {
+    const response = await apiClient.patch<{ updatedTask: TaskNode; unlockedTasks: TaskNode[]; graph?: ProjectGraphResponse }>(
       `/api/v1/tasks/${taskId}/status`,
-      data
+      {
+        ...data,
+        loggedHours: serializeHours(data.loggedHours)
+      }
     );
-    return response.data;
+    return {
+      ...response.data,
+      updatedTask: normalizeTaskNode(response.data.updatedTask),
+      unlockedTasks: (response.data.unlockedTasks ?? []).map(normalizeTaskNode),
+      graph: response.data.graph ? normalizeProjectGraph(response.data.graph) : undefined
+    };
   },
 
   async deleteEdge(edgeId: string): Promise<void> {
@@ -332,7 +393,7 @@ export const projectsApi = {
 
   async assignTask(taskId: string, data: AssignTaskRequest): Promise<TaskNode> {
     const response = await apiClient.put<TaskNode>(`/api/v1/tasks/${taskId}/assignees`, data);
-    return response.data;
+    return normalizeTaskNode(response.data);
   },
 
   async getActionLog(
