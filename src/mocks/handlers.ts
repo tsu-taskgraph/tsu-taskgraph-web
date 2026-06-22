@@ -651,6 +651,163 @@ const projectGraphs: Record<string, {
   }
 };
 
+const enrichmentTimelines = new Map<string, number>();
+
+function getEnrichmentProgress(projectId: string): 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | null {
+  const graph = projectGraphs[projectId];
+  if (!graph) return null;
+  if (graph.enrichmentStatus === 'COMPLETED') return 'COMPLETED';
+
+  if (!enrichmentTimelines.has(projectId)) {
+    enrichmentTimelines.set(projectId, Date.now());
+  }
+
+  const elapsed = Date.now() - enrichmentTimelines.get(projectId)!;
+
+  if (elapsed < 5000) {
+    graph.enrichmentStatus = 'PENDING';
+    return 'PENDING';
+  }
+  if (elapsed < 10000) {
+    graph.enrichmentStatus = 'IN_PROGRESS';
+    return 'IN_PROGRESS';
+  }
+
+  graph.enrichmentStatus = 'COMPLETED';
+  
+  if (projectId === '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e') {
+    graph.nodes = [
+      {
+        id: 'iot-1',
+        projectId,
+        title: 'Архитектура сбора данных',
+        description: 'Разработка архитектуры высоконагруженного сбора телеметрии с IoT-датчиков умного дома.',
+        status: 'COMPLETED',
+        category: 'DEVOPS',
+        layer: 0,
+        positionX: 80,
+        positionY: 220,
+        estimatedHours: 8,
+        loggedHours: 8,
+        enrichment: {
+          checklist: ['Выбрать протокол передачи', 'Спроектировать формат пакетов данных'],
+          pitfalls: ['Учесть нестабильное соединение на датчиках'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-2',
+        projectId,
+        title: 'Интеграция MQTT-брокера',
+        description: 'Настройка кластера EMQX / Mosquitto для приема пакетов данных по протоколу MQTT.',
+        status: 'IN_PROGRESS',
+        category: 'DEVOPS',
+        layer: 1,
+        positionX: 330,
+        positionY: 100,
+        estimatedHours: 12,
+        loggedHours: 4,
+        enrichment: {
+          checklist: ['Развернуть брокер в Docker', 'Настроить ACL правила авторизации'],
+          pitfalls: ['Ограничить максимальный размер пакета на брокере'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-3',
+        projectId,
+        title: 'Служба ClickHouse БД',
+        description: 'Разработка сервиса на Go для записи входящего потока данных в ClickHouse.',
+        status: 'AVAILABLE',
+        category: 'BACKEND',
+        layer: 2,
+        positionX: 600,
+        positionY: 80,
+        estimatedHours: 16,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Создать схему таблиц ClickHouse', 'Настроить batch-запись'],
+          pitfalls: ['Избегать одиночных инсертов в ClickHouse'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-4',
+        projectId,
+        title: 'Дашборд Next.js',
+        description: 'Фронтенд дашборда для отображения графиков датчиков в реальном времени.',
+        status: 'AVAILABLE',
+        category: 'FRONTEND',
+        layer: 2,
+        positionX: 600,
+        positionY: 340,
+        estimatedHours: 14,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Подключить WebSockets', 'Реализовать графики Chart.js'],
+          pitfalls: ['Оптимизировать рендер при высокой частоте обновлений'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-5',
+        projectId,
+        title: 'ML-модель аномалий',
+        description: 'Разработка микросервиса на Python для детекции аномалий в показаниях датчиков.',
+        status: 'LOCKED',
+        category: 'OTHER',
+        layer: 3,
+        positionX: 870,
+        positionY: 220,
+        estimatedHours: 20,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Обучить модель Isolation Forest', 'Реализовать инференс через API'],
+          pitfalls: ['Учесть ложные срабатывания при резком изменении внешних факторов'],
+          links: []
+        }
+      }
+    ];
+    graph.edges = [
+      { id: 'iot-e1', sourceTaskId: 'iot-1', targetTaskId: 'iot-2' },
+      { id: 'iot-e2', sourceTaskId: 'iot-1', targetTaskId: 'iot-4' },
+      { id: 'iot-e3', sourceTaskId: 'iot-2', targetTaskId: 'iot-3' },
+      { id: 'iot-e4', sourceTaskId: 'iot-3', targetTaskId: 'iot-5' },
+      { id: 'iot-e5', sourceTaskId: 'iot-4', targetTaskId: 'iot-5' }
+    ];
+  } else {
+    graph.nodes = [
+      {
+        id: `node-${projectId}-1`,
+        projectId,
+        title: 'Инициализация проекта ИИ',
+        description: 'Базовая декомпозиция и планирование этапов.',
+        status: 'AVAILABLE',
+        category: 'DEVOPS',
+        layer: 0,
+        positionX: 100,
+        positionY: 200,
+        estimatedHours: 4,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Инициализировать git-репозиторий', 'Настроить базовые конфиги сборки'],
+          pitfalls: [],
+          links: []
+        }
+      }
+    ];
+    graph.edges = [];
+  }
+
+  const project = projectsList.find((p) => p.id === projectId);
+  if (project && project.status === 'PENDING_AI') {
+    project.status = 'ACTIVE';
+  }
+
+  enrichmentTimelines.delete(projectId);
+  return 'COMPLETED';
+}
+
 function recalculateTaskStatuses(graph: typeof projectGraphs[string]) {
   const now = new Date().toISOString();
   const completedIds = new Set(
@@ -962,27 +1119,9 @@ export const handlers = [
 
     projectGraphs[newProjectId] = {
       projectId: newProjectId,
-      nodes: [
-        {
-          id: 'node-1',
-          projectId: newProjectId,
-          title: 'Инициализация проекта ИИ',
-          description: `Декомпозиция проекта: ${newProject.description}`,
-          status: 'AVAILABLE',
-          category: 'DEVOPS',
-          positionX: 100,
-          positionY: 200,
-          estimatedHours: 4,
-          loggedHours: 0,
-          enrichment: {
-            checklist: ['Настроить окружение', 'Проверить линтер'],
-            pitfalls: ['Начальная сборка может завершиться ошибкой при отсутствии node_modules'],
-            links: []
-          }
-        }
-      ],
+      nodes: [],
       edges: [],
-      enrichmentStatus: 'COMPLETED'
+      enrichmentStatus: data.aiEstimate ? 'PENDING' : 'COMPLETED'
     };
 
     return HttpResponse.json({
@@ -1028,6 +1167,8 @@ export const handlers = [
         enrichmentStatus: 'PENDING'
       });
     }
+
+    getEnrichmentProgress(projectId as string);
 
     const graph = projectGraphs[projectId as string];
 
