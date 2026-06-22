@@ -12,7 +12,7 @@ const FIELD_MAPPING = [
   { keys: ['description', 'описан'], field: 'description', label: 'Description' },
   { keys: ['teamsize', 'размер', 'команд', 'участник'], field: 'teamSize', label: 'Team size' },
   { keys: ['apikey', 'api key', 'ключ'], field: 'apiKey', label: 'API key' },
-  { keys: ['ollamabaseurl', 'url', 'ссылк', 'адрес'], field: 'ollamaBaseUrl', label: 'Ollama URL' },
+  { keys: ['custombaseurl', 'ollamabaseurl', 'base url', 'url', 'ссылк', 'адрес'], field: 'customBaseUrl', label: 'Custom base URL' },
   { keys: ['provider', 'провайдер'], field: 'provider', label: 'AI provider' },
   { keys: ['model', 'модель'], field: 'model', label: 'AI model' },
 ];
@@ -145,10 +145,28 @@ export const mapServerErrorToEnglish = (
 ): MappedError => {
   const isLogin = context?.isLogin ?? false;
 
+  if (errorData && typeof errorData === 'object') {
+    const maybeAxiosError = errorData as {
+      response?: { status?: number; data?: unknown };
+      code?: string;
+      message?: string;
+    };
+
+    if (maybeAxiosError.response) {
+      status = status ?? maybeAxiosError.response.status;
+      errorData = maybeAxiosError.response.data;
+    } else if (!status && maybeAxiosError.code === 'ERR_NETWORK') {
+      errorData = undefined;
+    }
+  }
+
   if (status === 401) {
     return {
       message: isLogin ? 'Invalid email or password.' : 'Session expired or unauthorized.'
     };
+  }
+  if (status === 403) {
+    return { message: 'Access denied.' };
   }
   if (status === 404) {
     return { message: 'Requested resource not found.' };
@@ -171,7 +189,11 @@ export const mapServerErrorToEnglish = (
       apiMessage = errorData;
     } else if (typeof errorData === 'object' && errorData !== null) {
       const dataObj = errorData as Record<string, unknown>;
-      apiMessage = typeof dataObj.message === 'string' ? dataObj.message : '';
+      apiMessage =
+        (typeof dataObj.message === 'string' ? dataObj.message : '') ||
+        (typeof dataObj.detail === 'string' ? dataObj.detail : '') ||
+        (typeof dataObj.error === 'string' ? dataObj.error : '') ||
+        (typeof dataObj.title === 'string' ? dataObj.title : '');
 
       const errorsList = dataObj.errors || dataObj.validationErrors;
       if (Array.isArray(errorsList)) {
@@ -179,7 +201,10 @@ export const mapServerErrorToEnglish = (
           if (err && typeof err === 'object') {
             const errObj = err as Record<string, unknown>;
             const fieldName = typeof errObj.field === 'string' ? errObj.field : '';
-            const rawMsg = typeof errObj.message === 'string' ? errObj.message : '';
+            const rawMsg =
+              (typeof errObj.message === 'string' ? errObj.message : '') ||
+              (typeof errObj.defaultMessage === 'string' ? errObj.defaultMessage : '') ||
+              (typeof errObj.reason === 'string' ? errObj.reason : '');
             const parsed = translateAndFormatMessage(rawMsg || fieldName, fieldName);
             const resolvedField = parsed.field || fieldName;
             if (resolvedField) {

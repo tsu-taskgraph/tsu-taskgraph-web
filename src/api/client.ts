@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -21,6 +21,15 @@ export const clearTokens = () => {
   localStorage.removeItem('refreshToken');
 };
 
+export const resolveApiAssetUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+};
+
 
 export const getAiSettings = () => {
   const settings = localStorage.getItem('aiSettings');
@@ -30,6 +39,7 @@ export const setAiSettings = (settings: {
   provider?: string;
   apiKey?: string;
   model?: string;
+  customBaseUrl?: string;
   ollamaBaseUrl?: string;
 }) => {
   localStorage.setItem('aiSettings', JSON.stringify(settings));
@@ -48,7 +58,8 @@ apiClient.interceptors.request.use(
       if (aiSettings.provider) config.headers['X-AI-Provider'] = aiSettings.provider;
       if (aiSettings.apiKey) config.headers['X-AI-API-Key'] = aiSettings.apiKey;
       if (aiSettings.model) config.headers['X-AI-Model'] = aiSettings.model;
-      if (aiSettings.ollamaBaseUrl) config.headers['X-Ollama-Base-URL'] = aiSettings.ollamaBaseUrl;
+      const customBaseUrl = aiSettings.customBaseUrl ?? aiSettings.ollamaBaseUrl;
+      if (customBaseUrl) config.headers['X-Custom-Base-URL'] = customBaseUrl;
     }
 
     return config;

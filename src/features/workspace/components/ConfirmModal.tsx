@@ -28,11 +28,11 @@ export function ConfirmModal({
     return (
         <>
             <div
-                className={`fixed inset-0 z-[80] bg-slate-950/70 backdrop-blur-sm transition-all duration-200 ${isClosing ? 'modal-overlay-exit' : 'animate-slow-fade'}`}
+                className={`fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm transition-all duration-200 ${isClosing ? 'modal-overlay-exit' : 'animate-slow-fade'}`}
                 onClick={onCancel}
             />
 
-            <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                 <div className={`w-full max-w-[380px] rounded-3xl border border-white/10 bg-[#020617]/90 p-6 text-slate-100 shadow-2xl shadow-black/30 backdrop-blur-2xl light:border-slate-200/70 light:bg-white/95 light:text-slate-900 light:shadow-slate-300/30 ${isClosing ? 'modal-content-exit' : 'animate-zoom-in-fade'}`}>
                     <div className="flex items-start gap-4">
                         <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isDestructive ? 'bg-red-500/10 text-red-400 light:bg-red-500/10 light:text-red-600' : 'bg-brand-500/10 text-brand-400 light:bg-brand-500/10 light:text-brand-600'}`}>

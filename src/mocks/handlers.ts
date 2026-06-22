@@ -18,6 +18,63 @@ interface UserProfile {
   createdAt: string;
 }
 
+export interface ProjectMember {
+  userId: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+  joinedAt: string;
+}
+
+interface TimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  userDisplayName: string;
+  hours: number;
+  comment: string | null;
+  loggedAt: string;
+}
+
+type ActionLogActorType = 'USER' | 'AI' | 'SYSTEM';
+
+type ActionLogEventType =
+  | 'PROJECT_CREATED'
+  | 'PROJECT_UPDATED'
+  | 'MEMBER_INVITED'
+  | 'MEMBER_ROLE_CHANGED'
+  | 'MEMBER_REMOVED'
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_STATUS_CHANGED'
+  | 'TASK_ASSIGNED'
+  | 'TASK_UNASSIGNED'
+  | 'TASK_DELETED'
+  | 'TIME_LOGGED'
+  | 'EDGE_CREATED'
+  | 'EDGE_DELETED'
+  | 'GRAPH_MUTATED'
+  | 'SMART_RECOVERY_APPLIED'
+  | 'AI_SKELETON_GENERATED'
+  | 'AI_ENRICHMENT_COMPLETED'
+  | 'WIKI_PAGE_CREATED'
+  | 'WIKI_PAGE_UPDATED'
+  | 'BLUEPRINT_GENERATED'
+  | 'GITHUB_TASK_CLOSED';
+
+interface ActionLogEntry {
+  id: string;
+  projectId: string;
+  actorId: string | null;
+  actorType: ActionLogActorType;
+  actorDisplayName: string;
+  eventType: ActionLogEventType;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 type MockTaskCategory = 'BACKEND' | 'FRONTEND' | 'DEVOPS' | 'TESTING' | 'DOCUMENTATION' | 'DESIGN' | 'OTHER' | null;
 
 interface Project {
@@ -32,6 +89,7 @@ interface Project {
   totalEstimatedHours: number | null;
   totalLoggedHours: number | null;
   completionPercent: number;
+  members: ProjectMember[];
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +123,32 @@ const projectsList: Project[] = [
     totalEstimatedHours: 39,
     totalLoggedHours: 8,
     completionPercent: 17,
+    members: [
+      {
+        userId: '00000000-0000-0000-0000-000000000000',
+        displayName: 'Разработчик TaskGraph',
+        email: 'dev@taskgraph.ru',
+        avatarUrl: null,
+        role: 'OWNER',
+        joinedAt: new Date(Date.now() - 86400000 * 5).toISOString()
+      },
+      {
+        userId: '00000000-0000-0000-0000-000000000002',
+        displayName: 'Maria Designer',
+        email: 'designer@taskgraph.ru',
+        avatarUrl: null,
+        role: 'MEMBER',
+        joinedAt: new Date(Date.now() - 86400000 * 4).toISOString()
+      },
+      {
+        userId: '00000000-0000-0000-0000-000000000003',
+        displayName: 'Ivan Tester',
+        email: 'tester@taskgraph.ru',
+        avatarUrl: null,
+        role: 'MEMBER',
+        joinedAt: new Date(Date.now() - 86400000 * 3).toISOString()
+      }
+    ],
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -80,6 +164,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 80,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -95,6 +180,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 16,
     totalLoggedHours: 16,
     completionPercent: 100,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
     updatedAt: new Date(Date.now() - 86400000 * 10).toISOString()
   },
@@ -110,6 +196,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 24,
     totalLoggedHours: 24,
     completionPercent: 100,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 100).toISOString(),
     updatedAt: new Date(Date.now() - 86400000 * 80).toISOString()
   },
@@ -125,6 +212,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 120,
     totalLoggedHours: 45,
     completionPercent: 37,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -140,6 +228,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 90,
     totalLoggedHours: 30,
     completionPercent: 33,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -155,6 +244,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 60,
     totalLoggedHours: 15,
     completionPercent: 25,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -170,6 +260,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 40,
     totalLoggedHours: 10,
     completionPercent: 25,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -185,6 +276,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 100,
     totalLoggedHours: 20,
     completionPercent: 20,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -200,6 +292,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 75,
     totalLoggedHours: 15,
     completionPercent: 20,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -215,6 +308,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 1,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -230,6 +324,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 1,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -245,8 +340,106 @@ const projectsList: Project[] = [
     totalEstimatedHours: 0,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
+  }
+];
+
+projectsList.forEach((project) => {
+  if (!project.members || project.members.length === 0) {
+    project.members = [
+      {
+        userId: '00000000-0000-0000-0000-000000000000',
+        displayName: userProfile.displayName,
+        email: userProfile.email,
+        avatarUrl: userProfile.avatarUrl,
+        role: 'OWNER',
+        joinedAt: project.createdAt
+      }
+    ];
+  }
+});
+
+const timeLogs: TimeLog[] = [];
+
+const actionLogs: ActionLogEntry[] = [
+  {
+    id: 'log-project-created',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'PROJECT_CREATED',
+    description: 'Created project E-Commerce Store (Spring & React).',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString()
+  },
+  {
+    id: 'log-ai-skeleton',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: null,
+    actorType: 'AI',
+    actorDisplayName: 'TaskGraph AI',
+    eventType: 'AI_SKELETON_GENERATED',
+    description: 'AI generated initial task graph skeleton.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 5 + 60000).toISOString()
+  },
+  {
+    id: 'log-member-designer',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'MEMBER_INVITED',
+    description: 'Invited Maria Designer as MEMBER.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 4).toISOString()
+  },
+  {
+    id: 'log-task-complete-t1',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'TASK_STATUS_CHANGED',
+    description: 'Task "Инициализация репозиториев и БД" marked as COMPLETED.',
+    metadata: { taskId: 't1', oldStatus: 'AVAILABLE', newStatus: 'COMPLETED' },
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+  },
+  {
+    id: 'log-time-t1',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'TIME_LOGGED',
+    description: 'Logged 4.0 hours on "Инициализация репозиториев и БД".',
+    metadata: { taskId: 't1', hours: 4 },
+    createdAt: new Date(Date.now() - 86400000 * 3 + 30000).toISOString()
+  },
+  {
+    id: 'log-ai-enrich',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: null,
+    actorType: 'AI',
+    actorDisplayName: 'TaskGraph AI',
+    eventType: 'AI_ENRICHMENT_COMPLETED',
+    description: 'AI enrichment completed for all project tasks.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+  },
+  {
+    id: 'log-system-ready',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: null,
+    actorType: 'SYSTEM',
+    actorDisplayName: 'System',
+    eventType: 'PROJECT_UPDATED',
+    description: 'Project status updated to ACTIVE.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000).toISOString()
   }
 ];
 
@@ -674,7 +867,7 @@ function getEnrichmentProgress(projectId: string): 'PENDING' | 'IN_PROGRESS' | '
   }
 
   graph.enrichmentStatus = 'COMPLETED';
-  
+
   if (projectId === '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e') {
     graph.nodes = [
       {
@@ -1111,6 +1304,16 @@ export const handlers = [
       totalEstimatedHours: data.aiEstimate ? 40 : 0,
       totalLoggedHours: 0,
       completionPercent: 0,
+      members: [
+        {
+          userId: '00000000-0000-0000-0000-000000000000',
+          displayName: userProfile.displayName,
+          email: userProfile.email,
+          avatarUrl: userProfile.avatarUrl,
+          role: 'OWNER',
+          joinedAt: new Date().toISOString()
+        }
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -1394,14 +1597,57 @@ export const handlers = [
     };
     targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
 
-    return HttpResponse.json({
-      id: `time-log-${Date.now()}`,
+    const logId = `time-log-${Date.now()}`;
+    const logEntry: TimeLog = {
+      id: logId,
       taskId,
       userId: '00000000-0000-0000-0000-000000000000',
+      userDisplayName: userProfile.displayName,
       hours: body.hours,
       comment: body.comment ?? null,
       loggedAt: now
+    };
+    timeLogs.push(logEntry);
+
+    return HttpResponse.json({
+      id: logEntry.id,
+      taskId: logEntry.taskId,
+      userId: logEntry.userId,
+      userDisplayName: logEntry.userDisplayName,
+      hours: logEntry.hours,
+      comment: logEntry.comment,
+      loggedAt: logEntry.loggedAt
     }, { status: 201 });
+  }),
+
+  http.get('*/api/v1/tasks/:taskId/time-logs', ({ params }) => {
+    const taskId = params.taskId as string;
+    const logs = timeLogs
+      .filter((log) => log.taskId === taskId)
+      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
+    return HttpResponse.json(logs);
+  }),
+
+  http.delete('*/api/v1/time-logs/:logId', ({ params }) => {
+    const logId = params.logId as string;
+    const index = timeLogs.findIndex((log) => log.id === logId);
+
+    if (index === -1) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const log = timeLogs[index];
+    timeLogs.splice(index, 1);
+
+    for (const graph of Object.values(projectGraphs)) {
+      const task = graph.nodes.find((node) => node.id === log.taskId);
+      if (task) {
+        const updatedHours = Math.max(0, Number(task.loggedHours ?? 0) - log.hours);
+        task.loggedHours = updatedHours;
+      }
+    }
+
+    return new HttpResponse(null, { status: 204 });
   }),
 
   http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {
@@ -1476,6 +1722,45 @@ export const handlers = [
       unlockedTasks,
       graph: targetGraph
     });
+  }),
+
+  http.put('*/api/v1/tasks/:taskId/assignees', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as { userIds?: string[] };
+    const userIds = body.userIds ?? [];
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const project = projectsList.find((p) => p.id === targetTask.projectId);
+    const assignedMembers = (project?.members ?? []).filter((m) => userIds.includes(m.userId));
+    const now = new Date().toISOString();
+
+    const updatedTask = {
+      ...targetTask,
+      assignees: assignedMembers.map((member) => ({
+        userId: member.userId,
+        displayName: member.displayName,
+        avatarUrl: member.avatarUrl
+      })),
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+    return HttpResponse.json(updatedTask);
   }),
 
   http.post('*/api/v1/projects/:projectId/edges', async ({ params, request }) => {
@@ -1806,5 +2091,137 @@ export const handlers = [
 
     recalculateTaskStatuses(targetGraph);
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get('*/api/v1/projects/:projectId/members', ({ params }) => {
+    const projectId = params.projectId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+    return HttpResponse.json(project.members || []);
+  }),
+
+  http.post('*/api/v1/projects/:projectId/members', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const body = await request.json() as { email: string; role: ProjectMember['role'] };
+    const email = (body.email || '').toLowerCase().trim();
+    const role = body.role || 'MEMBER';
+
+    if (!email) {
+      return HttpResponse.json({ message: 'Email is required.' }, { status: 400 });
+    }
+
+    if (project.members.some((m) => m.email.toLowerCase() === email)) {
+      return HttpResponse.json({ message: 'User is already a member of this project.' }, { status: 409 });
+    }
+
+    if (email.includes('notfound')) {
+      return HttpResponse.json({ message: 'User with this email was not found.' }, { status: 404 });
+    }
+
+    let displayName = 'Guest User';
+    const avatarUrl = null;
+    let userId = `user-${Date.now()}`;
+
+    if (email === 'admin@taskgraph.ru') {
+      displayName = 'Alex Admin';
+      userId = '00000000-0000-0000-0000-000000000001';
+    } else if (email === 'designer@taskgraph.ru') {
+      displayName = 'Maria Designer';
+      userId = '00000000-0000-0000-0000-000000000002';
+    } else if (email === 'tester@taskgraph.ru') {
+      displayName = 'Ivan Tester';
+      userId = '00000000-0000-0000-0000-000000000003';
+    } else {
+      const parts = email.split('@');
+      displayName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    }
+
+    const newMember: ProjectMember = {
+      userId,
+      displayName,
+      email,
+      avatarUrl,
+      role,
+      joinedAt: new Date().toISOString()
+    };
+
+    project.members.push(newMember);
+    return HttpResponse.json(newMember, { status: 201 });
+  }),
+
+  http.patch('*/api/v1/projects/:projectId/members/:userId', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const userId = params.userId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const member = project.members.find((m) => m.userId === userId);
+    if (!member) {
+      return HttpResponse.json({ message: 'Member not found in project.' }, { status: 404 });
+    }
+
+    const body = await request.json() as { role: ProjectMember['role'] };
+    member.role = body.role;
+    return HttpResponse.json(member, { status: 200 });
+  }),
+
+  http.delete('*/api/v1/projects/:projectId/members/:userId', ({ params }) => {
+    const projectId = params.projectId as string;
+    const userId = params.userId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const initialLength = project.members.length;
+    project.members = project.members.filter((m) => m.userId !== userId);
+
+    if (project.members.length === initialLength) {
+      return HttpResponse.json({ message: 'Member not found in project.' }, { status: 404 });
+    }
+
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get('*/api/v1/projects/:projectId/action-log', ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const url = new URL(request.url);
+    const actorType = url.searchParams.get('actorType') as ActionLogActorType | null;
+    const eventType = url.searchParams.get('eventType') as ActionLogEventType | null;
+    const page = parseInt(url.searchParams.get('page') || '0', 10);
+    const size = parseInt(url.searchParams.get('size') || '50', 10);
+
+    let filtered = actionLogs.filter((log) => log.projectId === projectId);
+    if (actorType) {
+      filtered = filtered.filter((log) => log.actorType === actorType);
+    }
+    if (eventType) {
+      filtered = filtered.filter((log) => log.eventType === eventType);
+    }
+
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const totalElements = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+    const safePage = Math.min(page, totalPages - 1);
+    const start = safePage * size;
+    const content = filtered.slice(start, start + size);
+
+    return HttpResponse.json({
+      content,
+      totalElements,
+      totalPages
+    });
   })
 ];

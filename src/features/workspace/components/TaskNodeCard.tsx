@@ -198,6 +198,25 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
           <StatusIcon className={`relative z-10 h-[18px] w-[18px] text-slate-200 light:text-slate-700 ${iconAnimClass}`} />
         </div>
 
+        {assignees.length > 0 && (
+          <div className="absolute -bottom-1 -right-1 z-30 flex -space-x-1">
+            {assignees.slice(0, 2).map((assignee) => (
+              <div
+                key={assignee.userId}
+                title={assignee.displayName}
+                className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border border-slate-950 bg-slate-800 text-[8px] font-bold text-slate-200 light:border-white light:bg-slate-100 light:text-slate-700"
+              >
+                {assignee.avatarUrl ? <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-full w-full object-cover" /> : getInitials(assignee.displayName)}
+              </div>
+            ))}
+            {assignees.length > 2 && (
+              <div className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-950 bg-brand-500/15 text-[8px] font-bold text-brand-300 light:border-white light:text-brand-700">
+                +{assignees.length - 2}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-80 -translate-x-1/2 translate-y-2 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-xs opacity-0 shadow-lg shadow-black/10 backdrop-blur-2xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 light:border-slate-200/60 light:bg-white/75 light:shadow-slate-200/10">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className={`rounded-lg border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${categoryConfig[category]}`}>
@@ -276,6 +295,24 @@ export function TaskNodeCard({ data, selected }: TaskNodeCardProps) {
                     <Clock className="h-3 w-3" />
                     {formatHours(loggedHours)} / {formatHours(estimatedHours)}
                   </span>
+                  {assignees.length > 0 && (
+                    <div className="flex -space-x-1.5">
+                      {assignees.slice(0, 3).map((assignee) => (
+                        <div
+                          key={assignee.userId}
+                          title={assignee.displayName}
+                          className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-slate-950 bg-slate-800 text-[9px] font-bold text-slate-200 light:border-white light:bg-slate-100 light:text-slate-700"
+                        >
+                          {assignee.avatarUrl ? <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-full w-full object-cover" /> : getInitials(assignee.displayName)}
+                        </div>
+                      ))}
+                      {assignees.length > 3 && (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-950 bg-brand-500/15 text-[9px] font-bold text-brand-300 light:border-white light:text-brand-700">
+                          +{assignees.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

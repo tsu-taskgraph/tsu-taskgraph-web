@@ -8,21 +8,24 @@ import {
     Clock,
     ExternalLink,
     Hourglass,
+    Loader2,
     Lock,
     Pencil,
     Save,
     Tag,
-    UserRound,
+    Trash2,
     X,
     Zap
 } from 'lucide-react';
-import type { TaskNode } from '../../../api/projects';
+import { projectsApi, type TaskNode, type ProjectMember, type TimeLogResponse } from '../../../api/projects';
 
 type TaskStatus = TaskNode['status'];
 type TaskCategory = NonNullable<TaskNode['category']>;
 
 interface TaskDetailsSidebarProps {
     task: TaskNode;
+    members: ProjectMember[];
+    currentUserId?: string;
     onClose: () => void;
     onTaskUpdate: (data: {
         title?: string;
@@ -34,6 +37,8 @@ interface TaskDetailsSidebarProps {
         startDate?: string | null;
         dueDate?: string | null;
     }) => Promise<void>;
+    onAssigneesChange: (userIds: string[]) => Promise<void>;
+    onTimeLogDelete: (log: TimeLogResponse) => Promise<void>;
     onInteract?: () => void;
     updating: boolean;
     isClosing?: boolean;
@@ -99,8 +104,21 @@ function formatDate(value: string | null) {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
+function formatDateTime(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 function formatHours(value: number | null | undefined) {
     return `${value ?? 0}h`;
+}
+
+function getInitials(displayName: string) {
+    const parts = displayName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'U';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
 }
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -248,7 +266,7 @@ function CustomDateField({ label, value, onChange }: {
     );
 }
 
-export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, updating, isClosing = false, isEnriching = false }: TaskDetailsSidebarProps) {
+export function TaskDetailsSidebar({ task, members, currentUserId, onClose, onTaskUpdate, onAssigneesChange, onTimeLogDelete, onInteract, updating, isClosing = false, isEnriching = false }: TaskDetailsSidebarProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [draftTitle, setDraftTitle] = useState(task.title);
     const [draftDescription, setDraftDescription] = useState(task.description ?? '');
@@ -261,6 +279,11 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
     const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
     const [progressDropdownOpen, setProgressDropdownOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+    const [assigneesDropdownOpen, setAssigneesDropdownOpen] = useState(false);
+    const [assigneeUpdating, setAssigneeUpdating] = useState(false);
+    const [timeLogs, setTimeLogs] = useState<TimeLogResponse[]>([]);
+    const [timeLogsLoading, setTimeLogsLoading] = useState(false);
+    const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
     const titleRef = useRef<HTMLHeadingElement | null>(null);
 
     const status = statusMeta[task.status];
@@ -286,7 +309,24 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
         setCategoryDropdownOpen(false);
         setProgressDropdownOpen(false);
         setStatusDropdownOpen(false);
+        setAssigneesDropdownOpen(false);
+        setTimeLogs([]);
     }, [task.id, task.title, task.description, task.category, task.estimatedHours, task.completionPercent, task.startDate, task.dueDate, task.status]);
+
+    useEffect(() => {
+        let cancelled = false;
+        setTimeLogsLoading(true);
+        void projectsApi.listTaskTimeLogs(task.id).then((logs) => {
+            if (!cancelled) {
+                setTimeLogs(logs);
+            }
+        }).finally(() => {
+            if (!cancelled) {
+                setTimeLogsLoading(false);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [task.id, task.loggedHours]);
 
     const startEditing = () => setIsEditing(true);
     const cancelEditing = () => {
@@ -301,6 +341,7 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
         setCategoryDropdownOpen(false);
         setProgressDropdownOpen(false);
         setStatusDropdownOpen(false);
+        setAssigneesDropdownOpen(false);
         setIsEditing(false);
     };
 
@@ -552,12 +593,110 @@ export function TaskDetailsSidebar({ task, onClose, onTaskUpdate, onInteract, up
                 </section>
 
                 <section className="mt-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Time logs</h3>
+                    {timeLogsLoading ? (
+                        <div className="mt-3 flex items-center justify-center py-4">
+                            <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                        </div>
+                    ) : timeLogs.length > 0 ? (
+                        <ul className="mt-2 space-y-2">
+                            {timeLogs.map((log) => {
+                                const isOwn = log.userId === currentUserId;
+                                return (
+                                    <li key={log.id} className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-100 light:text-slate-900">
+                                                <Clock className="h-3.5 w-3.5 text-sky-400 light:text-sky-600" />
+                                                <span>{formatHours(log.hours)}</span>
+                                            </div>
+                                            <div className="mt-1 text-xs text-slate-500">{log.userDisplayName} · {formatDateTime(log.loggedAt)}</div>
+                                            {log.comment && <p className="mt-1.5 text-xs text-slate-400 light:text-slate-600">{log.comment}</p>}
+                                        </div>
+                                        {isOwn && (
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    setDeletingLogId(log.id);
+                                                    await onTimeLogDelete(log);
+                                                    const logs = await projectsApi.listTaskTimeLogs(task.id);
+                                                    setTimeLogs(logs);
+                                                    setDeletingLogId(null);
+                                                }}
+                                                disabled={deletingLogId === log.id}
+                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-slate-400 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50 light:border-slate-200/70 light:bg-white/60 light:text-slate-500 light:hover:bg-red-50 light:hover:text-red-600"
+                                                aria-label="Delete time log"
+                                            >
+                                                {deletingLogId === log.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                            </button>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (
+                        <p className="mt-2 text-sm text-slate-500">No time logs yet.</p>
+                    )}
+                </section>
+
+                <section className="mt-4">
                     <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Assignees</h3>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                        {assignees.length > 0 ? assignees.map((assignee) => (
-                            <div key={assignee.userId} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-2 text-xs font-semibold text-slate-300 light:border-slate-200/70 light:bg-white/55 light:text-slate-700"><UserRound className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />{assignee.displayName}</div>
-                        )) : <p className="text-sm text-slate-500">No assignees.</p>}
+                    <div className="relative mt-2">
+                        <button
+                            type="button"
+                            onClick={() => setAssigneesDropdownOpen((open) => !open)}
+                            disabled={assigneeUpdating}
+                            className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-left text-sm font-medium text-slate-100 transition focus:border-brand-500 focus:ring-1 focus:ring-brand-500 disabled:opacity-60 light:border-slate-200 light:bg-white light:text-slate-900"
+                        >
+                            <span className="truncate">{assignees.length > 0 ? `${assignees.length} assigned` : 'Select assignees'}</span>
+                            <div className="flex items-center gap-2">
+                                {assigneeUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+                                <ChevronDown className={`h-3.5 w-3.5 text-slate-500 transition-transform ${assigneesDropdownOpen ? 'rotate-180' : ''}`} />
+                            </div>
+                        </button>
+                        {assigneesDropdownOpen && (
+                            <div className="absolute left-0 top-[calc(100%+0.5rem)] z-[90] w-full origin-top rounded-2xl border border-white/10 bg-slate-950/95 p-1.5 shadow-xl backdrop-blur-xl animate-dropdown-slide light:border-slate-200/80 light:bg-white/95">
+                                {members.length > 0 ? members.map((member) => {
+                                    const selected = assignees.some((a) => a.userId === member.userId);
+                                    return (
+                                        <button
+                                            key={member.userId}
+                                            type="button"
+                                            disabled={assigneeUpdating}
+                                            onClick={async () => {
+                                                if (assigneeUpdating) return;
+                                                const nextIds = selected
+                                                    ? assignees.filter((a) => a.userId !== member.userId).map((a) => a.userId)
+                                                    : [...assignees.map((a) => a.userId), member.userId];
+                                                setAssigneeUpdating(true);
+                                                await onAssigneesChange(nextIds);
+                                                setAssigneeUpdating(false);
+                                            }}
+                                            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left transition hover:bg-white/5 disabled:opacity-50 light:hover:bg-slate-50"
+                                        >
+                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-950 bg-slate-800 text-[10px] font-bold text-slate-200 light:border-white light:bg-slate-100 light:text-slate-700">
+                                                {member.avatarUrl ? <img src={member.avatarUrl} alt={member.displayName} className="h-full w-full object-cover" /> : getInitials(member.displayName)}
+                                            </div>
+                                            <span className="flex-1 truncate text-xs font-semibold text-slate-200 light:text-slate-800">{member.displayName}</span>
+                                            <span className="text-[10px] font-medium text-slate-500">{member.role}</span>
+                                            {selected && <CheckCircle2 className="h-4 w-4 text-brand-400 light:text-brand-600" />}
+                                        </button>
+                                    );
+                                }) : <div className="px-3 py-2 text-xs text-slate-500">No project members available.</div>}
+                            </div>
+                        )}
                     </div>
+                    {assignees.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {assignees.map((assignee) => (
+                                <div key={assignee.userId} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-2 text-xs font-semibold text-slate-300 light:border-slate-200/70 light:bg-white/55 light:text-slate-700">
+                                    <div className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border border-slate-950 bg-slate-800 text-[9px] font-bold text-slate-200 light:border-white light:bg-slate-100 light:text-slate-700">
+                                        {assignee.avatarUrl ? <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-full w-full object-cover" /> : getInitials(assignee.displayName)}
+                                    </div>
+                                    {assignee.displayName}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {hasEnrichmentDetails ? (

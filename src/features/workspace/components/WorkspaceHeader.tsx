@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Moon, Sun, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Moon, Sun, Sparkles, Loader2, Users, History } from 'lucide-react';
 import type { ProjectResponse, ProjectGraphResponse } from '../../../api/projects';
 
 const projectStatusClass: Record<ProjectResponse['status'], string> = {
@@ -17,6 +17,8 @@ interface WorkspaceHeaderProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   onRefresh: () => void;
+  onOpenTeam: () => void;
+  onOpenActionLog: () => void;
   isScrolled: boolean;
 }
 
@@ -28,6 +30,8 @@ export function WorkspaceHeader({
   theme,
   toggleTheme,
   onRefresh,
+  onOpenTeam,
+  onOpenActionLog,
   isScrolled
 }: WorkspaceHeaderProps) {
   return (
@@ -70,11 +74,10 @@ export function WorkspaceHeader({
 
             <div className="flex items-center gap-2">
               {graph && (
-                <div className={`hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium backdrop-blur-xl xl:flex ${
-                  (graph.enrichmentStatus === 'PENDING' || graph.enrichmentStatus === 'IN_PROGRESS')
+                <div className={`hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium backdrop-blur-xl xl:flex ${(graph.enrichmentStatus === 'PENDING' || graph.enrichmentStatus === 'IN_PROGRESS')
                     ? 'border-brand-500/30 bg-brand-500/10 text-brand-400 light:text-brand-600'
                     : 'border-white/10 bg-[#020617]/45 text-slate-400 light:border-slate-200/60 light:bg-white/45 light:text-slate-600'
-                }`}>
+                  }`}>
                   {(graph.enrichmentStatus === 'PENDING' || graph.enrichmentStatus === 'IN_PROGRESS') ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-400 light:text-brand-600" />
@@ -88,6 +91,22 @@ export function WorkspaceHeader({
                   )}
                 </div>
               )}
+              <button
+                onClick={onOpenTeam}
+                disabled={loading}
+                className="flex h-9 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/45 text-xs font-semibold text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900 w-9 lg:w-auto px-0 lg:px-3 shrink-0"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Team</span>
+              </button>
+              <button
+                onClick={onOpenActionLog}
+                disabled={loading}
+                className="flex h-9 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/45 text-xs font-semibold text-slate-400 backdrop-blur-xl transition-all hover:bg-slate-800/80 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200/60 light:bg-white/45 light:text-slate-600 light:hover:bg-slate-50 light:hover:text-slate-900 w-9 lg:w-auto px-0 lg:px-3 shrink-0"
+              >
+                <History className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Activity</span>
+              </button>
               <button
                 onClick={onRefresh}
                 disabled={refreshing || loading}

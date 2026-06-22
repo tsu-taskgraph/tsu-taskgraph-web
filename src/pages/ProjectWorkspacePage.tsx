@@ -27,7 +27,10 @@ import { TaskDetailsSidebar } from '../features/workspace/components/TaskDetails
 import { TaskStatusMenu } from '../features/workspace/components/TaskStatusMenu';
 import { TaskActionsModal } from '../features/workspace/components/TaskActionsModal';
 import { ConfirmModal } from '../features/workspace/components/ConfirmModal';
+import { TeamModal } from '../features/workspace/components/TeamModal';
+import { InviteMemberModal } from '../features/workspace/components/InviteMemberModal';
 import { useWorkspace } from '../features/workspace/hooks/useWorkspace';
+import { ActionLogPanel } from '../features/workspace/components/ActionLogPanel';
 
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -70,6 +73,8 @@ export default function ProjectWorkspacePage() {
         theme={workspace.theme}
         toggleTheme={workspace.toggleTheme}
         onRefresh={() => workspace.loadWorkspace(true)}
+        onOpenTeam={workspace.openTeamModal}
+        onOpenActionLog={workspace.openActionLog}
         isScrolled={workspace.isScrolled}
       />
 
@@ -238,8 +243,12 @@ export default function ProjectWorkspacePage() {
                       {workspace.isTaskSidebarOpen && workspace.selectedTask && (
                         <TaskDetailsSidebar
                           task={workspace.selectedTask}
+                          members={workspace.members}
+                          currentUserId={workspace.currentUserId}
                           onClose={workspace.closeSidebarOnly}
                           onTaskUpdate={workspace.handleTaskUpdate}
+                          onAssigneesChange={workspace.handleAssigneesChange}
+                          onTimeLogDelete={workspace.handleDeleteTimeLog}
                           onInteract={() => workspace.setStatusMenu(null)}
                           updating={workspace.statusUpdatingTaskId === workspace.selectedTask.id}
                           isClosing={workspace.isTaskSidebarClosing}
@@ -350,6 +359,35 @@ export default function ProjectWorkspacePage() {
           }}
         />
       )}
+
+      <TeamModal
+        isOpen={workspace.isTeamOpen}
+        isClosing={workspace.isTeamClosing}
+        onClose={workspace.closeTeamModal}
+        members={workspace.members}
+        currentUserId={workspace.currentUserId}
+        onRoleChange={workspace.handleRoleChange}
+        onRemoveMember={workspace.handleRemoveMember}
+        onOpenInvite={workspace.openInviteModal}
+      />
+
+      <InviteMemberModal
+        isOpen={workspace.isInviteOpen}
+        isClosing={workspace.isInviteClosing}
+        onClose={workspace.closeInviteModal}
+        onInvite={workspace.handleInviteMember}
+      />
+
+      <ActionLogPanel
+        projectId={projectId || ''}
+        isOpen={workspace.isActionLogOpen}
+        isClosing={workspace.isActionLogClosing}
+        onClose={workspace.closeActionLog}
+        actionLogs={workspace.actionLogs}
+        loading={workspace.loadingActionLogs}
+        error={workspace.actionLogError}
+        onReload={workspace.loadActionLogs}
+      />
     </div>
   );
 }
