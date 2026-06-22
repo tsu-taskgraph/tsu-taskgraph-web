@@ -1522,6 +1522,8 @@ export const handlers = [
       return HttpResponse.json({ message: 'Cannot create dependency: edge already exists.' }, { status: 409 });
     }
 
+    const enableSmartRecovery = request.headers.get('X-Enable-Smart-Recovery') === 'true';
+
     const adjacency = new Map<string, string[]>();
     graph.nodes.forEach((node) => adjacency.set(node.id as string, []));
     graph.edges.forEach((edge) => {
@@ -1532,15 +1534,49 @@ export const handlers = [
 
     const stack = [targetTaskId];
     const visited = new Set<string>();
+    let cycleDetected = false;
 
     while (stack.length > 0) {
       const current = stack.pop();
       if (!current || visited.has(current)) continue;
       if (current === sourceTaskId) {
-        return HttpResponse.json({ message: 'Cannot create dependency: cycle detected.' }, { status: 400 });
+        cycleDetected = true;
+        break;
       }
       visited.add(current);
       stack.push(...(adjacency.get(current) ?? []));
+    }
+
+    if (cycleDetected) {
+      if (enableSmartRecovery) {
+        const pathMap = new Map<string, string>();
+        const q = [targetTaskId];
+        const vis = new Set<string>([targetTaskId]);
+        let found = false;
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          if (curr === sourceTaskId) {
+            found = true;
+            break;
+          }
+          const children = adjacency.get(curr) ?? [];
+          for (const child of children) {
+            if (!vis.has(child)) {
+              vis.add(child);
+              pathMap.set(child, curr);
+              q.push(child);
+            }
+          }
+        }
+        if (found) {
+          const parent = pathMap.get(sourceTaskId);
+          if (parent) {
+            graph.edges = graph.edges.filter((edge) => !(edge.sourceTaskId === parent && edge.targetTaskId === sourceTaskId));
+          }
+        }
+      } else {
+        return HttpResponse.json({ message: 'Cannot create dependency: cycle detected.' }, { status: 400 });
+      }
     }
 
     const createdEdge = {

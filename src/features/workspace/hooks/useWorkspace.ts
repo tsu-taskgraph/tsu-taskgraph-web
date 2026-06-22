@@ -118,7 +118,9 @@ export function useWorkspace(projectId: string | undefined) {
     setGraph,
     takeSnapshot,
     showEdgeToast: toast.showEdgeToast,
-    loadWorkspace
+    loadWorkspace,
+    setConfirmModal: modals.setConfirmModal,
+    setIsConfirmClosing: modals.setIsConfirmClosing
   });
 
   const {

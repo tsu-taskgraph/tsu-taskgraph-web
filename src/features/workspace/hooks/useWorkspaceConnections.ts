@@ -19,6 +19,15 @@ interface UseWorkspaceConnectionsProps {
   takeSnapshot: () => void;
   showEdgeToast: (message: string, variant?: 'error' | 'success') => void;
   loadWorkspace: (showRefresh?: boolean) => Promise<void>;
+  setConfirmModal: React.Dispatch<React.SetStateAction<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+    cancelText?: string;
+  } | null>>;
+  setIsConfirmClosing: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export function useWorkspaceConnections({
@@ -27,7 +36,9 @@ export function useWorkspaceConnections({
   setGraph,
   takeSnapshot,
   showEdgeToast,
-  loadWorkspace
+  loadWorkspace,
+  setConfirmModal,
+  setIsConfirmClosing
 }: UseWorkspaceConnectionsProps) {
   const [connectionHint, setConnectionHint] = useState<ConnectionHintState | null>(null);
   const connectionSourceRef = useRef<string | null>(null);
@@ -100,7 +111,13 @@ export function useWorkspaceConnections({
       };
     });
 
-    return !blockReason;
+    if (blockReason) {
+      if (blockReason.includes('cycle')) {
+        return true;
+      }
+      return false;
+    }
+    return true;
   }, [getConnectionBlockReason]);
 
   const getConnectionClientPoint = useCallback((event: MouseEvent | TouchEvent) => {
@@ -165,7 +182,7 @@ export function useWorkspaceConnections({
 
     const blockReason = getConnectionBlockReason(connection.source, connection.target);
 
-    if (blockReason) {
+    if (blockReason && !blockReason.includes('cycle')) {
       showEdgeToast(blockReason);
       return;
     }
@@ -185,9 +202,43 @@ export function useWorkspaceConnections({
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot create dependency: cycle detected.' : parsed.message);
+      if (isCycleApiError(err, statusCode)) {
+        setConfirmModal({
+          title: 'Cycle detected',
+          message: 'A dependency cycle was detected.\nAsk AI to resolve connections?',
+          confirmText: 'Ask AI to resolve',
+          cancelText: 'Cancel',
+          onConfirm: async () => {
+            setIsConfirmClosing(true);
+            setTimeout(() => {
+              setConfirmModal(null);
+              setIsConfirmClosing(false);
+            }, 200);
+
+            try {
+              const createdEdge = await projectsApi.createEdge(projectId, {
+                sourceTaskId: connection.source!,
+                targetTaskId: connection.target!
+              }, true);
+
+              setGraph((currentGraph) => currentGraph ? {
+                ...currentGraph,
+                edges: [...currentGraph.edges, createdEdge]
+              } : currentGraph);
+              showEdgeToast('Dependency created and cycle resolved.', 'success');
+              void loadWorkspace(true);
+            } catch (recoveryErr) {
+              const recStatusCode = axios.isAxiosError(recoveryErr) ? recoveryErr.response?.status : undefined;
+              const recParsed = mapServerErrorToEnglish(recoveryErr, recStatusCode);
+              showEdgeToast(recParsed.message);
+            }
+          }
+        });
+      } else {
+        showEdgeToast(parsed.message);
+      }
     }
-  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph, loadWorkspace]);
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph, loadWorkspace, setConfirmModal, setIsConfirmClosing]);
 
   const handleReconnectStart = useCallback((event: any, edge: Edge) => {
     reconnectSuccessRef.current = false;
@@ -211,7 +262,7 @@ export function useWorkspaceConnections({
     }
 
     const blockReason = getConnectionBlockReason(newConnection.source, newConnection.target);
-    if (blockReason) {
+    if (blockReason && !blockReason.includes('cycle')) {
       showEdgeToast(blockReason);
       return;
     }
@@ -241,9 +292,47 @@ export function useWorkspaceConnections({
     } catch (err) {
       const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
       const parsed = mapServerErrorToEnglish(err, statusCode);
-      showEdgeToast(isCycleApiError(err, statusCode) ? 'Cannot update dependency: cycle detected.' : parsed.message);
+      if (isCycleApiError(err, statusCode)) {
+        setConfirmModal({
+          title: 'Cycle detected',
+          message: 'A dependency cycle was detected.\nAsk AI to resolve connections?',
+          confirmText: 'Ask AI to resolve',
+          cancelText: 'Cancel',
+          onConfirm: async () => {
+            setIsConfirmClosing(true);
+            setTimeout(() => {
+              setConfirmModal(null);
+              setIsConfirmClosing(false);
+            }, 200);
+
+            try {
+              const createdEdge = await projectsApi.createEdge(projectId, {
+                sourceTaskId: newConnection.source!,
+                targetTaskId: newConnection.target!
+              }, true);
+
+              setGraph((currentGraph) => {
+                if (!currentGraph) return null;
+                const filtered = currentGraph.edges.filter((e) => e.id !== oldEdge.id);
+                return {
+                  ...currentGraph,
+                  edges: [...filtered, createdEdge]
+                };
+              });
+              showEdgeToast('Dependency updated and cycle resolved.', 'success');
+              void loadWorkspace(true);
+            } catch (recoveryErr) {
+              const recStatusCode = axios.isAxiosError(recoveryErr) ? recoveryErr.response?.status : undefined;
+              const recParsed = mapServerErrorToEnglish(recoveryErr, recStatusCode);
+              showEdgeToast(recParsed.message);
+            }
+          }
+        });
+      } else {
+        showEdgeToast(parsed.message);
+      }
     }
-  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph, loadWorkspace]);
+  }, [getConnectionBlockReason, isCycleApiError, projectId, showEdgeToast, takeSnapshot, setGraph, loadWorkspace, setConfirmModal, setIsConfirmClosing]);
 
   const handleReconnectEnd = useCallback(async (_event: any, edge: Edge) => {
     const linger = connectionHint?.variant === 'error';
