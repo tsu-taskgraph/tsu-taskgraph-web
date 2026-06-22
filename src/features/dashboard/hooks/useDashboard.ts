@@ -37,10 +37,12 @@ export function useDashboard() {
     name: string;
     description: string;
     techStack: string[];
+    aiEstimate: boolean;
   }>({
     name: '',
     description: '',
-    techStack: []
+    techStack: [],
+    aiEstimate: true
   });
   const [currentTechInput, setCurrentTechInput] = useState('');
 
@@ -221,22 +223,28 @@ export function useDashboard() {
         name: form.name.trim(),
         description: form.description.trim(),
         techStack: finalTechStack,
-        teamSize: 1,
-        aiEstimate: true
+        aiEstimate: form.aiEstimate
       });
 
       setForm({
         name: '',
         description: '',
-        techStack: []
+        techStack: [],
+        aiEstimate: true
       });
       setCurrentTechInput('');
       closeModal();
       fetchProjects(0, pageSize, activeFilter);
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      const parsed = mapServerErrorToEnglish(err, status);
-      setFormError(parsed.message);
+      const isTimeout = axios.isAxiosError(err) && (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT');
+
+      if (isTimeout) {
+        setFormError('AI generation is taking longer than expected. The project may still be created — please check the dashboard in a moment.');
+      } else {
+        const parsed = mapServerErrorToEnglish(err, status);
+        setFormError(parsed.message);
+      }
       setShakeToggle(prev => !prev);
     } finally {
       setSubmitting(false);

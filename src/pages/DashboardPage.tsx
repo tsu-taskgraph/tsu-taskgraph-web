@@ -37,6 +37,7 @@ export default function DashboardPage() {
     stats,
     setIsProfileOpen,
     setIsMobileMenuOpen,
+    setForm,
     setCurrentTechInput,
     setCurrentPage,
     closeModal,
@@ -81,9 +82,8 @@ export default function DashboardPage() {
         <rect width="100%" height="100%" filter="url(#noiseFilter)" />
       </svg>
 
-      <div className={`absolute inset-0 transition-colors duration-300 z-0 pointer-events-none md:hidden ${
-        theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'
-      }`} />
+      <div className={`absolute inset-0 transition-colors duration-300 z-0 pointer-events-none md:hidden ${theme === 'light' ? 'light-dashboard-bg-mobile' : 'dashboard-bg-mobile'
+        }`} />
 
       <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 md:animate-slow-fade" />
       <div className="md:hidden absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 light:from-[#f1f5f9] to-transparent pointer-events-none z-30 md:animate-slow-fade" />
@@ -128,11 +128,10 @@ export default function DashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => handleFilterChange(tab.id)}
-                className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all duration-300 active:scale-97 cursor-pointer will-change-transform ${
-                  activeFilter === tab.id
+                className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all duration-300 active:scale-97 cursor-pointer will-change-transform ${activeFilter === tab.id
                     ? 'bg-gradient-to-r from-brand-500/20 to-orange-500/20 text-brand-400 border-brand-500/40 shadow-inner light:from-brand-500/10 light:to-orange-500/10 light:text-brand-600 light:border-brand-500/40'
                     : 'bg-slate-900/40 text-slate-400 border-white/5 hover:bg-slate-800/40 hover:text-slate-200 hover:border-slate-700 light:bg-white/60 light:text-slate-600 light:border-slate-200/60 light:hover:bg-slate-100 light:hover:text-slate-900'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -237,11 +236,10 @@ export default function DashboardPage() {
                       <button
                         key={n}
                         onClick={() => handlePageSizeChange(n)}
-                        className={`px-2 py-0.5 text-[11px] sm:text-xs font-semibold rounded-md border transition-all cursor-pointer ${
-                          pageSize === n
+                        className={`px-2 py-0.5 text-[11px] sm:text-xs font-semibold rounded-md border transition-all cursor-pointer ${pageSize === n
                             ? 'bg-brand-500/15 text-brand-400 border-brand-500/30 light:bg-brand-500/10 light:text-brand-600 light:border-brand-500/30'
                             : 'bg-slate-800/40 text-slate-400 border-slate-700/40 hover:bg-slate-700/40 hover:text-slate-200 light:bg-slate-100 light:text-slate-500 light:border-slate-200 light:hover:bg-slate-200'
-                        }`}
+                          }`}
                       >
                         {n}
                       </button>
@@ -287,11 +285,10 @@ export default function DashboardPage() {
                           <button
                             key={p}
                             onClick={() => setCurrentPage(p)}
-                            className={`min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 px-1.5 sm:px-2 text-[11px] sm:text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                              currentPage === p
+                            className={`min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 px-1.5 sm:px-2 text-[11px] sm:text-xs font-semibold rounded-lg border transition-all cursor-pointer ${currentPage === p
                                 ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 light:bg-brand-500/10 light:text-brand-600 light:border-brand-500/30'
                                 : 'border-slate-700/40 bg-slate-900/40 light:bg-white/60 light:border-slate-200 text-slate-400 light:text-slate-500 hover:bg-slate-800/50 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900'
-                            }`}
+                              }`}
                           >
                             {p + 1}
                           </button>
@@ -343,6 +340,7 @@ export default function DashboardPage() {
           setCurrentTechInput={setCurrentTechInput}
           addTag={addTag}
           removeTag={removeTag}
+          setForm={setForm}
           handleCreateProject={handleCreateProject}
         />
       )}
