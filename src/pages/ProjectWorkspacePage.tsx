@@ -219,6 +219,7 @@ export default function ProjectWorkspacePage() {
                         redo={workspace.redo}
                         canUndo={workspace.canUndo}
                         canRedo={workspace.canRedo}
+                        onMutate={workspace.handleMutateGraph}
                         isTaskSidebarOpen={workspace.isTaskSidebarOpen}
                         isTaskSelected={Boolean(workspace.selectedTaskId) && !workspace.statusMenu}
                       />
