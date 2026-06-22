@@ -20,6 +20,7 @@ import {
   Redo2
 } from 'lucide-react';
 import type { ViewMode, EdgeTypeMode } from '../utils/workspaceUtils';
+import { AiAssistant } from './AiAssistant';
 
 const viewModes = [
   { key: 'dot' as const, label: 'Dots', icon: Circle },
@@ -59,6 +60,7 @@ interface WorkspaceToolbarProps {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onMutate?: (prompt: string) => Promise<void>;
   isTaskSidebarOpen?: boolean;
   isTaskSelected?: boolean;
 }
@@ -80,6 +82,7 @@ export function WorkspaceToolbar({
   redo,
   canUndo,
   canRedo,
+  onMutate,
   isTaskSidebarOpen = false,
   isTaskSelected = false
 }: WorkspaceToolbarProps) {
@@ -286,6 +289,11 @@ export function WorkspaceToolbar({
       )}
 
       <Panel position="bottom-right" className="!mb-[145px] lg:!mb-6 !mr-6 !z-40 flex flex-col items-end gap-3">
+        {onMutate && (
+          <AiAssistant
+            onMutate={onMutate}
+          />
+        )}
         <button
           type="button"
           onClick={onCreateTask}

@@ -8,7 +8,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AlertCircle, GitBranch, ShieldAlert, Plus, X } from 'lucide-react';
+import { AlertCircle, GitBranch, ShieldAlert, X } from 'lucide-react';
 import { SafariTopBar } from '../components/common/SafariTopBar';
 import { SafariBottomBar } from '../components/common/SafariBottomBar';
 import {
@@ -115,18 +115,10 @@ export default function ProjectWorkspacePage() {
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#020617]/70 text-slate-400 backdrop-blur-xl shadow-lg shadow-black/10 light:border-slate-200/60 light:bg-white/75 light:text-slate-500 light:shadow-slate-200/10">
                         <ShieldAlert className="h-7 w-7" />
                       </div>
-                      <h2 className="mt-4 text-lg font-bold text-white light:text-slate-900">Graph is empty</h2>
+                      <h2 className="mt-4 text-lg font-bold text-white light:text-slate-900">This project has no tasks yet</h2>
                       <p className="mt-2 text-sm text-slate-400 light:text-slate-600">
-                        The API returned no tasks for this project yet. Create tasks or trigger AI decomposition to populate the workspace.
+                        The task graph hasn't been built yet. Try refreshing the page in a few seconds.
                       </p>
-                      <button
-                        onClick={() => workspace.openTaskCreator(undefined, undefined, 'toolbar')}
-                        className="group relative mt-6 flex items-center justify-center gap-2 rounded-xl border-0 bg-gradient-to-r from-brand-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/15 transition-all duration-300 hover:scale-[1.03] hover:shadow-brand-500/25 hover:brightness-110 active:scale-95 cursor-pointer"
-                      >
-                        <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-brand-500 to-orange-500 opacity-10 blur-[2px] transition-opacity duration-300 group-hover:opacity-20 pointer-events-none" />
-                        <Plus className="relative z-10 h-4 w-4 shrink-0" />
-                        <span className="relative z-10">Create First Task</span>
-                      </button>
                     </div>
                   </div>
                 ) : (
@@ -227,6 +219,7 @@ export default function ProjectWorkspacePage() {
                         redo={workspace.redo}
                         canUndo={workspace.canUndo}
                         canRedo={workspace.canRedo}
+                        onMutate={workspace.handleMutateGraph}
                         isTaskSidebarOpen={workspace.isTaskSidebarOpen}
                         isTaskSelected={Boolean(workspace.selectedTaskId) && !workspace.statusMenu}
                       />
@@ -250,6 +243,7 @@ export default function ProjectWorkspacePage() {
                           onInteract={() => workspace.setStatusMenu(null)}
                           updating={workspace.statusUpdatingTaskId === workspace.selectedTask.id}
                           isClosing={workspace.isTaskSidebarClosing}
+                          isEnriching={workspace.isPolling}
                         />
                       )}
 

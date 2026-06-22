@@ -6,6 +6,7 @@ import { SafariTopBar } from './SafariTopBar';
 import { SafariBottomBar } from './SafariBottomBar';
 import axios from 'axios';
 import { mapServerErrorToEnglish } from '../../api/errors';
+import { AiSettingsForm } from './AiSettingsForm';
 
 interface UserProfileOverlayProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
 
   const [fieldErrors, setFieldErrors] = useState<{ displayName?: string }>({});
   const [shakeToggle, setShakeToggle] = useState(false);
+  const [resetSignal, setResetSignal] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -235,6 +237,7 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
                 setActiveTab('ai-settings');
                 setError(null);
                 setSuccess(null);
+                setResetSignal((v) => v + 1);
               }}
               className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${activeTab === 'ai-settings'
                 ? 'border-brand-500 text-brand-400 light:text-brand-600 light:border-brand-600'
@@ -399,17 +402,11 @@ export default function UserProfileOverlay({ isOpen, onClose }: UserProfileOverl
             )}
 
             {activeTab === 'ai-settings' && (
-              <div className="flex flex-col items-center justify-center text-center py-12 gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-slate-900/60 light:bg-white/80 border border-white/5 light:border-slate-200 text-slate-500 light:text-slate-400 flex items-center justify-center">
-                  <Cpu className="h-7 w-7" />
-                </div>
-                <div>
-                  <h3 className="text-white light:text-slate-900 font-bold text-base">AI Provider Settings</h3>
-                  <p className="text-slate-400 light:text-slate-500 text-sm mt-1 max-w-xs">
-                    Configure your AI provider, model, and API key for AI-powered features like task generation and graph mutations.
-                  </p>
-                </div>
-              </div>
+              <AiSettingsForm
+                onError={setError}
+                onSuccess={setSuccess}
+                resetSignal={resetSignal}
+              />
             )}
           </div>
         </div>

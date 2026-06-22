@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Moon, Sun, Sparkles } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Moon, Sun, Sparkles, Loader2 } from 'lucide-react';
 import type { ProjectResponse, ProjectGraphResponse } from '../../../api/projects';
 
 const projectStatusClass: Record<ProjectResponse['status'], string> = {
@@ -70,9 +70,22 @@ export function WorkspaceHeader({
 
             <div className="flex items-center gap-2">
               {graph && (
-                <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#020617]/45 px-3 py-2 text-xs font-medium text-slate-400 backdrop-blur-xl light:border-slate-200/60 light:bg-white/45 light:text-slate-600 xl:flex">
-                  <Sparkles className="h-3.5 w-3.5 text-brand-400 light:text-brand-600" />
-                  <span>{graph.enrichmentStatus}</span>
+                <div className={`hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium backdrop-blur-xl xl:flex ${
+                  (graph.enrichmentStatus === 'PENDING' || graph.enrichmentStatus === 'IN_PROGRESS')
+                    ? 'border-brand-500/30 bg-brand-500/10 text-brand-400 light:text-brand-600'
+                    : 'border-white/10 bg-[#020617]/45 text-slate-400 light:border-slate-200/60 light:bg-white/45 light:text-slate-600'
+                }`}>
+                  {(graph.enrichmentStatus === 'PENDING' || graph.enrichmentStatus === 'IN_PROGRESS') ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-400 light:text-brand-600" />
+                      <span>AI enriching tasks...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-slate-400 light:text-slate-600" />
+                      <span>Ready</span>
+                    </>
+                  )}
                 </div>
               )}
               <button

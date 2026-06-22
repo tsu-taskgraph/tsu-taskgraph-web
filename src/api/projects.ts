@@ -109,6 +109,10 @@ export interface CreateEdgeRequest {
   targetTaskId: string;
 }
 
+export interface MutateGraphRequest {
+  prompt: string;
+}
+
 export interface UpdateTaskRequest {
   title?: string;
   description?: string | null;
@@ -141,7 +145,9 @@ export const projectsApi = {
   },
 
   async createProject(data: CreateProjectRequest): Promise<CreateProjectResponse> {
-    const response = await apiClient.post<CreateProjectResponse>('/api/v1/projects', data);
+    const response = await apiClient.post<CreateProjectResponse>('/api/v1/projects', data, {
+      timeout: 20000
+    });
     return response.data;
   },
 
@@ -160,12 +166,17 @@ export const projectsApi = {
     return response.data;
   },
 
-  async createEdge(projectId: string, data: CreateEdgeRequest): Promise<EdgeResponse> {
+  async createEdge(projectId: string, data: CreateEdgeRequest, enableSmartRecovery = false): Promise<EdgeResponse> {
     const response = await apiClient.post<EdgeResponse>(`/api/v1/projects/${projectId}/edges`, data, {
       headers: {
-        'X-Enable-Smart-Recovery': 'false'
+        'X-Enable-Smart-Recovery': String(enableSmartRecovery)
       }
     });
+    return response.data;
+  },
+
+  async mutateGraph(projectId: string, data: MutateGraphRequest): Promise<ProjectGraphResponse> {
+    const response = await apiClient.post<ProjectGraphResponse>(`/api/v1/projects/${projectId}/mutate`, data);
     return response.data;
   },
 

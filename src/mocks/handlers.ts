@@ -232,6 +232,21 @@ const projectsList: Project[] = [
     completionPercent: 0,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mock-workspace-empty-graph',
+    name: 'Mock: Empty Graph',
+    description: 'Технический мок для просмотра состояния пустого графа (ни одной задачи) на ProjectWorkspacePage.',
+    techStack: ['MSW', 'Empty State'],
+    status: 'PENDING_AI',
+    ownerId: '00000000-0000-0000-0000-000000000000',
+    teamSize: 1,
+    aiEstimate: true,
+    totalEstimatedHours: 0,
+    totalLoggedHours: 0,
+    completionPercent: 0,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];
 
@@ -636,6 +651,163 @@ const projectGraphs: Record<string, {
   }
 };
 
+const enrichmentTimelines = new Map<string, number>();
+
+function getEnrichmentProgress(projectId: string): 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | null {
+  const graph = projectGraphs[projectId];
+  if (!graph) return null;
+  if (graph.enrichmentStatus === 'COMPLETED') return 'COMPLETED';
+
+  if (!enrichmentTimelines.has(projectId)) {
+    enrichmentTimelines.set(projectId, Date.now());
+  }
+
+  const elapsed = Date.now() - enrichmentTimelines.get(projectId)!;
+
+  if (elapsed < 5000) {
+    graph.enrichmentStatus = 'PENDING';
+    return 'PENDING';
+  }
+  if (elapsed < 10000) {
+    graph.enrichmentStatus = 'IN_PROGRESS';
+    return 'IN_PROGRESS';
+  }
+
+  graph.enrichmentStatus = 'COMPLETED';
+  
+  if (projectId === '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e') {
+    graph.nodes = [
+      {
+        id: 'iot-1',
+        projectId,
+        title: 'Архитектура сбора данных',
+        description: 'Разработка архитектуры высоконагруженного сбора телеметрии с IoT-датчиков умного дома.',
+        status: 'COMPLETED',
+        category: 'DEVOPS',
+        layer: 0,
+        positionX: 80,
+        positionY: 220,
+        estimatedHours: 8,
+        loggedHours: 8,
+        enrichment: {
+          checklist: ['Выбрать протокол передачи', 'Спроектировать формат пакетов данных'],
+          pitfalls: ['Учесть нестабильное соединение на датчиках'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-2',
+        projectId,
+        title: 'Интеграция MQTT-брокера',
+        description: 'Настройка кластера EMQX / Mosquitto для приема пакетов данных по протоколу MQTT.',
+        status: 'IN_PROGRESS',
+        category: 'DEVOPS',
+        layer: 1,
+        positionX: 330,
+        positionY: 100,
+        estimatedHours: 12,
+        loggedHours: 4,
+        enrichment: {
+          checklist: ['Развернуть брокер в Docker', 'Настроить ACL правила авторизации'],
+          pitfalls: ['Ограничить максимальный размер пакета на брокере'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-3',
+        projectId,
+        title: 'Служба ClickHouse БД',
+        description: 'Разработка сервиса на Go для записи входящего потока данных в ClickHouse.',
+        status: 'AVAILABLE',
+        category: 'BACKEND',
+        layer: 2,
+        positionX: 600,
+        positionY: 80,
+        estimatedHours: 16,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Создать схему таблиц ClickHouse', 'Настроить batch-запись'],
+          pitfalls: ['Избегать одиночных инсертов в ClickHouse'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-4',
+        projectId,
+        title: 'Дашборд Next.js',
+        description: 'Фронтенд дашборда для отображения графиков датчиков в реальном времени.',
+        status: 'AVAILABLE',
+        category: 'FRONTEND',
+        layer: 2,
+        positionX: 600,
+        positionY: 340,
+        estimatedHours: 14,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Подключить WebSockets', 'Реализовать графики Chart.js'],
+          pitfalls: ['Оптимизировать рендер при высокой частоте обновлений'],
+          links: []
+        }
+      },
+      {
+        id: 'iot-5',
+        projectId,
+        title: 'ML-модель аномалий',
+        description: 'Разработка микросервиса на Python для детекции аномалий в показаниях датчиков.',
+        status: 'LOCKED',
+        category: 'OTHER',
+        layer: 3,
+        positionX: 870,
+        positionY: 220,
+        estimatedHours: 20,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Обучить модель Isolation Forest', 'Реализовать инференс через API'],
+          pitfalls: ['Учесть ложные срабатывания при резком изменении внешних факторов'],
+          links: []
+        }
+      }
+    ];
+    graph.edges = [
+      { id: 'iot-e1', sourceTaskId: 'iot-1', targetTaskId: 'iot-2' },
+      { id: 'iot-e2', sourceTaskId: 'iot-1', targetTaskId: 'iot-4' },
+      { id: 'iot-e3', sourceTaskId: 'iot-2', targetTaskId: 'iot-3' },
+      { id: 'iot-e4', sourceTaskId: 'iot-3', targetTaskId: 'iot-5' },
+      { id: 'iot-e5', sourceTaskId: 'iot-4', targetTaskId: 'iot-5' }
+    ];
+  } else {
+    graph.nodes = [
+      {
+        id: `node-${projectId}-1`,
+        projectId,
+        title: 'Инициализация проекта ИИ',
+        description: 'Базовая декомпозиция и планирование этапов.',
+        status: 'AVAILABLE',
+        category: 'DEVOPS',
+        layer: 0,
+        positionX: 100,
+        positionY: 200,
+        estimatedHours: 4,
+        loggedHours: 0,
+        enrichment: {
+          checklist: ['Инициализировать git-репозиторий', 'Настроить базовые конфиги сборки'],
+          pitfalls: [],
+          links: []
+        }
+      }
+    ];
+    graph.edges = [];
+  }
+
+  const project = projectsList.find((p) => p.id === projectId);
+  if (project && project.status === 'PENDING_AI') {
+    project.status = 'ACTIVE';
+  }
+
+  enrichmentTimelines.delete(projectId);
+  return 'COMPLETED';
+}
+
 function recalculateTaskStatuses(graph: typeof projectGraphs[string]) {
   const now = new Date().toISOString();
   const completedIds = new Set(
@@ -832,6 +1004,57 @@ export const handlers = [
     return HttpResponse.json(userProfile);
   }),
 
+  http.get('*/api/v1/users/me/ai-settings', () => {
+    return HttpResponse.json(userProfile.aiSettings);
+  }),
+
+  http.get('*/api/v1/ai-providers', () => {
+    return HttpResponse.json({
+      gemini: {
+        defaultModel: 'gemini-2.5-flash',
+        supportedModels: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+        supportsWebSearch: true,
+        supportsExtendedThinking: true,
+        supportsReasoningEffort: false
+      },
+      openai: {
+        defaultModel: 'gpt-4o',
+        supportedModels: ['gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3-mini', 'o3'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: true
+      },
+      anthropic: {
+        defaultModel: 'claude-sonnet-4-6',
+        supportedModels: ['claude-sonnet-4-6', 'claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: true,
+        supportsReasoningEffort: false
+      },
+      groq: {
+        defaultModel: 'llama-3.3-70b-versatile',
+        supportedModels: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: false
+      },
+      mistral: {
+        defaultModel: 'mistral-large-latest',
+        supportedModels: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-small-latest'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: false
+      },
+      ollama: {
+        defaultModel: 'llama3',
+        supportedModels: ['llama3', 'llama3.1', 'qwen2.5', 'phi3', 'gemma2'],
+        supportsWebSearch: false,
+        supportsExtendedThinking: false,
+        supportsReasoningEffort: false
+      }
+    });
+  }),
+
   http.put('*/api/v1/users/me/ai-settings', async ({ request }) => {
     const data = await request.json() as Record<string, unknown>;
     userProfile.aiSettings = {
@@ -896,27 +1119,9 @@ export const handlers = [
 
     projectGraphs[newProjectId] = {
       projectId: newProjectId,
-      nodes: [
-        {
-          id: 'node-1',
-          projectId: newProjectId,
-          title: 'Инициализация проекта ИИ',
-          description: `Декомпозиция проекта: ${newProject.description}`,
-          status: 'AVAILABLE',
-          category: 'DEVOPS',
-          positionX: 100,
-          positionY: 200,
-          estimatedHours: 4,
-          loggedHours: 0,
-          enrichment: {
-            checklist: ['Настроить окружение', 'Проверить линтер'],
-            pitfalls: ['Начальная сборка может завершиться ошибкой при отсутствии node_modules'],
-            links: []
-          }
-        }
-      ],
+      nodes: [],
       edges: [],
-      enrichmentStatus: 'COMPLETED'
+      enrichmentStatus: data.aiEstimate ? 'PENDING' : 'COMPLETED'
     };
 
     return HttpResponse.json({
@@ -953,6 +1158,17 @@ export const handlers = [
         { status: 500 }
       );
     }
+
+    if (projectId === 'mock-workspace-empty-graph') {
+      return HttpResponse.json({
+        projectId: projectId as string,
+        nodes: [],
+        edges: [],
+        enrichmentStatus: 'PENDING'
+      });
+    }
+
+    getEnrichmentProgress(projectId as string);
 
     const graph = projectGraphs[projectId as string];
 
@@ -1306,6 +1522,8 @@ export const handlers = [
       return HttpResponse.json({ message: 'Cannot create dependency: edge already exists.' }, { status: 409 });
     }
 
+    const enableSmartRecovery = request.headers.get('X-Enable-Smart-Recovery') === 'true';
+
     const adjacency = new Map<string, string[]>();
     graph.nodes.forEach((node) => adjacency.set(node.id as string, []));
     graph.edges.forEach((edge) => {
@@ -1316,15 +1534,49 @@ export const handlers = [
 
     const stack = [targetTaskId];
     const visited = new Set<string>();
+    let cycleDetected = false;
 
     while (stack.length > 0) {
       const current = stack.pop();
       if (!current || visited.has(current)) continue;
       if (current === sourceTaskId) {
-        return HttpResponse.json({ message: 'Cannot create dependency: cycle detected.' }, { status: 400 });
+        cycleDetected = true;
+        break;
       }
       visited.add(current);
       stack.push(...(adjacency.get(current) ?? []));
+    }
+
+    if (cycleDetected) {
+      if (enableSmartRecovery) {
+        const pathMap = new Map<string, string>();
+        const q = [targetTaskId];
+        const vis = new Set<string>([targetTaskId]);
+        let found = false;
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          if (curr === sourceTaskId) {
+            found = true;
+            break;
+          }
+          const children = adjacency.get(curr) ?? [];
+          for (const child of children) {
+            if (!vis.has(child)) {
+              vis.add(child);
+              pathMap.set(child, curr);
+              q.push(child);
+            }
+          }
+        }
+        if (found) {
+          const parent = pathMap.get(sourceTaskId);
+          if (parent) {
+            graph.edges = graph.edges.filter((edge) => !(edge.sourceTaskId === parent && edge.targetTaskId === sourceTaskId));
+          }
+        }
+      } else {
+        return HttpResponse.json({ message: 'Cannot create dependency: cycle detected.' }, { status: 400 });
+      }
     }
 
     const createdEdge = {
@@ -1336,6 +1588,176 @@ export const handlers = [
     graph.edges.push(createdEdge);
     recalculateTaskStatuses(graph);
     return HttpResponse.json(createdEdge, { status: 201 });
+  }),
+
+  http.post('*/api/v1/projects/:projectId/mutate', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const graph = projectGraphs[projectId];
+
+    if (!graph) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const body = await request.json() as { prompt: string };
+    const prompt = (body.prompt || '').toLowerCase();
+    const now = new Date().toISOString();
+
+    graph.nodes = graph.nodes.map((node: any) => ({
+      ...node,
+      positionY: (node.positionY ?? 0) + 120
+    }));
+
+    if (prompt.includes('redis')) {
+      const redis1Id = `redis-task-1-${Date.now()}`;
+      const redis2Id = `redis-task-2-${Date.now()}`;
+
+      const task1 = {
+        id: redis1Id,
+        projectId,
+        title: 'Configure Redis Cache Cluster',
+        description: 'Set up Redis cache instance and configure persistence options.',
+        status: 'AVAILABLE' as const,
+        category: 'DEVOPS' as const,
+        layer: 1,
+        positionX: 400,
+        positionY: -100,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 6,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const task2 = {
+        id: redis2Id,
+        projectId,
+        title: 'Integrate Redis Client & Caching Logic',
+        description: 'Implement caching decorators for user sessions and frequent DB queries.',
+        status: 'LOCKED' as const,
+        category: 'BACKEND' as const,
+        layer: 2,
+        positionX: 800,
+        positionY: -100,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 8,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      graph.nodes.push(task1, task2);
+      graph.edges.push(
+        { id: `edge-redis-1-${Date.now()}`, sourceTaskId: redis1Id, targetTaskId: redis2Id }
+      );
+
+      if (graph.nodes.length > 2) {
+        const firstTaskId = graph.nodes[0].id;
+        graph.edges.push({
+          id: `edge-redis-parent-${Date.now()}`,
+          sourceTaskId: firstTaskId,
+          targetTaskId: redis1Id
+        });
+      }
+    } else if (prompt.includes('test')) {
+      const test1Id = `test-task-1-${Date.now()}`;
+      const test2Id = `test-task-2-${Date.now()}`;
+
+      const task1 = {
+        id: test1Id,
+        projectId,
+        title: 'Write Auth Integration Tests',
+        description: 'Add test suite for user registration, token generation and route protection.',
+        status: 'AVAILABLE' as const,
+        category: 'TESTING' as const,
+        layer: 2,
+        positionX: 800,
+        positionY: -200,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 8,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const task2 = {
+        id: test2Id,
+        projectId,
+        title: 'Setup Automated CI Testing',
+        description: 'Configure GitHub Actions workflow to run the test suite on every pull request.',
+        status: 'LOCKED' as const,
+        category: 'DEVOPS' as const,
+        layer: 3,
+        positionX: 1200,
+        positionY: -200,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 4,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      graph.nodes.push(task1, task2);
+      graph.edges.push(
+        { id: `edge-test-1-${Date.now()}`, sourceTaskId: test1Id, targetTaskId: test2Id }
+      );
+
+      if (graph.nodes.length > 2) {
+        const sourceId = graph.nodes[1].id;
+        graph.edges.push({
+          id: `edge-test-parent-${Date.now()}`,
+          sourceTaskId: sourceId,
+          targetTaskId: test1Id
+        });
+      }
+    } else {
+      const gen1Id = `gen-task-1-${Date.now()}`;
+      const task1 = {
+        id: gen1Id,
+        projectId,
+        title: `AI Action: ${body.prompt || 'Optimise workspace logic'}`,
+        description: 'Automatically suggested improvement based on user workspace request.',
+        status: 'AVAILABLE' as const,
+        category: 'OTHER' as const,
+        layer: 1,
+        positionX: 400,
+        positionY: -150,
+        assignees: [],
+        enrichment: null,
+        completionPercent: 0,
+        estimatedHours: 4,
+        loggedHours: 0,
+        startDate: null,
+        dueDate: null,
+        wikiPageId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      graph.nodes.push(task1);
+    }
+
+    recalculateTaskStatuses(graph);
+    return HttpResponse.json(graph, { status: 200 });
   }),
 
   http.delete('*/api/v1/edges/:edgeId', ({ params }) => {

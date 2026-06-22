@@ -20,6 +20,8 @@ import {
   type EdgeTypeMode,
   type WorkspaceNode,
   type TaskFlowEdge,
+  type TaskFlowNode,
+  type LayerHeaderNode,
 } from '../utils/workspaceUtils';
 import { useUndoRedo } from '../../../hooks/useUndoRedo';
 import { useWorkspaceCopyPaste } from './useWorkspaceCopyPaste';
@@ -29,6 +31,7 @@ import { useWorkspaceLayout } from './useWorkspaceLayout';
 import { useWorkspaceToast } from './useWorkspaceToast';
 import { useWorkspaceModals } from './useWorkspaceModals';
 import { useWorkspaceTaskOperations } from './useWorkspaceTaskOperations';
+import { useWorkspacePolling } from './useWorkspacePolling';
 
 const isEditableShortcutTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -46,6 +49,7 @@ export function useWorkspace(projectId: string | undefined) {
   const [edgesVisible, setEdgesVisible] = useState(true);
   const [showTopologicalLanes, setShowTopologicalLanes] = useState(false);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<WorkspaceNode, TaskFlowEdge> | null>(null);
+  const forceAlignRef = useRef(false);
 
   const toast = useWorkspaceToast();
 
@@ -80,6 +84,8 @@ export function useWorkspace(projectId: string | undefined) {
     loadWorkspace
   } = useWorkspaceLoader({ projectId });
 
+  const { isPolling, enrichmentStatus } = useWorkspacePolling({ projectId, graph, setGraph, setProject });
+
   const {
     isAligned,
     setIsAligned,
@@ -113,7 +119,9 @@ export function useWorkspace(projectId: string | undefined) {
     setGraph,
     takeSnapshot,
     showEdgeToast: toast.showEdgeToast,
-    loadWorkspace
+    loadWorkspace,
+    setConfirmModal: modals.setConfirmModal,
+    setIsConfirmClosing: modals.setIsConfirmClosing
   });
 
   const {
@@ -390,19 +398,98 @@ export function useWorkspace(projectId: string | undefined) {
     const flow = mapGraphToFlow(graph, theme, viewMode, edgeType, edgesVisible, showTopologicalLanes);
     setNodes((currentNodes) => {
       const currentNodeById = new Map(currentNodes.map((node) => [node.id, node]));
-      const useNewPosition = (nodeType: string | undefined) => nodeType === 'layerHeader';
+      const useNewPosition = (nodeType: string | undefined) => nodeType === 'layerHeader' || forceAlignRef.current;
 
       return flow.nodes.map((node) => {
         const currentNode = currentNodeById.get(node.id);
+        if (!currentNode) return node;
+
+        const targetPosition = useNewPosition(node.type) ? node.position : currentNode.position;
+        const targetSelected = currentNode.selected;
+
+        if (node.type === 'layerHeader' && currentNode.type === 'layerHeader') {
+          const lNode = node as LayerHeaderNode;
+          const lCurrentNode = currentNode as LayerHeaderNode;
+          if (
+            lCurrentNode.data.label === lNode.data.label &&
+            currentNode.position.x === targetPosition.x &&
+            currentNode.position.y === targetPosition.y
+          ) {
+            return currentNode;
+          }
+        }
+
+        if (node.type === 'taskNode' && currentNode.type === 'taskNode') {
+          const tNode = node as TaskFlowNode;
+          const tCurrentNode = currentNode as TaskFlowNode;
+          const taskA = tCurrentNode.data.task;
+          const taskB = tNode.data.task;
+
+          const taskUnchanged =
+            taskA.id === taskB.id &&
+            taskA.title === taskB.title &&
+            taskA.description === taskB.description &&
+            taskA.status === taskB.status &&
+            taskA.layer === taskB.layer &&
+            taskA.positionY === taskB.positionY &&
+            taskA.estimatedHours === taskB.estimatedHours &&
+            taskA.loggedHours === taskB.loggedHours &&
+            taskA.completionPercent === taskB.completionPercent &&
+            JSON.stringify(taskA.enrichment) === JSON.stringify(taskB.enrichment);
+
+          const positionUnchanged =
+            currentNode.position.x === targetPosition.x &&
+            currentNode.position.y === targetPosition.y;
+
+          const selectedUnchanged = !!currentNode.selected === !!targetSelected;
+          const viewModeUnchanged = tCurrentNode.data.viewMode === tNode.data.viewMode;
+
+          if (taskUnchanged && positionUnchanged && selectedUnchanged && viewModeUnchanged) {
+            return currentNode;
+          }
+        }
 
         return {
           ...node,
-          position: useNewPosition(node.type) ? node.position : (currentNode?.position ?? node.position),
-          selected: currentNode?.selected
+          position: targetPosition,
+          selected: targetSelected
         };
       });
     });
-    setEdges(flow.edges);
+
+    setEdges((currentEdges) => {
+      const currentEdgeById = new Map(currentEdges.map((edge) => [edge.id, edge]));
+
+      return flow.edges.map((edge) => {
+        const currentEdge = currentEdgeById.get(edge.id);
+        if (!currentEdge) return edge;
+
+        const styleUnchanged =
+          currentEdge.style?.stroke === edge.style?.stroke &&
+          currentEdge.style?.strokeDasharray === edge.style?.strokeDasharray &&
+          currentEdge.style?.opacity === edge.style?.opacity &&
+          currentEdge.style?.animation === edge.style?.animation;
+
+        const dataUnchanged = JSON.stringify(currentEdge.data) === JSON.stringify(edge.data);
+
+        const unchanged =
+          currentEdge.source === edge.source &&
+          currentEdge.target === edge.target &&
+          currentEdge.type === edge.type &&
+          styleUnchanged &&
+          dataUnchanged;
+
+        if (unchanged) {
+          return currentEdge;
+        }
+
+        return edge;
+      });
+    });
+
+    if (forceAlignRef.current) {
+      forceAlignRef.current = false;
+    }
   }, [edgeType, graph, setEdges, setNodes, theme, viewMode, edgesVisible, showTopologicalLanes]);
 
   const uniqueLayers = useMemo(() => {
@@ -451,6 +538,20 @@ export function useWorkspace(projectId: string | undefined) {
   const handleRedo = useCallback(() => {
     redo(setNodes, setEdges, setGraph);
   }, [redo, setNodes, setEdges, setGraph]);
+
+  const handleMutateGraph = useCallback(async (prompt: string) => {
+    if (!projectId) return;
+    try {
+      const updatedGraph = await projectsApi.mutateGraph(projectId, { prompt });
+      forceAlignRef.current = true;
+      setGraph(updatedGraph);
+      toast.showEdgeToast('Graph mutated successfully.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      toast.showEdgeToast(parsed.message);
+    }
+  }, [projectId, setGraph, toast]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -561,11 +662,14 @@ export function useWorkspace(projectId: string | undefined) {
     refreshing,
     error,
     loadWorkspace,
+    isPolling,
+    enrichmentStatus,
     isAligned,
     setIsAligned,
     handleNodeDragStart,
     handleNodeDrag,
     autoArrangeLayout,
+    handleMutateGraph,
     connectionHint,
     handleConnect,
     handleConnectStart,
