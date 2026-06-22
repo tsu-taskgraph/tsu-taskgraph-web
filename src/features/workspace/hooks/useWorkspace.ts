@@ -33,6 +33,7 @@ import { useWorkspaceModals } from './useWorkspaceModals';
 import { useWorkspaceTaskOperations } from './useWorkspaceTaskOperations';
 import { useWorkspacePolling } from './useWorkspacePolling';
 import { useWorkspaceMembers } from './useWorkspaceMembers';
+import { useWorkspaceActionLog } from './useWorkspaceActionLog';
 import { useAuth } from '../../../features/auth/context/AuthContext';
 
 const isEditableShortcutTarget = (target: EventTarget | null) => {
@@ -64,6 +65,11 @@ export function useWorkspace(projectId: string | undefined) {
     showEdgeToast: toast.showEdgeToast,
     setConfirmModal: modals.setConfirmModal,
     setIsConfirmClosing: modals.setIsConfirmClosing
+  });
+
+  const actionLogState = useWorkspaceActionLog({
+    projectId,
+    showEdgeToast: toast.showEdgeToast
   });
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -256,9 +262,10 @@ export function useWorkspace(projectId: string | undefined) {
     if (node.type === 'taskNode') {
       lastTaskNodeClickAtRef.current = Date.now();
       cancelTaskDetailsSidebarClose();
+      actionLogState.closeActionLog();
       setSelectedTaskId(node.id);
     }
-  }, [cancelTaskDetailsSidebarClose]);
+  }, [cancelTaskDetailsSidebarClose, actionLogState.closeActionLog]);
 
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: WorkspaceNode) => {
     if (node.type !== 'taskNode') return;
@@ -714,6 +721,7 @@ export function useWorkspace(projectId: string | undefined) {
     handleTaskCreated: operations.handleTaskCreated,
     handleTaskUpdate: operations.handleTaskUpdate,
     handleLogTaskTime: operations.handleLogTaskTime,
+    handleDeleteTimeLog: operations.handleDeleteTimeLog,
     handleAssigneesChange: operations.handleAssigneesChange,
     handleDeleteTask: operations.handleDeleteTask,
     handleTaskStatusChange: operations.handleTaskStatusChange,
@@ -731,6 +739,18 @@ export function useWorkspace(projectId: string | undefined) {
     closeInviteModal: membersState.closeInviteModal,
     handleRoleChange: membersState.handleRoleChange,
     handleRemoveMember: membersState.handleRemoveMember,
-    handleInviteMember: membersState.handleInviteMember
+    handleInviteMember: membersState.handleInviteMember,
+
+    isActionLogOpen: actionLogState.isActionLogOpen,
+    isActionLogClosing: actionLogState.isActionLogClosing,
+    actionLogs: actionLogState.actionLogs,
+    loadingActionLogs: actionLogState.loadingActionLogs,
+    actionLogError: actionLogState.actionLogError,
+    openActionLog: useCallback(() => {
+      closeTaskDetailsSidebar();
+      actionLogState.openActionLog();
+    }, [closeTaskDetailsSidebar, actionLogState.openActionLog]),
+    closeActionLog: actionLogState.closeActionLog,
+    loadActionLogs: actionLogState.loadActionLogs
   };
 }

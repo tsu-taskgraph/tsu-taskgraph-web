@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { authApi, type SavedAiSettings } from '../../api/auth';
+import { aiApi } from '../../api/ai';
 import { setAiSettings as persistAiSettings } from '../../api/client';
 import { mapServerErrorToEnglish } from '../../api/errors';
 import { useAuth } from '../../features/auth/context/AuthContext';
@@ -43,6 +44,9 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
     const [ollamaBaseUrl, setOllamaBaseUrl] = useState('http://localhost:11434');
     const [hasSavedKey, setHasSavedKey] = useState(false);
     const [maskedKey, setMaskedKey] = useState<string | null>(null);
+    const [apiProviders, setApiProviders] = useState<AiProviderType[] | null>(null);
+    const [apiModels, setApiModels] = useState<string[]>([]);
+    const [modelsLoading, setModelsLoading] = useState(false);
 
     const [showApiKey, setShowApiKey] = useState(false);
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
@@ -73,12 +77,60 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
         setApiKey('');
         setHasSavedKey(settings?.hasApiKey ?? false);
         setMaskedKey(settings?.apiKeyMasked ?? null);
-        setOllamaBaseUrl(settings?.ollamaBaseUrl ?? 'http://localhost:11434');
+        setOllamaBaseUrl(settings?.customBaseUrl ?? settings?.ollamaBaseUrl ?? 'http://localhost:11434');
     }
 
     useEffect(() => {
         void loadSettings();
     }, [loadSettings, resetSignal]);
+
+    useEffect(() => {
+        let cancelled = false;
+        void aiApi.getProviders()
+            .then((providers) => {
+                if (!cancelled && providers.length > 0) {
+                    setApiProviders(providers);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setApiProviders(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!provider) {
+            setApiModels([]);
+            setModelsLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        const timer = window.setTimeout(() => {
+            setModelsLoading(true);
+            void aiApi.getModels({
+                provider,
+                apiKey: apiKey.trim() || null,
+                customBaseUrl: provider === 'ollama' ? (ollamaBaseUrl.trim() || null) : null
+            })
+                .then((models) => {
+                    if (!cancelled) setApiModels(models);
+                })
+                .catch(() => {
+                    if (!cancelled) setApiModels([]);
+                })
+                .finally(() => {
+                    if (!cancelled) setModelsLoading(false);
+                });
+        }, 350);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [provider, apiKey, ollamaBaseUrl]);
 
     useEffect(() => {
         if (!modelDropdownOpen) return;
@@ -104,16 +156,17 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
         const info = getProviderInfo(p);
         setModel(info?.defaultModel ?? '');
         setApiKey('');
+        setApiModels([]);
     };
 
     const providerInfo = getProviderInfo(provider);
-    const availableModels = providerInfo?.models ?? [];
+    const availableModels = apiModels.length > 0 ? apiModels : (providerInfo?.models ?? []);
 
     const isDirty = (() => {
         if (provider !== (user?.aiSettings?.provider ?? null)) return true;
         if (model !== (user?.aiSettings?.model ?? '')) return true;
         if (apiKey.trim()) return true;
-        if (provider === 'ollama' && ollamaBaseUrl !== (user?.aiSettings?.ollamaBaseUrl ?? 'http://localhost:11434')) return true;
+        if (provider === 'ollama' && ollamaBaseUrl !== (user?.aiSettings?.customBaseUrl ?? user?.aiSettings?.ollamaBaseUrl ?? 'http://localhost:11434')) return true;
         return false;
     })();
 
@@ -133,7 +186,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
             }
 
             if (provider === 'ollama') {
-                payload.ollamaBaseUrl = ollamaBaseUrl.trim() || null;
+                payload.customBaseUrl = ollamaBaseUrl.trim() || null;
             }
 
             const updated = await authApi.updateAiSettings(payload);
@@ -143,7 +196,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
                 provider: provider,
                 model: model || providerInfo?.defaultModel,
                 apiKey: apiKey.trim() || undefined,
-                ollamaBaseUrl: provider === 'ollama' ? ollamaBaseUrl.trim() : undefined
+                customBaseUrl: provider === 'ollama' ? ollamaBaseUrl.trim() : undefined
             });
 
             onSuccess('AI provider settings saved');
@@ -156,7 +209,9 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
         }
     };
 
-    const byokProviders = AI_PROVIDERS.filter((p) => !p.isLocal);
+    const supportedProviderIds = apiProviders ?? AI_PROVIDERS.map((p) => p.id);
+    const byokProviders = AI_PROVIDERS.filter((p) => !p.isLocal && supportedProviderIds.includes(p.id));
+    const localProviderAvailable = supportedProviderIds.includes('ollama');
 
     if (loading) {
         return (
@@ -194,7 +249,8 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
                     <button
                         key="local-btn"
                         type="button"
-                        onClick={() => handleStrategyChange('local')}
+                        disabled={!localProviderAvailable}
+                        onClick={() => localProviderAvailable && handleStrategyChange('local')}
                         className={`relative flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all cursor-pointer ${strategy === 'local'
                             ? 'border-brand-500/50 bg-brand-500/10 shadow-md shadow-brand-500/10'
                             : 'border-white/10 bg-slate-900/40 hover:border-slate-700 light:border-slate-200 light:bg-white/60 light:hover:border-slate-300'
@@ -253,7 +309,18 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
 
                         {modelDropdownOpen && (
                             <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-30 rounded-xl border border-white/10 bg-slate-900/95 light:bg-white/95 backdrop-blur-2xl shadow-xl overflow-hidden animate-dropdown-slide max-h-48 overflow-y-auto">
-                                {availableModels.map((m) => (
+                                {modelsLoading && (
+                                    <div className="flex items-center gap-2 px-3.5 py-2.5 text-xs text-slate-400 light:text-slate-500">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        Loading models from provider...
+                                    </div>
+                                )}
+                                {!modelsLoading && availableModels.length === 0 && (
+                                    <div className="px-3.5 py-2.5 text-xs text-slate-400 light:text-slate-500">
+                                        No models returned by API.
+                                    </div>
+                                )}
+                                {!modelsLoading && availableModels.map((m) => (
                                     <button
                                         key={m}
                                         type="button"

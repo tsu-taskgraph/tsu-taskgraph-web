@@ -27,6 +27,54 @@ export interface ProjectMember {
   joinedAt: string;
 }
 
+interface TimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  userDisplayName: string;
+  hours: number;
+  comment: string | null;
+  loggedAt: string;
+}
+
+type ActionLogActorType = 'USER' | 'AI' | 'SYSTEM';
+
+type ActionLogEventType =
+  | 'PROJECT_CREATED'
+  | 'PROJECT_UPDATED'
+  | 'MEMBER_INVITED'
+  | 'MEMBER_ROLE_CHANGED'
+  | 'MEMBER_REMOVED'
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_STATUS_CHANGED'
+  | 'TASK_ASSIGNED'
+  | 'TASK_UNASSIGNED'
+  | 'TASK_DELETED'
+  | 'TIME_LOGGED'
+  | 'EDGE_CREATED'
+  | 'EDGE_DELETED'
+  | 'GRAPH_MUTATED'
+  | 'SMART_RECOVERY_APPLIED'
+  | 'AI_SKELETON_GENERATED'
+  | 'AI_ENRICHMENT_COMPLETED'
+  | 'WIKI_PAGE_CREATED'
+  | 'WIKI_PAGE_UPDATED'
+  | 'BLUEPRINT_GENERATED'
+  | 'GITHUB_TASK_CLOSED';
+
+interface ActionLogEntry {
+  id: string;
+  projectId: string;
+  actorId: string | null;
+  actorType: ActionLogActorType;
+  actorDisplayName: string;
+  eventType: ActionLogEventType;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 type MockTaskCategory = 'BACKEND' | 'FRONTEND' | 'DEVOPS' | 'TESTING' | 'DOCUMENTATION' | 'DESIGN' | 'OTHER' | null;
 
 interface Project {
@@ -312,6 +360,88 @@ projectsList.forEach((project) => {
     ];
   }
 });
+
+const timeLogs: TimeLog[] = [];
+
+const actionLogs: ActionLogEntry[] = [
+  {
+    id: 'log-project-created',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'PROJECT_CREATED',
+    description: 'Created project E-Commerce Store (Spring & React).',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString()
+  },
+  {
+    id: 'log-ai-skeleton',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: null,
+    actorType: 'AI',
+    actorDisplayName: 'TaskGraph AI',
+    eventType: 'AI_SKELETON_GENERATED',
+    description: 'AI generated initial task graph skeleton.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 5 + 60000).toISOString()
+  },
+  {
+    id: 'log-member-designer',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'MEMBER_INVITED',
+    description: 'Invited Maria Designer as MEMBER.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 4).toISOString()
+  },
+  {
+    id: 'log-task-complete-t1',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'TASK_STATUS_CHANGED',
+    description: 'Task "Инициализация репозиториев и БД" marked as COMPLETED.',
+    metadata: { taskId: 't1', oldStatus: 'AVAILABLE', newStatus: 'COMPLETED' },
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+  },
+  {
+    id: 'log-time-t1',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: '00000000-0000-0000-0000-000000000000',
+    actorType: 'USER',
+    actorDisplayName: 'Разработчик TaskGraph',
+    eventType: 'TIME_LOGGED',
+    description: 'Logged 4.0 hours on "Инициализация репозиториев и БД".',
+    metadata: { taskId: 't1', hours: 4 },
+    createdAt: new Date(Date.now() - 86400000 * 3 + 30000).toISOString()
+  },
+  {
+    id: 'log-ai-enrich',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: null,
+    actorType: 'AI',
+    actorDisplayName: 'TaskGraph AI',
+    eventType: 'AI_ENRICHMENT_COMPLETED',
+    description: 'AI enrichment completed for all project tasks.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+  },
+  {
+    id: 'log-system-ready',
+    projectId: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    actorId: null,
+    actorType: 'SYSTEM',
+    actorDisplayName: 'System',
+    eventType: 'PROJECT_UPDATED',
+    description: 'Project status updated to ACTIVE.',
+    metadata: null,
+    createdAt: new Date(Date.now() - 86400000).toISOString()
+  }
+];
 
 const projectGraphs: Record<string, {
   projectId: string;
@@ -1467,14 +1597,57 @@ export const handlers = [
     };
     targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
 
-    return HttpResponse.json({
-      id: `time-log-${Date.now()}`,
+    const logId = `time-log-${Date.now()}`;
+    const logEntry: TimeLog = {
+      id: logId,
       taskId,
       userId: '00000000-0000-0000-0000-000000000000',
+      userDisplayName: userProfile.displayName,
       hours: body.hours,
       comment: body.comment ?? null,
       loggedAt: now
+    };
+    timeLogs.push(logEntry);
+
+    return HttpResponse.json({
+      id: logEntry.id,
+      taskId: logEntry.taskId,
+      userId: logEntry.userId,
+      userDisplayName: logEntry.userDisplayName,
+      hours: logEntry.hours,
+      comment: logEntry.comment,
+      loggedAt: logEntry.loggedAt
     }, { status: 201 });
+  }),
+
+  http.get('*/api/v1/tasks/:taskId/time-logs', ({ params }) => {
+    const taskId = params.taskId as string;
+    const logs = timeLogs
+      .filter((log) => log.taskId === taskId)
+      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
+    return HttpResponse.json(logs);
+  }),
+
+  http.delete('*/api/v1/time-logs/:logId', ({ params }) => {
+    const logId = params.logId as string;
+    const index = timeLogs.findIndex((log) => log.id === logId);
+
+    if (index === -1) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const log = timeLogs[index];
+    timeLogs.splice(index, 1);
+
+    for (const graph of Object.values(projectGraphs)) {
+      const task = graph.nodes.find((node) => node.id === log.taskId);
+      if (task) {
+        const updatedHours = Math.max(0, Number(task.loggedHours ?? 0) - log.hours);
+        task.loggedHours = updatedHours;
+      }
+    }
+
+    return new HttpResponse(null, { status: 204 });
   }),
 
   http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {
@@ -2019,5 +2192,36 @@ export const handlers = [
     }
 
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get('*/api/v1/projects/:projectId/action-log', ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const url = new URL(request.url);
+    const actorType = url.searchParams.get('actorType') as ActionLogActorType | null;
+    const eventType = url.searchParams.get('eventType') as ActionLogEventType | null;
+    const page = parseInt(url.searchParams.get('page') || '0', 10);
+    const size = parseInt(url.searchParams.get('size') || '50', 10);
+
+    let filtered = actionLogs.filter((log) => log.projectId === projectId);
+    if (actorType) {
+      filtered = filtered.filter((log) => log.actorType === actorType);
+    }
+    if (eventType) {
+      filtered = filtered.filter((log) => log.eventType === eventType);
+    }
+
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const totalElements = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+    const safePage = Math.min(page, totalPages - 1);
+    const start = safePage * size;
+    const content = filtered.slice(start, start + size);
+
+    return HttpResponse.json({
+      content,
+      totalElements,
+      totalPages
+    });
   })
 ];
