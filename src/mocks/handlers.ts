@@ -18,6 +18,15 @@ interface UserProfile {
   createdAt: string;
 }
 
+export interface ProjectMember {
+  userId: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+  joinedAt: string;
+}
+
 type MockTaskCategory = 'BACKEND' | 'FRONTEND' | 'DEVOPS' | 'TESTING' | 'DOCUMENTATION' | 'DESIGN' | 'OTHER' | null;
 
 interface Project {
@@ -32,6 +41,7 @@ interface Project {
   totalEstimatedHours: number | null;
   totalLoggedHours: number | null;
   completionPercent: number;
+  members: ProjectMember[];
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +75,32 @@ const projectsList: Project[] = [
     totalEstimatedHours: 39,
     totalLoggedHours: 8,
     completionPercent: 17,
+    members: [
+      {
+        userId: '00000000-0000-0000-0000-000000000000',
+        displayName: 'Разработчик TaskGraph',
+        email: 'dev@taskgraph.ru',
+        avatarUrl: null,
+        role: 'OWNER',
+        joinedAt: new Date(Date.now() - 86400000 * 5).toISOString()
+      },
+      {
+        userId: '00000000-0000-0000-0000-000000000002',
+        displayName: 'Maria Designer',
+        email: 'designer@taskgraph.ru',
+        avatarUrl: null,
+        role: 'MEMBER',
+        joinedAt: new Date(Date.now() - 86400000 * 4).toISOString()
+      },
+      {
+        userId: '00000000-0000-0000-0000-000000000003',
+        displayName: 'Ivan Tester',
+        email: 'tester@taskgraph.ru',
+        avatarUrl: null,
+        role: 'MEMBER',
+        joinedAt: new Date(Date.now() - 86400000 * 3).toISOString()
+      }
+    ],
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -80,6 +116,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 80,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -95,6 +132,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 16,
     totalLoggedHours: 16,
     completionPercent: 100,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
     updatedAt: new Date(Date.now() - 86400000 * 10).toISOString()
   },
@@ -110,6 +148,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 24,
     totalLoggedHours: 24,
     completionPercent: 100,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 100).toISOString(),
     updatedAt: new Date(Date.now() - 86400000 * 80).toISOString()
   },
@@ -125,6 +164,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 120,
     totalLoggedHours: 45,
     completionPercent: 37,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -140,6 +180,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 90,
     totalLoggedHours: 30,
     completionPercent: 33,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -155,6 +196,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 60,
     totalLoggedHours: 15,
     completionPercent: 25,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -170,6 +212,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 40,
     totalLoggedHours: 10,
     completionPercent: 25,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -185,6 +228,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 100,
     totalLoggedHours: 20,
     completionPercent: 20,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -200,6 +244,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 75,
     totalLoggedHours: 15,
     completionPercent: 20,
+    members: [],
     createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -215,6 +260,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 1,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -230,6 +276,7 @@ const projectsList: Project[] = [
     totalEstimatedHours: 1,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -245,10 +292,26 @@ const projectsList: Project[] = [
     totalEstimatedHours: 0,
     totalLoggedHours: 0,
     completionPercent: 0,
+    members: [],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString()
   }
 ];
+
+projectsList.forEach((project) => {
+  if (!project.members || project.members.length === 0) {
+    project.members = [
+      {
+        userId: '00000000-0000-0000-0000-000000000000',
+        displayName: userProfile.displayName,
+        email: userProfile.email,
+        avatarUrl: userProfile.avatarUrl,
+        role: 'OWNER',
+        joinedAt: project.createdAt
+      }
+    ];
+  }
+});
 
 const projectGraphs: Record<string, {
   projectId: string;
@@ -674,7 +737,7 @@ function getEnrichmentProgress(projectId: string): 'PENDING' | 'IN_PROGRESS' | '
   }
 
   graph.enrichmentStatus = 'COMPLETED';
-  
+
   if (projectId === '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e') {
     graph.nodes = [
       {
@@ -1111,6 +1174,16 @@ export const handlers = [
       totalEstimatedHours: data.aiEstimate ? 40 : 0,
       totalLoggedHours: 0,
       completionPercent: 0,
+      members: [
+        {
+          userId: '00000000-0000-0000-0000-000000000000',
+          displayName: userProfile.displayName,
+          email: userProfile.email,
+          avatarUrl: userProfile.avatarUrl,
+          role: 'OWNER',
+          joinedAt: new Date().toISOString()
+        }
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -1478,6 +1551,45 @@ export const handlers = [
     });
   }),
 
+  http.put('*/api/v1/tasks/:taskId/assignees', async ({ params, request }) => {
+    const taskId = params.taskId as string;
+    const body = await request.json() as { userIds?: string[] };
+    const userIds = body.userIds ?? [];
+
+    let targetGraph: typeof projectGraphs[string] | null = null;
+    let targetTask: Record<string, unknown> | null = null;
+
+    for (const graph of Object.values(projectGraphs)) {
+      const foundTask = graph.nodes.find((node) => node.id === taskId);
+      if (foundTask) {
+        targetGraph = graph;
+        targetTask = foundTask;
+        break;
+      }
+    }
+
+    if (!targetGraph || !targetTask) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const project = projectsList.find((p) => p.id === targetTask.projectId);
+    const assignedMembers = (project?.members ?? []).filter((m) => userIds.includes(m.userId));
+    const now = new Date().toISOString();
+
+    const updatedTask = {
+      ...targetTask,
+      assignees: assignedMembers.map((member) => ({
+        userId: member.userId,
+        displayName: member.displayName,
+        avatarUrl: member.avatarUrl
+      })),
+      updatedAt: now
+    };
+
+    targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
+    return HttpResponse.json(updatedTask);
+  }),
+
   http.post('*/api/v1/projects/:projectId/edges', async ({ params, request }) => {
     const projectId = params.projectId as string;
     const graph = projectGraphs[projectId];
@@ -1805,6 +1917,107 @@ export const handlers = [
     }
 
     recalculateTaskStatuses(targetGraph);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get('*/api/v1/projects/:projectId/members', ({ params }) => {
+    const projectId = params.projectId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+    return HttpResponse.json(project.members || []);
+  }),
+
+  http.post('*/api/v1/projects/:projectId/members', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const body = await request.json() as { email: string; role: ProjectMember['role'] };
+    const email = (body.email || '').toLowerCase().trim();
+    const role = body.role || 'MEMBER';
+
+    if (!email) {
+      return HttpResponse.json({ message: 'Email is required.' }, { status: 400 });
+    }
+
+    if (project.members.some((m) => m.email.toLowerCase() === email)) {
+      return HttpResponse.json({ message: 'User is already a member of this project.' }, { status: 409 });
+    }
+
+    if (email.includes('notfound')) {
+      return HttpResponse.json({ message: 'User with this email was not found.' }, { status: 404 });
+    }
+
+    let displayName = 'Guest User';
+    const avatarUrl = null;
+    let userId = `user-${Date.now()}`;
+
+    if (email === 'admin@taskgraph.ru') {
+      displayName = 'Alex Admin';
+      userId = '00000000-0000-0000-0000-000000000001';
+    } else if (email === 'designer@taskgraph.ru') {
+      displayName = 'Maria Designer';
+      userId = '00000000-0000-0000-0000-000000000002';
+    } else if (email === 'tester@taskgraph.ru') {
+      displayName = 'Ivan Tester';
+      userId = '00000000-0000-0000-0000-000000000003';
+    } else {
+      const parts = email.split('@');
+      displayName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    }
+
+    const newMember: ProjectMember = {
+      userId,
+      displayName,
+      email,
+      avatarUrl,
+      role,
+      joinedAt: new Date().toISOString()
+    };
+
+    project.members.push(newMember);
+    return HttpResponse.json(newMember, { status: 201 });
+  }),
+
+  http.patch('*/api/v1/projects/:projectId/members/:userId', async ({ params, request }) => {
+    const projectId = params.projectId as string;
+    const userId = params.userId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const member = project.members.find((m) => m.userId === userId);
+    if (!member) {
+      return HttpResponse.json({ message: 'Member not found in project.' }, { status: 404 });
+    }
+
+    const body = await request.json() as { role: ProjectMember['role'] };
+    member.role = body.role;
+    return HttpResponse.json(member, { status: 200 });
+  }),
+
+  http.delete('*/api/v1/projects/:projectId/members/:userId', ({ params }) => {
+    const projectId = params.projectId as string;
+    const userId = params.userId as string;
+    const project = projectsList.find((p) => p.id === projectId);
+
+    if (!project) {
+      return HttpResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const initialLength = project.members.length;
+    project.members = project.members.filter((m) => m.userId !== userId);
+
+    if (project.members.length === initialLength) {
+      return HttpResponse.json({ message: 'Member not found in project.' }, { status: 404 });
+    }
+
     return new HttpResponse(null, { status: 204 });
   })
 ];

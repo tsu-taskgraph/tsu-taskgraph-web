@@ -113,6 +113,15 @@ export interface MutateGraphRequest {
   prompt: string;
 }
 
+export interface InviteMemberRequest {
+  email: string;
+  role: ProjectMember['role'];
+}
+
+export interface UpdateMemberRoleRequest {
+  role: ProjectMember['role'];
+}
+
 export interface UpdateTaskRequest {
   title?: string;
   description?: string | null;
@@ -132,6 +141,10 @@ export interface TimeLogResponse {
   hours: number;
   comment: string | null;
   loggedAt: string;
+}
+
+export interface AssignTaskRequest {
+  userIds: string[];
 }
 
 export const projectsApi = {
@@ -212,5 +225,29 @@ export const projectsApi = {
 
   async deleteTask(taskId: string): Promise<void> {
     await apiClient.delete(`/api/v1/tasks/${taskId}`);
+  },
+
+  async listProjectMembers(projectId: string): Promise<ProjectMember[]> {
+    const response = await apiClient.get<ProjectMember[]>(`/api/v1/projects/${projectId}/members`);
+    return response.data;
+  },
+
+  async inviteMember(projectId: string, data: InviteMemberRequest): Promise<ProjectMember> {
+    const response = await apiClient.post<ProjectMember>(`/api/v1/projects/${projectId}/members`, data);
+    return response.data;
+  },
+
+  async updateMemberRole(projectId: string, userId: string, data: UpdateMemberRoleRequest): Promise<ProjectMember> {
+    const response = await apiClient.patch<ProjectMember>(`/api/v1/projects/${projectId}/members/${userId}`, data);
+    return response.data;
+  },
+
+  async removeMember(projectId: string, userId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/projects/${projectId}/members/${userId}`);
+  },
+
+  async assignTask(taskId: string, data: AssignTaskRequest): Promise<TaskNode> {
+    const response = await apiClient.put<TaskNode>(`/api/v1/tasks/${taskId}/assignees`, data);
+    return response.data;
   }
 };

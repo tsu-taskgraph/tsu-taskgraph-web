@@ -32,6 +32,8 @@ import { useWorkspaceToast } from './useWorkspaceToast';
 import { useWorkspaceModals } from './useWorkspaceModals';
 import { useWorkspaceTaskOperations } from './useWorkspaceTaskOperations';
 import { useWorkspacePolling } from './useWorkspacePolling';
+import { useWorkspaceMembers } from './useWorkspaceMembers';
+import { useAuth } from '../../../features/auth/context/AuthContext';
 
 const isEditableShortcutTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -54,6 +56,15 @@ export function useWorkspace(projectId: string | undefined) {
   const toast = useWorkspaceToast();
 
   const modals = useWorkspaceModals({ flowInstance });
+
+  const { user } = useAuth();
+
+  const membersState = useWorkspaceMembers({
+    projectId,
+    showEdgeToast: toast.showEdgeToast,
+    setConfirmModal: modals.setConfirmModal,
+    setIsConfirmClosing: modals.setIsConfirmClosing
+  });
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isTaskSidebarOpen, setIsTaskSidebarOpen] = useState(false);
@@ -435,7 +446,8 @@ export function useWorkspace(projectId: string | undefined) {
             taskA.estimatedHours === taskB.estimatedHours &&
             taskA.loggedHours === taskB.loggedHours &&
             taskA.completionPercent === taskB.completionPercent &&
-            JSON.stringify(taskA.enrichment) === JSON.stringify(taskB.enrichment);
+            JSON.stringify(taskA.enrichment) === JSON.stringify(taskB.enrichment) &&
+            JSON.stringify(taskA.assignees) === JSON.stringify(taskB.assignees);
 
           const positionUnchanged =
             currentNode.position.x === targetPosition.x &&
@@ -702,7 +714,23 @@ export function useWorkspace(projectId: string | undefined) {
     handleTaskCreated: operations.handleTaskCreated,
     handleTaskUpdate: operations.handleTaskUpdate,
     handleLogTaskTime: operations.handleLogTaskTime,
+    handleAssigneesChange: operations.handleAssigneesChange,
     handleDeleteTask: operations.handleDeleteTask,
-    handleTaskStatusChange: operations.handleTaskStatusChange
+    handleTaskStatusChange: operations.handleTaskStatusChange,
+
+    currentUserId: user?.id,
+    members: membersState.members,
+    loadingMembers: membersState.loadingMembers,
+    isTeamOpen: membersState.isTeamOpen,
+    isTeamClosing: membersState.isTeamClosing,
+    isInviteOpen: membersState.isInviteOpen,
+    isInviteClosing: membersState.isInviteClosing,
+    openTeamModal: membersState.openTeamModal,
+    closeTeamModal: membersState.closeTeamModal,
+    openInviteModal: membersState.openInviteModal,
+    closeInviteModal: membersState.closeInviteModal,
+    handleRoleChange: membersState.handleRoleChange,
+    handleRemoveMember: membersState.handleRemoveMember,
+    handleInviteMember: membersState.handleInviteMember
   };
 }

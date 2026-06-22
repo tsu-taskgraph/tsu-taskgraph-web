@@ -5,6 +5,7 @@ import {
   type TaskNode,
   type UpdateTaskRequest,
   type ProjectGraphResponse,
+  type AssignTaskRequest,
 } from '../../../api/projects';
 import {
   type WorkspaceNode,
@@ -223,6 +224,39 @@ export function useWorkspaceTaskOperations({
     }
   }, [setGraph, setNodes, showEdgeToast, takeSnapshot, setStatusMenu]);
 
+  const handleAssigneesChange = useCallback(async (userIds: string[]) => {
+    if (!selectedTask) return;
+
+    takeSnapshot();
+    setStatusUpdatingTaskId(selectedTask.id);
+
+    try {
+      const finalTask = await projectsApi.assignTask(selectedTask.id, { userIds } as AssignTaskRequest);
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map((task) => task.id === finalTask.id ? finalTask : task)
+      } : currentGraph);
+
+      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+        if (node.type !== 'taskNode' || node.id !== finalTask.id) return node;
+        const taskNode = node as TaskFlowNode;
+        return {
+          ...taskNode,
+          data: { ...taskNode.data, task: finalTask }
+        };
+      }));
+
+      showEdgeToast('Assignees updated.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    } finally {
+      setStatusUpdatingTaskId(null);
+    }
+  }, [selectedTask, takeSnapshot, setGraph, setNodes, showEdgeToast]);
+
   const handleDeleteTask = useCallback((taskId: string) => {
     if (!selectedTask) return;
 
@@ -329,6 +363,7 @@ export function useWorkspaceTaskOperations({
     handleTaskCreated,
     handleTaskUpdate,
     handleLogTaskTime,
+    handleAssigneesChange,
     handleDeleteTask,
     handleTaskStatusChange
   };
