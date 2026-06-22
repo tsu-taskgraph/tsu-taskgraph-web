@@ -6,14 +6,16 @@ export interface SavedAiSettings {
   model: string | null;
   apiKeyMasked: string | null;
   hasApiKey: boolean;
-  ollamaBaseUrl: string | null;
-  providerSettings: Record<string, unknown> | null;
+  customBaseUrl: string | null;
+  ollamaBaseUrl?: string | null;
+  providerSettings?: Record<string, unknown> | null;
 }
 
 export interface UpdateAiSettingsRequest {
   provider?: AiProviderType;
   model?: string | null;
   apiKey?: string | null;
+  customBaseUrl?: string | null;
   ollamaBaseUrl?: string | null;
   providerSettings?: Record<string, unknown> | null;
 }
@@ -30,7 +32,7 @@ export interface UserProfile {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  tokenType: string;
+  tokenType?: string;
   user: UserProfile;
 }
 

@@ -3,6 +3,8 @@ import { apiClient } from './client';
 export type TechStack = string[];
 
 export interface ProjectMember {
+  id?: string;
+  projectId?: string;
   userId: string;
   displayName: string;
   email: string;
@@ -13,6 +15,7 @@ export interface ProjectMember {
 
 export interface ProjectResponse {
   id: string;
+  version?: number;
   name: string;
   description: string;
   techStack: TechStack;
@@ -23,7 +26,7 @@ export interface ProjectResponse {
   totalEstimatedHours: number | null;
   totalLoggedHours: number | null;
   completionPercent: number;
-  members: ProjectMember[];
+  members?: ProjectMember[];
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +44,8 @@ export interface ProjectsListResponse {
   totalElements: number;
   totalPages: number;
   page: number;
+  number?: number;
+  size?: number;
 }
 
 export interface TaskEnrichment {
@@ -52,6 +57,7 @@ export interface TaskEnrichment {
 
 export interface TaskNode {
   id: string;
+  version?: number;
   projectId: string;
   title: string;
   description: string | null;
@@ -89,9 +95,6 @@ export interface ProjectGraphResponse {
   enrichmentStatus: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 }
 
-export interface CreateProjectResponse extends ProjectResponse {
-  graph: ProjectGraphResponse;
-}
 
 export interface CreateTaskRequest {
   title: string;
@@ -123,6 +126,7 @@ export interface UpdateMemberRoleRequest {
 }
 
 export interface UpdateTaskRequest {
+  version?: number;
   title?: string;
   description?: string | null;
   category?: TaskNode['category'];
@@ -190,28 +194,55 @@ export interface ActionLogResponse {
   content: ActionLogEntry[];
   totalElements: number;
   totalPages: number;
+  page?: number;
+  number?: number;
 }
+
+const normalizeProject = (project: ProjectResponse): ProjectResponse => ({
+  ...project,
+  members: project.members ?? []
+});
+
+const normalizeProjectPage = (page: ProjectsListResponse): ProjectsListResponse => ({
+  ...page,
+  page: page.page ?? page.number ?? 0,
+  content: (page.content ?? []).map(normalizeProject)
+});
+
+const normalizeProjectMember = (member: Partial<ProjectMember> & { userId?: string; id?: string }): ProjectMember => {
+  const userId = member.userId ?? member.id ?? '';
+  return {
+    ...member,
+    userId,
+    displayName: member.displayName ?? (userId ? `User ${userId.slice(0, 8)}` : 'Project member'),
+    email: member.email ?? '',
+    avatarUrl: member.avatarUrl ?? null,
+    role: member.role ?? 'MEMBER',
+    joinedAt: member.joinedAt ?? ''
+  };
+};
 
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+    name?: string;
     page?: number;
     size?: number;
   }): Promise<ProjectsListResponse> {
     const response = await apiClient.get<ProjectsListResponse>('/api/v1/projects', { params });
-    return response.data;
+    return normalizeProjectPage(response.data);
   },
 
-  async createProject(data: CreateProjectRequest): Promise<CreateProjectResponse> {
-    const response = await apiClient.post<CreateProjectResponse>('/api/v1/projects', data, {
+  async createProject(data: CreateProjectRequest): Promise<ProjectResponse> {
+    const response = await apiClient.post<ProjectResponse>('/api/v1/projects', data, {
       timeout: 20000
     });
-    return response.data;
+    return normalizeProject(response.data);
   },
 
   async getProject(projectId: string): Promise<ProjectResponse> {
     const response = await apiClient.get<ProjectResponse>(`/api/v1/projects/${projectId}`);
-    return response.data;
+    return normalizeProject(response.data);
   },
 
   async getProjectGraph(projectId: string): Promise<ProjectGraphResponse> {
@@ -253,8 +284,8 @@ export const projectsApi = {
     return response.data;
   },
 
-  async deleteTimeLog(logId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/time-logs/${logId}`);
+  async deleteTimeLog(taskId: string, logId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/tasks/${taskId}/time-logs/${logId}`);
   },
 
   async updateTaskStatus(
@@ -272,9 +303,8 @@ export const projectsApi = {
     return response.data;
   },
 
-  async deleteEdge(edgeId: string): Promise<ProjectGraphResponse> {
-    const response = await apiClient.delete<ProjectGraphResponse>(`/api/v1/edges/${edgeId}`);
-    return response.data;
+  async deleteEdge(edgeId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/edges/${edgeId}`);
   },
 
   async deleteTask(taskId: string): Promise<void> {
@@ -283,17 +313,17 @@ export const projectsApi = {
 
   async listProjectMembers(projectId: string): Promise<ProjectMember[]> {
     const response = await apiClient.get<ProjectMember[]>(`/api/v1/projects/${projectId}/members`);
-    return response.data;
+    return (response.data ?? []).map(normalizeProjectMember);
   },
 
   async inviteMember(projectId: string, data: InviteMemberRequest): Promise<ProjectMember> {
     const response = await apiClient.post<ProjectMember>(`/api/v1/projects/${projectId}/members`, data);
-    return response.data;
+    return normalizeProjectMember(response.data);
   },
 
   async updateMemberRole(projectId: string, userId: string, data: UpdateMemberRoleRequest): Promise<ProjectMember> {
     const response = await apiClient.patch<ProjectMember>(`/api/v1/projects/${projectId}/members/${userId}`, data);
-    return response.data;
+    return normalizeProjectMember(response.data);
   },
 
   async removeMember(projectId: string, userId: string): Promise<void> {

@@ -73,7 +73,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
         setApiKey('');
         setHasSavedKey(settings?.hasApiKey ?? false);
         setMaskedKey(settings?.apiKeyMasked ?? null);
-        setOllamaBaseUrl(settings?.ollamaBaseUrl ?? 'http://localhost:11434');
+        setOllamaBaseUrl(settings?.customBaseUrl ?? settings?.ollamaBaseUrl ?? 'http://localhost:11434');
     }
 
     useEffect(() => {
@@ -113,7 +113,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
         if (provider !== (user?.aiSettings?.provider ?? null)) return true;
         if (model !== (user?.aiSettings?.model ?? '')) return true;
         if (apiKey.trim()) return true;
-        if (provider === 'ollama' && ollamaBaseUrl !== (user?.aiSettings?.ollamaBaseUrl ?? 'http://localhost:11434')) return true;
+        if (provider === 'ollama' && ollamaBaseUrl !== (user?.aiSettings?.customBaseUrl ?? user?.aiSettings?.ollamaBaseUrl ?? 'http://localhost:11434')) return true;
         return false;
     })();
 
@@ -133,7 +133,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
             }
 
             if (provider === 'ollama') {
-                payload.ollamaBaseUrl = ollamaBaseUrl.trim() || null;
+                payload.customBaseUrl = ollamaBaseUrl.trim() || null;
             }
 
             const updated = await authApi.updateAiSettings(payload);
@@ -143,7 +143,7 @@ export function AiSettingsForm({ onError, onSuccess, resetSignal }: AiSettingsFo
                 provider: provider,
                 model: model || providerInfo?.defaultModel,
                 apiKey: apiKey.trim() || undefined,
-                ollamaBaseUrl: provider === 'ollama' ? ollamaBaseUrl.trim() : undefined
+                customBaseUrl: provider === 'ollama' ? ollamaBaseUrl.trim() : undefined
             });
 
             onSuccess('AI provider settings saved');

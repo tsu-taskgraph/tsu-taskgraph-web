@@ -142,6 +142,7 @@ export function useWorkspaceTaskOperations({
       }
 
       const updateData: UpdateTaskRequest = {
+        version: selectedTask.version,
         title: data.title,
         description: data.description,
         category: data.category,
@@ -191,7 +192,7 @@ export function useWorkspaceTaskOperations({
       }
 
       if (typeof data.completionPercent === 'number') {
-        const response = await projectsApi.updateTask(task.id, { completionPercent: data.completionPercent });
+        const response = await projectsApi.updateTask(task.id, { version: task.version, completionPercent: data.completionPercent });
         updatedTask = {
           ...updatedTask,
           ...response,
@@ -265,7 +266,7 @@ export function useWorkspaceTaskOperations({
     setStatusUpdatingTaskId(selectedTask.id);
 
     try {
-      await projectsApi.deleteTimeLog(log.id);
+      await projectsApi.deleteTimeLog(selectedTask.id, log.id);
 
       const updatedTask = {
         ...selectedTask,
@@ -352,7 +353,7 @@ export function useWorkspaceTaskOperations({
       });
 
       const updatedMainTask = typeof data?.completionPercent === 'number'
-        ? await projectsApi.updateTask(response.updatedTask.id, { completionPercent: data.completionPercent })
+        ? await projectsApi.updateTask(response.updatedTask.id, { version: response.updatedTask.version, completionPercent: data.completionPercent })
         : response.updatedTask;
       const updatedTasks = [updatedMainTask, ...(response.unlockedTasks ?? [])];
       const updatedTaskById = new Map(updatedTasks.map((task) => [task.id, task]));
