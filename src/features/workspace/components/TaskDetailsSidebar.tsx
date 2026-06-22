@@ -13,10 +13,11 @@ import {
     Pencil,
     Save,
     Tag,
+    Trash2,
     X,
     Zap
 } from 'lucide-react';
-import type { TaskNode, ProjectMember } from '../../../api/projects';
+import { projectsApi, type TaskNode, type ProjectMember, type TimeLogResponse } from '../../../api/projects';
 
 type TaskStatus = TaskNode['status'];
 type TaskCategory = NonNullable<TaskNode['category']>;
@@ -24,6 +25,7 @@ type TaskCategory = NonNullable<TaskNode['category']>;
 interface TaskDetailsSidebarProps {
     task: TaskNode;
     members: ProjectMember[];
+    currentUserId?: string;
     onClose: () => void;
     onTaskUpdate: (data: {
         title?: string;
@@ -36,6 +38,7 @@ interface TaskDetailsSidebarProps {
         dueDate?: string | null;
     }) => Promise<void>;
     onAssigneesChange: (userIds: string[]) => Promise<void>;
+    onTimeLogDelete: (log: TimeLogResponse) => Promise<void>;
     onInteract?: () => void;
     updating: boolean;
     isClosing?: boolean;
@@ -99,6 +102,12 @@ function formatDate(value: string | null) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+}
+
+function formatDateTime(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatHours(value: number | null | undefined) {
@@ -257,7 +266,7 @@ function CustomDateField({ label, value, onChange }: {
     );
 }
 
-export function TaskDetailsSidebar({ task, members, onClose, onTaskUpdate, onAssigneesChange, onInteract, updating, isClosing = false, isEnriching = false }: TaskDetailsSidebarProps) {
+export function TaskDetailsSidebar({ task, members, currentUserId, onClose, onTaskUpdate, onAssigneesChange, onTimeLogDelete, onInteract, updating, isClosing = false, isEnriching = false }: TaskDetailsSidebarProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [draftTitle, setDraftTitle] = useState(task.title);
     const [draftDescription, setDraftDescription] = useState(task.description ?? '');
@@ -272,6 +281,9 @@ export function TaskDetailsSidebar({ task, members, onClose, onTaskUpdate, onAss
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
     const [assigneesDropdownOpen, setAssigneesDropdownOpen] = useState(false);
     const [assigneeUpdating, setAssigneeUpdating] = useState(false);
+    const [timeLogs, setTimeLogs] = useState<TimeLogResponse[]>([]);
+    const [timeLogsLoading, setTimeLogsLoading] = useState(false);
+    const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
     const titleRef = useRef<HTMLHeadingElement | null>(null);
 
     const status = statusMeta[task.status];
@@ -298,7 +310,23 @@ export function TaskDetailsSidebar({ task, members, onClose, onTaskUpdate, onAss
         setProgressDropdownOpen(false);
         setStatusDropdownOpen(false);
         setAssigneesDropdownOpen(false);
+        setTimeLogs([]);
     }, [task.id, task.title, task.description, task.category, task.estimatedHours, task.completionPercent, task.startDate, task.dueDate, task.status]);
+
+    useEffect(() => {
+        let cancelled = false;
+        setTimeLogsLoading(true);
+        void projectsApi.listTaskTimeLogs(task.id).then((logs) => {
+            if (!cancelled) {
+                setTimeLogs(logs);
+            }
+        }).finally(() => {
+            if (!cancelled) {
+                setTimeLogsLoading(false);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [task.id, task.loggedHours]);
 
     const startEditing = () => setIsEditing(true);
     const cancelEditing = () => {
@@ -561,6 +589,52 @@ export function TaskDetailsSidebar({ task, members, onClose, onTaskUpdate, onAss
                         <textarea value={draftDescription} onChange={(event) => setDraftDescription(event.target.value)} rows={4} className={`${fieldClass} mt-2 resize-none leading-relaxed`} />
                     ) : (
                         <p className="mt-2 whitespace-pre-wrap rounded-2xl border border-white/10 bg-slate-950/35 p-3 text-sm leading-relaxed text-slate-300 light:border-slate-200/70 light:bg-white/55 light:text-slate-700">{task.description?.trim() || 'No description provided.'}</p>
+                    )}
+                </section>
+
+                <section className="mt-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Time logs</h3>
+                    {timeLogsLoading ? (
+                        <div className="mt-3 flex items-center justify-center py-4">
+                            <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                        </div>
+                    ) : timeLogs.length > 0 ? (
+                        <ul className="mt-2 space-y-2">
+                            {timeLogs.map((log) => {
+                                const isOwn = log.userId === currentUserId;
+                                return (
+                                    <li key={log.id} className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200/70 light:bg-white/55">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-100 light:text-slate-900">
+                                                <Clock className="h-3.5 w-3.5 text-sky-400 light:text-sky-600" />
+                                                <span>{formatHours(log.hours)}</span>
+                                            </div>
+                                            <div className="mt-1 text-xs text-slate-500">{log.userDisplayName} · {formatDateTime(log.loggedAt)}</div>
+                                            {log.comment && <p className="mt-1.5 text-xs text-slate-400 light:text-slate-600">{log.comment}</p>}
+                                        </div>
+                                        {isOwn && (
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    setDeletingLogId(log.id);
+                                                    await onTimeLogDelete(log);
+                                                    const logs = await projectsApi.listTaskTimeLogs(task.id);
+                                                    setTimeLogs(logs);
+                                                    setDeletingLogId(null);
+                                                }}
+                                                disabled={deletingLogId === log.id}
+                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-slate-400 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50 light:border-slate-200/70 light:bg-white/60 light:text-slate-500 light:hover:bg-red-50 light:hover:text-red-600"
+                                                aria-label="Delete time log"
+                                            >
+                                                {deletingLogId === log.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                            </button>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (
+                        <p className="mt-2 text-sm text-slate-500">No time logs yet.</p>
                     )}
                 </section>
 

@@ -1,0 +1,4173 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "TaskGraph — Core API",
+        "version": "0.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://taskgraph.orexi4.ru",
+            "description": "Generated server url"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Wiki",
+            "description": "Wiki-страницы проекта"
+        },
+        {
+            "name": "Users",
+            "description": "Профиль и AI-настройки текущего пользователя"
+        },
+        {
+            "name": "ActionLog",
+            "description": "Лог действий пользователей и ИИ"
+        },
+        {
+            "name": "Projects",
+            "description": "Управление проектами"
+        },
+        {
+            "name": "Tasks",
+            "description": "CRUD задач, статусы, трудозатраты"
+        },
+        {
+            "name": "Edges",
+            "description": "Рёбра (зависимости) DAG"
+        },
+        {
+            "name": "Auth",
+            "description": "Регистрация, вход, выход, токены"
+        },
+        {
+            "name": "AI",
+            "description": "Эндпоинты, вызывающие AI Service Bridge"
+        }
+    ],
+    "paths": {
+        "/api/v1/wiki/{pageId}": {
+            "get": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Получить Wiki-страницу (полный контент)",
+                "operationId": "getWikiPage",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Страница найдена",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Wiki-страница с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Обновить Wiki-страницу",
+                "operationId": "updateWikiPage",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateWikiPageRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Страница успешно обновлена",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Wiki-страница с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт версий. Возможное сообщение:\n* 'Страница была изменена другим пользователем. Пожалуйста, обновите страницу.'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Удалить Wiki-страницу",
+                "operationId": "deleteWikiPage",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Страница успешно удалена"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Wiki-страница с id=123 не найдена'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me/ai-settings": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Получить AI-настройки (ключ замаскирован)",
+                "operationId": "getAiSettings",
+                "responses": {
+                    "200": {
+                        "description": "Настройки найдены",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedAiSettings"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedAiSettings"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможные сообщения:\n* 'Пользователь с id=123 не найден'\n* 'AI-настройки не найдены'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedAiSettings"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Сохранить AI-настройки (ключ шифруется AES-256)",
+                "operationId": "saveAiSettings",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAiSettingsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Настройки успешно сохранены",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedAiSettings"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedAiSettings"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedAiSettings"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Удалить AI-настройки и ключ",
+                "operationId": "deleteAiSettings",
+                "responses": {
+                    "204": {
+                        "description": "Настройки успешно удалены"
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/tasks/{taskId}/assignees": {
+            "put": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Назначить исполнителей (заменяет весь список)",
+                "description": "Передать пустой массив userIds = снять всех исполнителей. Аватары обновятся на узле ReactFlow.",
+                "operationId": "assignTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssignTaskRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Исполнители успешно назначены",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me/avatar": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Загрузить / заменить аватар текущего пользователя",
+                "operationId": "uploadAvatar",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Аватар успешно загружен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможные сообщения:\n* 'Файл не выбран'\n* 'Разрешены только изображения'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера. Возможное сообщение:\n* 'Не удалось сохранить файл'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Удалить аватар (сбросить на дефолтный)",
+                "operationId": "deleteAvatar",
+                "responses": {
+                    "200": {
+                        "description": "Аватар успешно удален",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/tasks/{taskId}/time-logs": {
+            "get": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Журнал трудозатрат по задаче",
+                "operationId": "listTimeLogs",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Журнал трудозатрат получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TimeLogDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TimeLogDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TimeLogDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Залогировать время (MEMBER и выше)",
+                "operationId": "createTimeLog",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTimeLogRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Время успешно залогировано",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimeLogDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможные причины:\n* Некорректный формат времени. Ожидается 'ЧЧ:ММ' или число.\n* Валидация (например, 'hours must be greater than 0')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimeLogDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimeLogDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimeLogDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects": {
+            "get": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Список проектов пользователя",
+                "operationId": "getUserProjects",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PENDING_AI",
+                                "ACTIVE",
+                                "COMPLETED",
+                                "ARCHIVED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "pageable",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Pageable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageProjectDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Создать проект + AI-декомпозиция (Фаза 1)",
+                "operationId": "createProject",
+                "parameters": [
+                    {
+                        "name": "X-AI-Provider",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-AI-API-Key",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-AI-Model",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Custom-Base-URL",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateProjectRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Проект успешно создан",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможное сообщение:\n* 'AI-провайдер не сконфигурирован. Передайте настройки в X-AI-* заголовках или сохраните их в профиле.'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{projectId}/wiki": {
+            "get": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Список Wiki-страниц проекта",
+                "operationId": "listWikiPages",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "taskId",
+                        "in": "query",
+                        "description": "Фильтр — только страницы конкретной задачи",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список страниц получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WikiPageSummaryDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WikiPageSummaryDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Создать Wiki-страницу вручную",
+                "operationId": "createWikiPage",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateWikiPageRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Страница успешно создана",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможные сообщения:\n* 'Проект с ID 123 не найден'\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiPageDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{projectId}/wiki/media": {
+            "get": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Список загруженных медиафайлов проекта",
+                "operationId": "listWikiMedia",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "mimeType",
+                        "in": "query",
+                        "description": "Фильтр по типу (image/*, application/pdf и т.д.)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список медиафайлов получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WikiMediaDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WikiMediaDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Загрузить медиафайл для вставки в Wiki",
+                "operationId": "uploadWikiMedia",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Медиафайл успешно загружен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiMediaDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiMediaDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiMediaDto"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера. Возможные сообщения:\n* 'Не удалось сохранить файл: некорректный путь 123'\n* 'Не удалось сохранить файл 123'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WikiMediaDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{projectId}/tasks": {
+            "get": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Список задач проекта",
+                "operationId": "listTasks",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "LOCKED",
+                                "AVAILABLE",
+                                "IN_PROGRESS",
+                                "COMPLETED",
+                                "SKIPPED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "assigneeId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "BACKEND",
+                                "FRONTEND",
+                                "DEVOPS",
+                                "TESTING",
+                                "DOCUMENTATION",
+                                "DESIGN",
+                                "OTHER"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список задач получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TaskNode"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TaskNode"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Создать задачу вручную",
+                "operationId": "createTask",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTaskRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Задача успешно создана",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный формат времени. Ожидается 'ЧЧ:ММ' или число.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{projectId}/mutate": {
+            "post": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Динамическая мутация графа (Фаза 3)",
+                "operationId": "mutateGraph",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-AI-Provider",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-AI-API-Key",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-AI-Model",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Custom-Base-URL",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Enable-Smart-Recovery",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MutateGraphRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Граф обновлён",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectGraphResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка при обращении к AI-сервису или обнаружен цикл",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectGraphResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{projectId}/edges": {
+            "post": {
+                "tags": [
+                    "Edges"
+                ],
+                "summary": "Добавить ребро (зависимость)",
+                "operationId": "createEdge",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateEdgeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Ребро успешно создано",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EdgeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможные сообщения:\n* 'Обе задачи должны принадлежать указанному проекту.'\n* 'Нельзя установить зависимость задачи на саму себя.'\n* 'Такая зависимость уже существует.'\n* 'Добавление этой зависимости создаёт цикл в графе задач.'\n* 'Нельзя создавать зависимость к уже завершенной задаче.'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EdgeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EdgeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EdgeResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{id}/members": {
+            "get": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Список участников проекта",
+                "operationId": "listProjectMembers",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список участников получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectMemberDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectMemberDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectMemberDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Пригласить участника (OWNER/ADMIN)",
+                "operationId": "inviteMember",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InviteMemberRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Участник успешно приглашен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможные сообщения:\n* 'Проект с ID 123 не найден'\n* 'Пользователь с email=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт. Возможное сообщение:\n* 'Пользователь уже является участником проекта'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/internal/enrichment-callback": {
+            "post": {
+                "tags": [
+                    "internal-callback-controller"
+                ],
+                "operationId": "enrichmentCallback",
+                "parameters": [
+                    {
+                        "name": "X-Internal-Secret",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EnrichTaskCallback"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Регистрация нового пользователя",
+                "operationId": "register",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Пользователь успешно зарегистрирован",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт. Возможное сообщение:\n* 'Email уже занят'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Обновить токены",
+                "operationId": "refresh",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Токены успешно обновлены",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможное сообщение:\n* 'Невалидный refresh token'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Выход",
+                "operationId": "logout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "Выход выполнен успешно (refresh-токен удален, если был предоставлен)"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Вход",
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Вход выполнен успешно",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможное сообщение:\n* 'Неверный email или пароль'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ai/providers/models": {
+            "post": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Получить список моделей для конкретного провайдера и ключа",
+                "operationId": "getModels",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProviderConfig"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Список моделей получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка при обращении к AI-сервису. Возможные причины:\n* 400: Неверные входные данные (например, не указан провайдер).\n* 401: Невалидный API-ключ для выбранного провайдера.\n* 429: Превышен лимит запросов (Rate limit) у провайдера.\n* 502: Сбой на стороне AI-провайдера.\n* 504: Превышено время ожидания ответа от AI-провайдера.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Профиль текущего пользователя",
+                "operationId": "getCurrentUser",
+                "responses": {
+                    "200": {
+                        "description": "Профиль пользователя получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Обновить профиль (displayName)",
+                "operationId": "updateCurrentUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProfileRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Профиль успешно обновлен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка аутентификации. Возможные сообщения:\n* 'Пользователь не авторизован'\n* 'Principal имеет некорректный тип'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Пользователь с id=123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/tasks/{taskId}": {
+            "get": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Получить задачу (с enrichment, time logs, wiki)",
+                "operationId": "getTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Задача найдена",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Удалить задачу",
+                "operationId": "deleteTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Задача успешно удалена"
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможное сообщение:\n* 'Нельзя удалить задачу, от которой зависят другие задачи.'"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Обновить задачу (title, description, даты, оценка, прогресс)",
+                "description": "Используется для обновления данных задачи, включая позицию на холсте (positionX / positionY при drag & drop в ReactFlow).",
+                "operationId": "updateTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTaskRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Задача успешно обновлена",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный формат времени. Ожидается 'ЧЧ:ММ' или число.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт версий. Возможное сообщение:\n* 'Задача была изменена другим пользователем. Пожалуйста, обновите страницу.'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskNode"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/tasks/{taskId}/status": {
+            "patch": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Сменить статус (с авторазблокировкой + опциональный time log)",
+                "operationId": "updateTaskStatus",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTaskStatusRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Статус успешно обновлен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskStatusUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможные причины:\n* Невалидный статус задачи\n* Отрицательное или нулевое значение трудозатрат (loggedHours)\n* Некорректный формат времени. Ожидается 'ЧЧ:ММ' или число.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskStatusUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskStatusUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Задача с id=123 не найдена'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskStatusUpdateResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{id}": {
+            "get": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Получить проект",
+                "operationId": "getProjectById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Проект найден",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Удалить проект (только OWNER)",
+                "operationId": "deleteProject",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Проект успешно удален"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Обновить метаданные (OWNER/ADMIN)",
+                "operationId": "updateProject",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProjectRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Проект успешно обновлен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт версий. Возможное сообщение:\n* 'Проект был изменен другим пользователем. Пожалуйста, обновите страницу.'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{id}/members/{userId}": {
+            "delete": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Удалить участника (OWNER или сам пользователь)",
+                "operationId": "removeMember",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Участник успешно удален"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможные сообщения:\n* 'Проект с ID 123 не найден'\n* 'Пользователь с id=123 не найден'\n* 'Участник с ID 123 не найден в проекте с ID 123'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Изменить роль участника (только OWNER)",
+                "operationId": "updateMemberRole",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMemberRoleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Роль участника успешно изменена",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможные сообщения:\n* 'Проект с ID 123 не найден'\n* 'Пользователь с id=123 не найден'\n* 'Участник с ID 123 не найден в проекте с ID 123'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectMemberDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/test": {
+            "get": {
+                "tags": [
+                    "test-controller"
+                ],
+                "summary": "Тестовый эндпоинт",
+                "operationId": "getTest",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me/avatar/{filename}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Получить файл аватарки",
+                "operationId": "getAvatar",
+                "parameters": [
+                    {
+                        "name": "filename",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Файл найден",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Файл не найден: 123'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/wiki/media/{filename}": {
+            "get": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Получить медиафайл",
+                "operationId": "getMedia",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "filename",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Медиафайл найден",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Не удалось прочитать файл: 123'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{projectId}/action-log": {
+            "get": {
+                "tags": [
+                    "ActionLog"
+                ],
+                "summary": "Лог действий проекта",
+                "operationId": "getActionLog",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "actorType",
+                        "in": "query",
+                        "description": "Фильтр по типу актора",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "USER",
+                                "AI",
+                                "SYSTEM"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "eventType",
+                        "in": "query",
+                        "description": "Фильтр по типу события",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PROJECT_CREATED",
+                                "PROJECT_UPDATED",
+                                "MEMBER_INVITED",
+                                "MEMBER_ROLE_CHANGED",
+                                "MEMBER_REMOVED",
+                                "TASK_CREATED",
+                                "TASK_UPDATED",
+                                "TASK_STATUS_CHANGED",
+                                "TASK_ASSIGNED",
+                                "TASK_DELETED",
+                                "TIME_LOGGED",
+                                "EDGE_CREATED",
+                                "EDGE_DELETED",
+                                "WIKI_PAGE_CREATED",
+                                "WIKI_PAGE_UPDATED",
+                                "AI_SKELETON_GENERATED",
+                                "AI_ENRICHMENT_COMPLETED",
+                                "AI_ENRICHMENT_FAILED",
+                                "BLUEPRINT_GENERATED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "taskId",
+                        "in": "query",
+                        "description": "Фильтр по ID задачи",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Начало временного диапазона (ISO 8601)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Конец временного диапазона (ISO 8601)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "pageable",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Pageable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Лог действий получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageActionLogEntryDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageActionLogEntryDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/projects/{id}/graph": {
+            "get": {
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Полный граф (узлы + рёбра + назначения)",
+                "operationId": "getProjectGraph",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Граф проекта получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectGraphResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectGraphResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Проект с ID 123 не найден'",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectGraphResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ai/providers": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Получить список доступных AI-провайдеров",
+                "operationId": "getProviders",
+                "responses": {
+                    "200": {
+                        "description": "Список провайдеров получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка при обращении к AI-сервису (например, сервис недоступен).",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/wiki/media/{mediaId}": {
+            "delete": {
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Удалить медиафайл",
+                "operationId": "deleteWikiMedia",
+                "parameters": [
+                    {
+                        "name": "mediaId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Медиафайл успешно удален"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Media-файл с id=123 не найден'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/tasks/{taskId}/time-logs/{logId}": {
+            "delete": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Удалить запись о времени (автор или ADMIN/OWNER)",
+                "operationId": "deleteTimeLog",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "logId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Запись о времени успешно удалена"
+                    },
+                    "400": {
+                        "description": "Некорректный запрос. Возможное сообщение:\n* 'Трудозатраты с id=123 не относятся к Задаче с id=123'"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможные сообщения:\n* 'Трудозатраты с id=123 не найдены'\n* 'Задача с id=123 не найдена'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/edges/{edgeId}": {
+            "delete": {
+                "tags": [
+                    "Edges"
+                ],
+                "summary": "Удалить ребро (зависимость)",
+                "operationId": "deleteEdge",
+                "parameters": [
+                    {
+                        "name": "edgeId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Ребро успешно удалено"
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (сообщение: 'Доступ запрещен')"
+                    },
+                    "404": {
+                        "description": "Ресурс не найден. Возможное сообщение:\n* 'Ребро с id=123 не найдено'"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "UpdateWikiPageRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "required": [
+                    "content",
+                    "version"
+                ]
+            },
+            "WikiPageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "authorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "authorType": {
+                        "type": "string",
+                        "enum": [
+                            "USER",
+                            "AI",
+                            "SYSTEM"
+                        ]
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "UpdateAiSettingsRequest": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "gemini",
+                            "openai",
+                            "anthropic",
+                            "groq",
+                            "mistral",
+                            "ollama"
+                        ]
+                    },
+                    "model": {
+                        "type": "string"
+                    },
+                    "apiKey": {
+                        "type": "string"
+                    },
+                    "customBaseUrl": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "provider"
+                ]
+            },
+            "SavedAiSettings": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "gemini",
+                            "openai",
+                            "anthropic",
+                            "groq",
+                            "mistral",
+                            "ollama"
+                        ]
+                    },
+                    "model": {
+                        "type": "string"
+                    },
+                    "apiKeyMasked": {
+                        "type": "string"
+                    },
+                    "hasApiKey": {
+                        "type": "boolean"
+                    },
+                    "customBaseUrl": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AssignTaskRequest": {
+                "type": "object",
+                "properties": {
+                    "userIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                },
+                "required": [
+                    "userIds"
+                ]
+            },
+            "AssigneeDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "avatarUrl": {
+                        "type": "string"
+                    }
+                }
+            },
+            "DocLink": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TaskEnrichment": {
+                "type": "object",
+                "properties": {
+                    "checklist": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pitfalls": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DocLink"
+                        }
+                    },
+                    "rawMarkdown": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TaskNode": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "LOCKED",
+                            "AVAILABLE",
+                            "IN_PROGRESS",
+                            "COMPLETED",
+                            "SKIPPED"
+                        ]
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "BACKEND",
+                            "FRONTEND",
+                            "DEVOPS",
+                            "TESTING",
+                            "DOCUMENTATION",
+                            "DESIGN",
+                            "OTHER"
+                        ]
+                    },
+                    "layer": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "positionX": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "positionY": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "assignees": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AssigneeDto"
+                        }
+                    },
+                    "completionPercent": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "estimatedHours": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "loggedHours": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "wikiPageId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "enrichment": {
+                        "$ref": "#/components/schemas/TaskEnrichment"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "UserProfile": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "avatarUrl": {
+                        "type": "string"
+                    },
+                    "aiSettings": {
+                        "$ref": "#/components/schemas/SavedAiSettings"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateTimeLogRequest": {
+                "type": "object",
+                "properties": {
+                    "hours": {
+                        "type": "string",
+                        "description": "Затраченное время. Форматы: '1.5' (полтора часа) или '1:30' (1 час 30 минут).",
+                        "example": "1:30"
+                    },
+                    "comment": {
+                        "type": "string"
+                    },
+                    "loggedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Дата и время лога. Если не указано, используется текущее время.",
+                        "example": "2024-05-20T13:45:00"
+                    }
+                },
+                "required": [
+                    "hours"
+                ]
+            },
+            "TimeLogDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userDisplayName": {
+                        "type": "string"
+                    },
+                    "hours": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "comment": {
+                        "type": "string"
+                    },
+                    "loggedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateProjectRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "techStack": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "aiEstimate": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "ProjectDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "techStack": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING_AI",
+                            "ACTIVE",
+                            "COMPLETED",
+                            "ARCHIVED"
+                        ]
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "teamSize": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "aiEstimate": {
+                        "type": "boolean"
+                    },
+                    "totalEstimatedHours": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "totalLoggedHours": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "completionPercent": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateWikiPageRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "content": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "content",
+                    "title"
+                ]
+            },
+            "WikiMediaDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "filename": {
+                        "type": "string"
+                    },
+                    "originalFilename": {
+                        "type": "string"
+                    },
+                    "mimeType": {
+                        "type": "string"
+                    },
+                    "sizeBytes": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "uploadedBy": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateTaskRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "BACKEND",
+                            "FRONTEND",
+                            "DEVOPS",
+                            "TESTING",
+                            "DOCUMENTATION",
+                            "DESIGN",
+                            "OTHER"
+                        ]
+                    },
+                    "estimatedHours": {
+                        "type": "string",
+                        "description": "Оценка трудозатрат. Форматы: '2.5' или '2:30'.",
+                        "example": "4:00"
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "positionX": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "positionY": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "title"
+                ]
+            },
+            "MutateGraphRequest": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "prompt"
+                ]
+            },
+            "EdgeResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "sourceTaskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "targetTaskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "ProjectGraphResponse": {
+                "type": "object",
+                "properties": {
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TaskNode"
+                        }
+                    },
+                    "edges": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EdgeResponse"
+                        }
+                    },
+                    "enrichmentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "IN_PROGRESS",
+                            "COMPLETED"
+                        ]
+                    }
+                }
+            },
+            "CreateEdgeRequest": {
+                "type": "object",
+                "properties": {
+                    "sourceTaskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "targetTaskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "sourceTaskId",
+                    "targetTaskId"
+                ]
+            },
+            "InviteMemberRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER",
+                            "ADMIN",
+                            "MEMBER",
+                            "VIEWER"
+                        ]
+                    }
+                },
+                "required": [
+                    "email",
+                    "role"
+                ]
+            },
+            "ProjectMemberDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER",
+                            "ADMIN",
+                            "MEMBER",
+                            "VIEWER"
+                        ]
+                    },
+                    "joinedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "EnrichTaskCallback": {
+                "type": "object",
+                "properties": {
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "checklist": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pitfalls": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DocLink"
+                        }
+                    },
+                    "rawMarkdown": {
+                        "type": "string"
+                    },
+                    "wikiDraft": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 2147483647,
+                        "minLength": 8
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "displayName",
+                    "email",
+                    "password"
+                ]
+            },
+            "AuthResponse": {
+                "type": "object",
+                "properties": {
+                    "accessToken": {
+                        "type": "string"
+                    },
+                    "refreshToken": {
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UserProfile"
+                    }
+                }
+            },
+            "RefreshRequest": {
+                "type": "object",
+                "properties": {
+                    "refreshToken": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "refreshToken"
+                ]
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 2147483647,
+                        "minLength": 8
+                    }
+                },
+                "required": [
+                    "email",
+                    "password"
+                ]
+            },
+            "ProviderConfig": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string"
+                    },
+                    "apiKey": {
+                        "type": "string"
+                    },
+                    "model": {
+                        "type": "string"
+                    },
+                    "customBaseUrl": {
+                        "type": "string"
+                    }
+                }
+            },
+            "UpdateProfileRequest": {
+                "type": "object",
+                "properties": {
+                    "displayName": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "displayName"
+                ]
+            },
+            "UpdateTaskRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "BACKEND",
+                            "FRONTEND",
+                            "DEVOPS",
+                            "TESTING",
+                            "DOCUMENTATION",
+                            "DESIGN",
+                            "OTHER"
+                        ]
+                    },
+                    "estimatedHours": {
+                        "type": "string",
+                        "description": "Оценка трудозатрат. Форматы: '1.5' или '1:30'.",
+                        "example": "1:00"
+                    },
+                    "completionPercent": {
+                        "type": "integer",
+                        "format": "int32",
+                        "maximum": 100,
+                        "minimum": 0
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "positionX": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "positionY": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            },
+            "UpdateTaskStatusRequest": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "LOCKED",
+                            "AVAILABLE",
+                            "IN_PROGRESS",
+                            "COMPLETED",
+                            "SKIPPED"
+                        ]
+                    },
+                    "loggedHours": {
+                        "type": "string",
+                        "description": "Часы, потраченные на выполнение. Форматы: '1.5' или '1:30'.",
+                        "example": "2:00"
+                    },
+                    "comment": {
+                        "type": "string"
+                    },
+                    "loggedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Дата и время лога. Если не указано, используется текущее время.",
+                        "example": "2024-05-20T13:45:00"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "TaskStatusUpdateResponse": {
+                "type": "object",
+                "properties": {
+                    "updatedTask": {
+                        "$ref": "#/components/schemas/TaskNode"
+                    },
+                    "unlockedTasks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TaskNode"
+                        }
+                    },
+                    "graph": {
+                        "$ref": "#/components/schemas/ProjectGraphResponse"
+                    }
+                }
+            },
+            "UpdateProjectRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "techStack": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING_AI",
+                            "ACTIVE",
+                            "COMPLETED",
+                            "ARCHIVED"
+                        ]
+                    },
+                    "aiEstimate": {
+                        "type": "boolean"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            },
+            "UpdateMemberRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER",
+                            "ADMIN",
+                            "MEMBER",
+                            "VIEWER"
+                        ]
+                    }
+                },
+                "required": [
+                    "role"
+                ]
+            },
+            "Pageable": {
+                "type": "object",
+                "properties": {
+                    "page": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 0
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 1
+                    },
+                    "sort": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "PageProjectDto": {
+                "type": "object",
+                "properties": {
+                    "totalElements": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "first": {
+                        "type": "boolean"
+                    },
+                    "last": {
+                        "type": "boolean"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProjectDto"
+                        }
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/SortObject"
+                    },
+                    "numberOfElements": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pageable": {
+                        "$ref": "#/components/schemas/PageableObject"
+                    },
+                    "empty": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "PageableObject": {
+                "type": "object",
+                "properties": {
+                    "offset": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/SortObject"
+                    },
+                    "paged": {
+                        "type": "boolean"
+                    },
+                    "pageNumber": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "unpaged": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "SortObject": {
+                "type": "object",
+                "properties": {
+                    "empty": {
+                        "type": "boolean"
+                    },
+                    "sorted": {
+                        "type": "boolean"
+                    },
+                    "unsorted": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "WikiPageSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "authorType": {
+                        "type": "string",
+                        "enum": [
+                            "USER",
+                            "AI",
+                            "SYSTEM"
+                        ]
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "ActionLogEntryDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "actorType": {
+                        "type": "string",
+                        "enum": [
+                            "USER",
+                            "AI",
+                            "SYSTEM"
+                        ]
+                    },
+                    "eventType": {
+                        "type": "string",
+                        "enum": [
+                            "PROJECT_CREATED",
+                            "PROJECT_UPDATED",
+                            "MEMBER_INVITED",
+                            "MEMBER_ROLE_CHANGED",
+                            "MEMBER_REMOVED",
+                            "TASK_CREATED",
+                            "TASK_UPDATED",
+                            "TASK_STATUS_CHANGED",
+                            "TASK_ASSIGNED",
+                            "TASK_DELETED",
+                            "TIME_LOGGED",
+                            "EDGE_CREATED",
+                            "EDGE_DELETED",
+                            "WIKI_PAGE_CREATED",
+                            "WIKI_PAGE_UPDATED",
+                            "AI_SKELETON_GENERATED",
+                            "AI_ENRICHMENT_COMPLETED",
+                            "AI_ENRICHMENT_FAILED",
+                            "BLUEPRINT_GENERATED"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "PageActionLogEntryDto": {
+                "type": "object",
+                "properties": {
+                    "totalElements": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "first": {
+                        "type": "boolean"
+                    },
+                    "last": {
+                        "type": "boolean"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ActionLogEntryDto"
+                        }
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/SortObject"
+                    },
+                    "numberOfElements": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pageable": {
+                        "$ref": "#/components/schemas/PageableObject"
+                    },
+                    "empty": {
+                        "type": "boolean"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "name": "BearerAuth",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

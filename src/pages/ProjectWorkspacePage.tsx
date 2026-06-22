@@ -242,9 +242,11 @@ export default function ProjectWorkspacePage() {
                         <TaskDetailsSidebar
                           task={workspace.selectedTask}
                           members={workspace.members}
+                          currentUserId={workspace.currentUserId}
                           onClose={workspace.closeSidebarOnly}
                           onTaskUpdate={workspace.handleTaskUpdate}
                           onAssigneesChange={workspace.handleAssigneesChange}
+                          onTimeLogDelete={workspace.handleDeleteTimeLog}
                           onInteract={() => workspace.setStatusMenu(null)}
                           updating={workspace.statusUpdatingTaskId === workspace.selectedTask.id}
                           isClosing={workspace.isTaskSidebarClosing}

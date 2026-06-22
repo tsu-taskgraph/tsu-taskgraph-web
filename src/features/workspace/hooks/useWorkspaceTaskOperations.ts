@@ -6,6 +6,7 @@ import {
   type UpdateTaskRequest,
   type ProjectGraphResponse,
   type AssignTaskRequest,
+  type TimeLogResponse,
 } from '../../../api/projects';
 import {
   type WorkspaceNode,
@@ -257,6 +258,42 @@ export function useWorkspaceTaskOperations({
     }
   }, [selectedTask, takeSnapshot, setGraph, setNodes, showEdgeToast]);
 
+  const handleDeleteTimeLog = useCallback(async (log: TimeLogResponse) => {
+    if (!selectedTask) return;
+
+    takeSnapshot();
+    setStatusUpdatingTaskId(selectedTask.id);
+
+    try {
+      await projectsApi.deleteTimeLog(log.id);
+
+      const updatedTask = {
+        ...selectedTask,
+        loggedHours: Math.max(0, selectedTask.loggedHours - log.hours),
+        updatedAt: new Date().toISOString()
+      };
+
+      setGraph((currentGraph) => currentGraph ? {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map((task) => task.id === updatedTask.id ? updatedTask : task)
+      } : currentGraph);
+
+      setNodes((currentNodes): WorkspaceNode[] => currentNodes.map((node) => {
+        if (node.type !== 'taskNode' || node.id !== updatedTask.id) return node;
+        const taskNode = node as TaskFlowNode;
+        return { ...taskNode, data: { ...taskNode.data, task: updatedTask } };
+      }));
+
+      showEdgeToast('Time log deleted.', 'success');
+    } catch (err) {
+      const statusCode = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const parsed = mapServerErrorToEnglish(err, statusCode);
+      showEdgeToast(parsed.message);
+    } finally {
+      setStatusUpdatingTaskId(null);
+    }
+  }, [selectedTask, takeSnapshot, setGraph, setNodes, showEdgeToast]);
+
   const handleDeleteTask = useCallback((taskId: string) => {
     if (!selectedTask) return;
 
@@ -363,6 +400,7 @@ export function useWorkspaceTaskOperations({
     handleTaskCreated,
     handleTaskUpdate,
     handleLogTaskTime,
+    handleDeleteTimeLog,
     handleAssigneesChange,
     handleDeleteTask,
     handleTaskStatusChange

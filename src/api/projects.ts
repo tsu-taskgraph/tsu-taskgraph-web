@@ -138,6 +138,7 @@ export interface TimeLogResponse {
   id: string;
   taskId: string;
   userId: string;
+  userDisplayName: string;
   hours: number;
   comment: string | null;
   loggedAt: string;
@@ -201,6 +202,15 @@ export const projectsApi = {
   async logTaskTime(taskId: string, data: { hours: number; comment?: string | null }): Promise<TimeLogResponse> {
     const response = await apiClient.post<TimeLogResponse>(`/api/v1/tasks/${taskId}/time-logs`, data);
     return response.data;
+  },
+
+  async listTaskTimeLogs(taskId: string): Promise<TimeLogResponse[]> {
+    const response = await apiClient.get<TimeLogResponse[]>(`/api/v1/tasks/${taskId}/time-logs`);
+    return response.data;
+  },
+
+  async deleteTimeLog(logId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/time-logs/${logId}`);
   },
 
   async updateTaskStatus(

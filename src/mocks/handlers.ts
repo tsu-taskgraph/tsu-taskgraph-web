@@ -27,6 +27,16 @@ export interface ProjectMember {
   joinedAt: string;
 }
 
+interface TimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  userDisplayName: string;
+  hours: number;
+  comment: string | null;
+  loggedAt: string;
+}
+
 type MockTaskCategory = 'BACKEND' | 'FRONTEND' | 'DEVOPS' | 'TESTING' | 'DOCUMENTATION' | 'DESIGN' | 'OTHER' | null;
 
 interface Project {
@@ -312,6 +322,8 @@ projectsList.forEach((project) => {
     ];
   }
 });
+
+const timeLogs: TimeLog[] = [];
 
 const projectGraphs: Record<string, {
   projectId: string;
@@ -1467,14 +1479,57 @@ export const handlers = [
     };
     targetGraph.nodes = targetGraph.nodes.map((node) => node.id === taskId ? updatedTask : node);
 
-    return HttpResponse.json({
-      id: `time-log-${Date.now()}`,
+    const logId = `time-log-${Date.now()}`;
+    const logEntry: TimeLog = {
+      id: logId,
       taskId,
       userId: '00000000-0000-0000-0000-000000000000',
+      userDisplayName: userProfile.displayName,
       hours: body.hours,
       comment: body.comment ?? null,
       loggedAt: now
+    };
+    timeLogs.push(logEntry);
+
+    return HttpResponse.json({
+      id: logEntry.id,
+      taskId: logEntry.taskId,
+      userId: logEntry.userId,
+      userDisplayName: logEntry.userDisplayName,
+      hours: logEntry.hours,
+      comment: logEntry.comment,
+      loggedAt: logEntry.loggedAt
     }, { status: 201 });
+  }),
+
+  http.get('*/api/v1/tasks/:taskId/time-logs', ({ params }) => {
+    const taskId = params.taskId as string;
+    const logs = timeLogs
+      .filter((log) => log.taskId === taskId)
+      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
+    return HttpResponse.json(logs);
+  }),
+
+  http.delete('*/api/v1/time-logs/:logId', ({ params }) => {
+    const logId = params.logId as string;
+    const index = timeLogs.findIndex((log) => log.id === logId);
+
+    if (index === -1) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const log = timeLogs[index];
+    timeLogs.splice(index, 1);
+
+    for (const graph of Object.values(projectGraphs)) {
+      const task = graph.nodes.find((node) => node.id === log.taskId);
+      if (task) {
+        const updatedHours = Math.max(0, Number(task.loggedHours ?? 0) - log.hours);
+        task.loggedHours = updatedHours;
+      }
+    }
+
+    return new HttpResponse(null, { status: 204 });
   }),
 
   http.patch('*/api/v1/tasks/:taskId/status', async ({ params, request }) => {

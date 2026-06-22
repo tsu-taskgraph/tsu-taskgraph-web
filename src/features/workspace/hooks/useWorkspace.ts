@@ -714,6 +714,7 @@ export function useWorkspace(projectId: string | undefined) {
     handleTaskCreated: operations.handleTaskCreated,
     handleTaskUpdate: operations.handleTaskUpdate,
     handleLogTaskTime: operations.handleLogTaskTime,
+    handleDeleteTimeLog: operations.handleDeleteTimeLog,
     handleAssigneesChange: operations.handleAssigneesChange,
     handleDeleteTask: operations.handleDeleteTask,
     handleTaskStatusChange: operations.handleTaskStatusChange,
