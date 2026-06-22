@@ -148,6 +148,50 @@ export interface AssignTaskRequest {
   userIds: string[];
 }
 
+export type ActionLogActorType = 'USER' | 'AI' | 'SYSTEM';
+
+export type ActionLogEventType =
+  | 'PROJECT_CREATED'
+  | 'PROJECT_UPDATED'
+  | 'MEMBER_INVITED'
+  | 'MEMBER_ROLE_CHANGED'
+  | 'MEMBER_REMOVED'
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_STATUS_CHANGED'
+  | 'TASK_ASSIGNED'
+  | 'TASK_UNASSIGNED'
+  | 'TASK_DELETED'
+  | 'TIME_LOGGED'
+  | 'EDGE_CREATED'
+  | 'EDGE_DELETED'
+  | 'GRAPH_MUTATED'
+  | 'SMART_RECOVERY_APPLIED'
+  | 'AI_SKELETON_GENERATED'
+  | 'AI_ENRICHMENT_COMPLETED'
+  | 'WIKI_PAGE_CREATED'
+  | 'WIKI_PAGE_UPDATED'
+  | 'BLUEPRINT_GENERATED'
+  | 'GITHUB_TASK_CLOSED';
+
+export interface ActionLogEntry {
+  id: string;
+  projectId: string;
+  actorId: string | null;
+  actorType: ActionLogActorType;
+  actorDisplayName: string;
+  eventType: ActionLogEventType;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ActionLogResponse {
+  content: ActionLogEntry[];
+  totalElements: number;
+  totalPages: number;
+}
+
 export const projectsApi = {
   async listProjects(params?: {
     status?: 'PENDING_AI' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -258,6 +302,19 @@ export const projectsApi = {
 
   async assignTask(taskId: string, data: AssignTaskRequest): Promise<TaskNode> {
     const response = await apiClient.put<TaskNode>(`/api/v1/tasks/${taskId}/assignees`, data);
+    return response.data;
+  },
+
+  async getActionLog(
+    projectId: string,
+    params?: {
+      actorType?: ActionLogActorType;
+      eventType?: ActionLogEventType;
+      page?: number;
+      size?: number;
+    }
+  ): Promise<ActionLogResponse> {
+    const response = await apiClient.get<ActionLogResponse>(`/api/v1/projects/${projectId}/action-log`, { params });
     return response.data;
   }
 };

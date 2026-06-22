@@ -30,6 +30,7 @@ import { ConfirmModal } from '../features/workspace/components/ConfirmModal';
 import { TeamModal } from '../features/workspace/components/TeamModal';
 import { InviteMemberModal } from '../features/workspace/components/InviteMemberModal';
 import { useWorkspace } from '../features/workspace/hooks/useWorkspace';
+import { ActionLogPanel } from '../features/workspace/components/ActionLogPanel';
 
 export default function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -73,6 +74,7 @@ export default function ProjectWorkspacePage() {
         toggleTheme={workspace.toggleTheme}
         onRefresh={() => workspace.loadWorkspace(true)}
         onOpenTeam={workspace.openTeamModal}
+        onOpenActionLog={workspace.openActionLog}
         isScrolled={workspace.isScrolled}
       />
 
@@ -374,6 +376,17 @@ export default function ProjectWorkspacePage() {
         isClosing={workspace.isInviteClosing}
         onClose={workspace.closeInviteModal}
         onInvite={workspace.handleInviteMember}
+      />
+
+      <ActionLogPanel
+        projectId={projectId || ''}
+        isOpen={workspace.isActionLogOpen}
+        isClosing={workspace.isActionLogClosing}
+        onClose={workspace.closeActionLog}
+        actionLogs={workspace.actionLogs}
+        loading={workspace.loadingActionLogs}
+        error={workspace.actionLogError}
+        onReload={workspace.loadActionLogs}
       />
     </div>
   );
