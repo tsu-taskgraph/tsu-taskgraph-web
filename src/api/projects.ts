@@ -162,10 +162,10 @@ export const projectsApi = {
     return response.data;
   },
 
-  async createEdge(projectId: string, data: CreateEdgeRequest): Promise<EdgeResponse> {
+  async createEdge(projectId: string, data: CreateEdgeRequest, enableSmartRecovery = false): Promise<EdgeResponse> {
     const response = await apiClient.post<EdgeResponse>(`/api/v1/projects/${projectId}/edges`, data, {
       headers: {
-        'X-Enable-Smart-Recovery': 'false'
+        'X-Enable-Smart-Recovery': String(enableSmartRecovery)
       }
     });
     return response.data;
