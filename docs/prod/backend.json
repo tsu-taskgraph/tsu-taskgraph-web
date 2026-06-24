@@ -671,6 +671,53 @@
                 ]
             }
         },
+        "/api/v1/providers/models": {
+            "post": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Получить список моделей для конкретного провайдера и ключа",
+                "operationId": "getModels",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProviderConfig"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Список моделей получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка при обращении к AI-сервису. Возможные причины:\n* 400: Неверные входные данные (например, не указан провайдер).\n* 401: Невалидный API-ключ для выбранного провайдера.\n* 429: Превышен лимит запросов (Rate limit) у провайдера.\n* 502: Сбой на стороне AI-провайдера.\n* 504: Превышено время ожидания ответа от AI-провайдера.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects": {
             "get": {
                 "tags": [
@@ -1759,53 +1806,6 @@
                 }
             }
         },
-        "/api/v1/ai/providers/models": {
-            "post": {
-                "tags": [
-                    "AI"
-                ],
-                "summary": "Получить список моделей для конкретного провайдера и ключа",
-                "operationId": "getModels",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ProviderConfig"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Список моделей получен",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Ошибка при обращении к AI-сервису. Возможные причины:\n* 400: Неверные входные данные (например, не указан провайдер).\n* 401: Невалидный API-ключ для выбранного провайдера.\n* 429: Превышен лимит запросов (Rate limit) у провайдера.\n* 502: Сбой на стороне AI-провайдера.\n* 504: Превышено время ожидания ответа от AI-провайдера.",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/users/me": {
             "get": {
                 "tags": [
@@ -2517,6 +2517,43 @@
                 }
             }
         },
+        "/api/v1/providers": {
+            "get": {
+                "tags": [
+                    "AI"
+                ],
+                "summary": "Получить список доступных AI-провайдеров",
+                "operationId": "getProviders",
+                "responses": {
+                    "200": {
+                        "description": "Список провайдеров получен",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка при обращении к AI-сервису (например, сервис недоступен).",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects/{projectId}/wiki/media/{filename}": {
             "get": {
                 "tags": [
@@ -2585,6 +2622,43 @@
                 ]
             }
         },
+        "/api/v1/projects/{projectId}/tasks/refresh-statuses": {
+            "get": {
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Обновить статусы всех задач в проекте",
+                "description": "Принудительно пересчитывает статусы всех задач (LOCKED/AVAILABLE) на основе текущих зависимостей. Полезно для исправления рассинхронизаций в графе.",
+                "operationId": "refreshProjectTaskStatuses",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Статусы успешно обновлены. Возвращает актуальный граф проекта."
+                    },
+                    "403": {
+                        "description": "Доступ запрещен"
+                    },
+                    "404": {
+                        "description": "Проект не найден"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/projects/{projectId}/action-log": {
             "get": {
                 "tags": [
@@ -2642,7 +2716,8 @@
                                 "AI_SKELETON_GENERATED",
                                 "AI_ENRICHMENT_COMPLETED",
                                 "AI_ENRICHMENT_FAILED",
-                                "BLUEPRINT_GENERATED"
+                                "BLUEPRINT_GENERATED",
+                                "TASK_STATUSES_RECALCULATED"
                             ]
                         }
                     },
@@ -2769,43 +2844,6 @@
                         "BearerAuth": []
                     }
                 ]
-            }
-        },
-        "/api/v1/ai/providers": {
-            "get": {
-                "tags": [
-                    "AI"
-                ],
-                "summary": "Получить список доступных AI-провайдеров",
-                "operationId": "getProviders",
-                "responses": {
-                    "200": {
-                        "description": "Список провайдеров получен",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Ошибка при обращении к AI-сервису (например, сервис недоступен).",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         },
         "/api/v1/wiki/media/{mediaId}": {
@@ -3297,6 +3335,23 @@
                     }
                 }
             },
+            "ProviderConfig": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string"
+                    },
+                    "apiKey": {
+                        "type": "string"
+                    },
+                    "model": {
+                        "type": "string"
+                    },
+                    "customBaseUrl": {
+                        "type": "string"
+                    }
+                }
+            },
             "CreateProjectRequest": {
                 "type": "object",
                 "properties": {
@@ -3731,23 +3786,6 @@
                     "password"
                 ]
             },
-            "ProviderConfig": {
-                "type": "object",
-                "properties": {
-                    "provider": {
-                        "type": "string"
-                    },
-                    "apiKey": {
-                        "type": "string"
-                    },
-                    "model": {
-                        "type": "string"
-                    },
-                    "customBaseUrl": {
-                        "type": "string"
-                    }
-                }
-            },
             "UpdateProfileRequest": {
                 "type": "object",
                 "properties": {
@@ -4098,7 +4136,8 @@
                             "AI_SKELETON_GENERATED",
                             "AI_ENRICHMENT_COMPLETED",
                             "AI_ENRICHMENT_FAILED",
-                            "BLUEPRINT_GENERATED"
+                            "BLUEPRINT_GENERATED",
+                            "TASK_STATUSES_RECALCULATED"
                         ]
                     },
                     "description": {

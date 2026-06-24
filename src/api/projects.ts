@@ -174,10 +174,12 @@ export type ActionLogEventType =
   | 'SMART_RECOVERY_APPLIED'
   | 'AI_SKELETON_GENERATED'
   | 'AI_ENRICHMENT_COMPLETED'
+  | 'AI_ENRICHMENT_FAILED'
   | 'WIKI_PAGE_CREATED'
   | 'WIKI_PAGE_UPDATED'
   | 'BLUEPRINT_GENERATED'
-  | 'GITHUB_TASK_CLOSED';
+  | 'GITHUB_TASK_CLOSED'
+  | (string & {});
 
 export interface ActionLogEntry {
   id: string;
@@ -223,6 +225,81 @@ const normalizeProjectGraph = (graph: ProjectGraphResponse): ProjectGraphRespons
   nodes: (graph.nodes ?? []).map(normalizeTaskNode),
   edges: graph.edges ?? []
 });
+
+type UnknownRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is UnknownRecord => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const readString = (value: unknown): string | undefined => (
+  typeof value === 'string' && value.trim() ? value : undefined
+);
+
+const readNumber = (value: unknown): number | undefined => (
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+);
+
+const normalizeActionLogActorType = (value: unknown): ActionLogActorType => {
+  if (value === 'USER' || value === 'AI' || value === 'SYSTEM') return value;
+  return 'SYSTEM';
+};
+
+const getFallbackActorDisplayName = (actorType: ActionLogActorType): string => {
+  if (actorType === 'AI') return 'TaskGraph AI';
+  if (actorType === 'SYSTEM') return 'System';
+  return 'Unknown user';
+};
+
+const normalizeActionLogEntry = (entry: unknown): ActionLogEntry => {
+  const raw = isRecord(entry) ? entry : {};
+  const metadata = isRecord(raw.metadata) ? raw.metadata : null;
+  const actorType = normalizeActionLogActorType(raw.actorType);
+  const description = readString(raw.description) ?? 'Project activity updated.';
+  const createdAt = readString(raw.createdAt) ?? new Date().toISOString();
+
+  return {
+    id: readString(raw.id) ?? `${createdAt}-${description}`,
+    projectId: readString(raw.projectId) ?? '',
+    actorId: readString(raw.actorId) ?? readString(metadata?.actorId) ?? null,
+    actorType,
+    actorDisplayName:
+      readString(raw.actorDisplayName) ??
+      readString(raw.actorName) ??
+      readString(raw.userDisplayName) ??
+      readString(metadata?.actorDisplayName) ??
+      getFallbackActorDisplayName(actorType),
+    eventType: readString(raw.eventType) ?? 'PROJECT_UPDATED',
+    description,
+    metadata,
+    createdAt
+  };
+};
+
+const normalizeActionLogResponse = (data: unknown): ActionLogResponse => {
+  if (Array.isArray(data)) {
+    const content = data.map(normalizeActionLogEntry);
+    return {
+      content,
+      totalElements: content.length,
+      totalPages: 1,
+      page: 0,
+      number: 0
+    };
+  }
+
+  const raw = isRecord(data) ? data : {};
+  const content = Array.isArray(raw.content) ? raw.content.map(normalizeActionLogEntry) : [];
+  const page = readNumber(raw.page) ?? readNumber(raw.number) ?? 0;
+
+  return {
+    content,
+    totalElements: readNumber(raw.totalElements) ?? content.length,
+    totalPages: readNumber(raw.totalPages) ?? (content.length > 0 ? 1 : 0),
+    page,
+    number: readNumber(raw.number) ?? page
+  };
+};
 
 const normalizeProjectMember = (member: Partial<ProjectMember> & { userId?: string; id?: string }): ProjectMember => {
   const userId = member.userId ?? member.id ?? '';
@@ -405,7 +482,7 @@ export const projectsApi = {
       size?: number;
     }
   ): Promise<ActionLogResponse> {
-    const response = await apiClient.get<ActionLogResponse>(`/api/v1/projects/${projectId}/action-log`, { params });
-    return response.data;
+    const response = await apiClient.get<unknown>(`/api/v1/projects/${projectId}/action-log`, { params });
+    return normalizeActionLogResponse(response.data);
   }
 };
