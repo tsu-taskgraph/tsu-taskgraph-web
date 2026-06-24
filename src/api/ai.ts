@@ -13,12 +13,12 @@ const isAiProviderType = (value: string): value is AiProviderType =>
 
 export const aiApi = {
     async getProviders(): Promise<AiProviderType[]> {
-        const response = await apiClient.get<string[]>('/api/v1/ai/providers');
+        const response = await apiClient.get<string[]>('/api/v1/providers');
         return (response.data ?? []).filter(isAiProviderType);
     },
 
     async getModels(config: ProviderConfig): Promise<string[]> {
-        const response = await apiClient.post<string[]>('/api/v1/ai/providers/models', config);
+        const response = await apiClient.post<string[]>('/api/v1/providers/models', config);
         return response.data ?? [];
     }
 };
