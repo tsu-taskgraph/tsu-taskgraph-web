@@ -36,7 +36,7 @@ interface ActionLogPanelProps {
     onReload: () => void;
 }
 
-const eventIconConfig: Record<ActionLogEventType, { icon: typeof Activity; className: string }> = {
+const eventIconConfig: Partial<Record<ActionLogEventType, { icon: typeof Activity; className: string }>> = {
     PROJECT_CREATED: { icon: FolderPlus, className: 'text-emerald-400 light:text-emerald-600' },
     PROJECT_UPDATED: { icon: Pencil, className: 'text-sky-400 light:text-sky-600' },
     MEMBER_INVITED: { icon: UserPlus, className: 'text-indigo-400 light:text-indigo-600' },
@@ -55,6 +55,7 @@ const eventIconConfig: Record<ActionLogEventType, { icon: typeof Activity; class
     SMART_RECOVERY_APPLIED: { icon: Sparkles, className: 'text-brand-400 light:text-brand-600' },
     AI_SKELETON_GENERATED: { icon: Sparkles, className: 'text-brand-400 light:text-brand-600' },
     AI_ENRICHMENT_COMPLETED: { icon: Sparkles, className: 'text-brand-400 light:text-brand-600' },
+    AI_ENRICHMENT_FAILED: { icon: Sparkles, className: 'text-rose-400 light:text-rose-600' },
     WIKI_PAGE_CREATED: { icon: BookOpen, className: 'text-blue-400 light:text-blue-600' },
     WIKI_PAGE_UPDATED: { icon: BookOpen, className: 'text-sky-400 light:text-sky-600' },
     BLUEPRINT_GENERATED: { icon: Layout, className: 'text-fuchsia-400 light:text-fuchsia-600' },
@@ -83,8 +84,9 @@ function formatRelativeTime(value: string) {
     return 'just now';
 }
 
-function getInitials(displayName: string) {
-    const parts = displayName.trim().split(/\s+/).filter(Boolean);
+function getInitials(displayName: string | null | undefined) {
+    const safeDisplayName = displayName?.trim() || 'Unknown user';
+    const parts = safeDisplayName.split(/\s+/).filter(Boolean);
     if (parts.length === 0) return 'U';
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
     return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
